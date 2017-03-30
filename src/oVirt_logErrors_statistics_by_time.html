@@ -37,7 +37,7 @@
         xAxis: {
             type: 'datetime',
             labels: {
-              format: '{value:%Y:%m:%d %H:%M:%S}',
+              format: '{value:%Y:%m:%d %H:%M:%S:%H}',
               align: 'left'
             },
             //tickInterval: 1000
@@ -84,20 +84,19 @@
       for (var logname in errors_data) {
         var errors_stat_series = []
         for (i = 0; i < new_cats.length; i++) {
-          var dt = new Date(Number(new_cats[i])*1000);
-          //console.log(dt);
-          //console.log(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(), dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds());
-          dt = Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(), dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds());
-          //console.log('>>', dt);
+          var dt = new Date(Number(new_cats[i]));
+          dt = Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(), dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds(), dt.getMilliseconds());
           if (new_cats[i] in errors_data[logname]) {
-            var num_of_errors = 0
-            for (msg_id in errors_data[logname][new_cats[i]]) {
-              num_of_errors += errors_data[logname][new_cats[i]][msg_id]
-            }
-            errors_stat_series.push([dt, num_of_errors]);
+            //var num_of_errors = 0
+            //for (msg_id in errors_data[logname][new_cats[i]]) {
+            //  num_of_errors += errors_data[logname][new_cats[i]][msg_id]
+            //}
+            //errors_stat_series.push([dt, num_of_errors]);
+            errors_stat_series.push([dt, errors_data[logname][new_cats[i]]['number']]);
           }// else {
            //   errors_stat_series.push([dt, 0]);
           //}
+          console.log('-------');
         }
         chart.addSeries({name: logname,
                           data: errors_stat_series,
@@ -105,15 +104,15 @@
                             events: {
                               click: function (e) {
                                       console.log(e);
-                                      console.log((e.point.category/1000).toString());
+                                      console.log((e.point.category).toString());
                                       hs.htmlExpand(null, {
                                         pageOrigin: {
                                           x: e.pageX || e.clientX,
                                           y: e.pageY || e.clientY
                                         },
-                                        headingText: this.series.name + ' | ' + e.point.y + ' errors',
-                                        maincontentText: GenErrText(errors_data[e.point.series.name][(e.point.category/1000).toString()]),
-                                        width: GenErrText(errors_data[e.point.series.name][(e.point.category/1000).toString()]).length * 10 > 500 ? 500 : GenErrText(errors_data[e.point.series.name][(e.point.category/1000).toString()]).length * 10
+                                        headingText: this.series.name + ' | ' + errors_data[e.point.series.name][(e.point.category).toString()]['thread'],
+                                        maincontentText: GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]),
+                                        width: GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]).length * 10 > 500 ? 500 : GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]).length * 5
                                       });
                               }
                             }
@@ -124,7 +123,7 @@
     var GenErrText = function(time_err){
       text = ''
       for (err_key in time_err) {
-        text += err_key + ': ' + time_err[err_key] + '\n'
+        text += '<b>'+err_key + ': </b>' + time_err[err_key] + '<br>'
       }
       return text;
     };
