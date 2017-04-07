@@ -1,0 +1,261 @@
+________________________________________
+
+Summarized statistics for engine
+Number of error messages: 52
+________________________________________
+  10| org.ovirt.engine.core.bll.RefreshHostCapabilitiesCommand
+      {09-30-14.183000 23.02.2017 - 10-18-31.470000 23.02.2017}
+       5| Command 'org.ovirt.engine.core.bll.RefreshHostCapabilitiesCommand' failed
+          {09-30-14.183000 23.02.2017 - 10-18-31.470000 23.02.2017}
+           5|  java.net.NoRouteToHostException No route to host
+              {09-30-14.183000 23.02.2017 - 10-18-31.470000 23.02.2017}
+       5| Exception
+          {09-30-14.183000 23.02.2017 - 10-18-31.470000 23.02.2017}
+           5|  org.ovirt.engine.core.vdsbroker.vdsbroker.VDSNetworkException java.net.NoRouteToHostException No route to host
+              {09-30-14.183000 23.02.2017 - 10-18-31.470000 23.02.2017}
+
+   2| org.ovirt.engine.core.bll.hostdeploy.HostUpdatesChecker
+      {09-43-39.938000 23.02.2017; 09-43-41.087000 23.02.2017; }
+       2| Unknown
+          {09-43-39.938000 23.02.2017; 09-43-41.087000 23.02.2017; }
+           1|  Command returned failure code 1 during SSH session root@192.168.121.108
+              {09-43-39.938000 23.02.2017; }
+           1|  Command returned failure code 1 during SSH session root@192.168.121.109
+              {09-43-41.087000 23.02.2017; }
+
+   6| org.ovirt.engine.core.bll.hostdeploy.VdsDeployBase
+      {09-43-39.306000 23.02.2017 - 09-43-41.085000 23.02.2017}
+       1| Error during host 192.168.121.108 install
+          {09-43-39.932000 23.02.2017; }
+           1|  java.io.IOException Command returned failure code 1 during SSH session 'root@192.168.121.108'
+              {09-43-39.932000 23.02.2017; }
+       1| Error during host 192.168.121.109 install
+          {09-43-41.085000 23.02.2017; }
+           1|  java.io.IOException Command returned failure code 1 during SSH session 'root@192.168.121.109'
+              {09-43-41.085000 23.02.2017; }
+       2| Failed to execute stage 'Package installation'
+          {09-43-39.311000 23.02.2017; 09-43-40.470000 23.02.2017; }
+           2|  Package rubygem-fluent-plugin-rewrite-tag-filter cannot be found
+              {09-43-39.311000 23.02.2017; 09-43-40.470000 23.02.2017; }
+       2| Yum
+          {09-43-39.306000 23.02.2017; 09-43-40.466000 23.02.2017; }
+           2|  Cannot queue package rubygem-fluent-plugin-rewrite-tag-filter Package rubygem-fluent-plugin-rewrite-tag-filter cannot be found
+              {09-43-39.306000 23.02.2017; 09-43-40.466000 23.02.2017; }
+
+  10| org.ovirt.engine.core.dal.dbbroker.auditloghandling.AuditLogDirector
+      {09-30-14.205000 23.02.2017 - 10-18-31.486000 23.02.2017}
+       1| Failed to check for available updates on host rhel-7.3-host-1 with 
+          {09-43-39.953000 23.02.2017; }
+           1|  'Command returned failure code 1 during SSH session 'root@192.168.121.108''.
+              {09-43-39.953000 23.02.2017; }
+       1| Failed to check for available updates on host rhel-7.3-host-2 with 
+          {09-43-41.102000 23.02.2017; }
+           1|  'Command returned failure code 1 during SSH session 'root@192.168.121.109''.
+              {09-43-41.102000 23.02.2017; }
+       1| Failed to hot set memory to VM debian
+          {10-12-42.023000 23.02.2017; }
+           1|  unsupported configuration Attaching memory device with size '2097152' would exceed domain's maxMemory config
+              {10-12-42.023000 23.02.2017; }
+       5| Unknown
+          {09-30-14.205000 23.02.2017 - 10-18-31.486000 23.02.2017}
+           5| Failed to refresh the capabilities of host centos-host-2.
+              {09-30-14.205000 23.02.2017 - 10-18-31.486000 23.02.2017}
+       1| VDSM rhel-7
+          {10-12-42.014000 23.02.2017; }
+           1|  unsupported configuration Attaching memory device with size '2097152' would exceed domain's maxMemory config
+              {10-12-42.014000 23.02.2017; }
+       1| VM centos-server-text is down with error
+          {09-48-48.992000 23.02.2017; }
+           1|  Wake up from hibernation failed'_srcDomXML'.
+              {09-48-48.992000 23.02.2017; }
+
+   4| org.ovirt.engine.core.uutils.ssh.SSHDialog
+      {09-43-39.931000 23.02.2017 - 09-43-41.084000 23.02.2017}
+       2| Exception
+          {09-43-39.931000 23.02.2017; 09-43-41.084000 23.02.2017; }
+           1|  java.io.IOException Command returned failure code 1 during SSH session 'root@192.168.121.108'
+              {09-43-39.931000 23.02.2017; }
+           1|  java.io.IOException Command returned failure code 1 during SSH session 'root@192.168.121.109'
+              {09-43-41.084000 23.02.2017; }
+       1| SSH error running command root@192.168.121.108
+          {09-43-39.931000 23.02.2017; }
+           1| 'umask 0077; MYTMP="$"; trap "chmod -R u+rwX \"$\" > /dev/null 2>&1; rm -fr \"$\" > /dev/null 2>&1" 0; tar --warning=no-timestamp -C "$" -x &&  "$"/ovirt-host-mgmt DIALOG/dialect=strmachine DIALOG/customization=boolTrue' Command returned failure code 1 during SSH session 'root@192.168.121.108'
+              {09-43-39.931000 23.02.2017; }
+       1| SSH error running command root@192.168.121.109
+          {09-43-41.084000 23.02.2017; }
+           1| 'umask 0077; MYTMP="$"; trap "chmod -R u+rwX \"$\" > /dev/null 2>&1; rm -fr \"$\" > /dev/null 2>&1" 0; tar --warning=no-timestamp -C "$" -x &&  "$"/ovirt-host-mgmt DIALOG/dialect=strmachine DIALOG/customization=boolTrue' Command returned failure code 1 during SSH session 'root@192.168.121.109'
+              {09-43-41.084000 23.02.2017; }
+
+   2| org.ovirt.engine.core.vdsbroker.SetAmountOfMemoryVDSCommand
+      {10-12-42.015000 23.02.2017; 10-12-42.004000 23.02.2017; }
+       1| Command 'SetAmountOfMemoryVDSCommand' execution failed
+          {10-12-42.015000 23.02.2017; }
+           1|  VDSGenericException VDSErrorException Failed to SetAmountOfMemoryVDS, error = unsupported configuration Attaching memory device with size '2097152' would exceed domain's maxMemory config, code = 70
+              {10-12-42.015000 23.02.2017; }
+       1| Unknown
+          {10-12-42.004000 23.02.2017; }
+           1| Failed in 'SetAmountOfMemoryVDS' method
+              {10-12-42.004000 23.02.2017; }
+
+   2| org.ovirt.engine.core.vdsbroker.monitoring.VmsMonitoring
+      {09-48-49.032000 23.02.2017; 09-58-02.048000 23.02.2017; }
+       2| Unknown
+          {09-48-49.032000 23.02.2017; 09-58-02.048000 23.02.2017; }
+           2| Rerun VM '43f02a2d-e563-4f11-a7bc-9ee191cfeba1'. Called from VDS 'rhel-7.3-host-1'
+              {09-48-49.032000 23.02.2017; 09-58-02.048000 23.02.2017; }
+
+   5| org.ovirt.engine.core.vdsbroker.vdsbroker.GetCapabilitiesVDSCommand
+      {09-30-14.152000 23.02.2017 - 10-18-31.456000 23.02.2017}
+       5| Command 'GetCapabilitiesVDSCommand' execution failed
+          {09-30-14.152000 23.02.2017 - 10-18-31.456000 23.02.2017}
+           5|  java.net.NoRouteToHostException No route to host
+              {09-30-14.152000 23.02.2017 - 10-18-31.456000 23.02.2017}
+
+  11| org.ovirt.engine.ui.frontend.server.dashboard.DashboardDataServlet.CacheUpdate.Utilization
+      {09-28-30.576000 23.02.2017 - 10-18-30.558000 23.02.2017}
+      11| Could not update the Utilization Cache
+          {09-28-30.576000 23.02.2017 - 10-18-30.558000 23.02.2017}
+          11|  Error while running SQL query org.ovirt.engine.ui.frontend.server.dashboard.DashboardDataException Error while running SQL query
+              {09-28-30.576000 23.02.2017 - 10-18-30.558000 23.02.2017}
+
+________________________________________
+
+Summarized statistics for vdsm-1
+Number of error messages: 202
+________________________________________
+   1| jsonrpc.JsonRpcServer
+      {11-02-49.851000 23.02.2017; }
+       1| NotConnectedError
+          {11-02-49.851000 23.02.2017; }
+           1|  VM u'dd18b0d2-ecd0-43dc-9f86-7e1219780967' was not started yet or was shut down
+              {11-02-49.851000 23.02.2017; }
+
+  62| storage.Dispatcher
+      {10-05-48.645000 23.02.2017 - 10-48-49.779000 23.02.2017}
+      62| Unknown
+          {10-05-48.645000 23.02.2017 - 10-48-49.779000 23.02.2017}
+          25|  "Cannot find master domain uspUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033", code 304 (dispatcher77)
+              {10-05-48.645000 23.02.2017 - 10-09-57.305000 23.02.2017}
+          25|  "Unknown pool id, pool not connected (u00000001-0001-0001-0001-000000000311,)", code 309 (dispatcher77)
+              {10-05-48.809000 23.02.2017 - 10-09-57.333000 23.02.2017}
+           1|  "Volume does not exist (u3a884457-49f6-4d9a-88bb-62bbdfe1c891,)", code 201 (dispatcher77)
+              {10-48-49.779000 23.02.2017; }
+          11|  Not SPM (), code 654 (dispatcher77)
+              {10-05-49.799000 23.02.2017 - 10-09-57.187000 23.02.2017}
+
+  60| storage.Monitor
+      {10-10-07.650000 23.02.2017 - 10-14-58.486000 23.02.2017}
+      60| StorageDomainDoesNotExist
+          {10-10-07.650000 23.02.2017 - 10-14-58.486000 23.02.2017}
+          60|  Storage domain does not exist 
+              {10-10-07.650000 23.02.2017 - 10-14-58.486000 23.02.2017}
+
+   6| storage.StoragePool
+      {10-12-49.064000 23.02.2017 - 10-28-43.672000 23.02.2017}
+       1| SecureError
+          {10-28-43.672000 23.02.2017; }
+           1|  Secured object is not in safe state
+              {10-28-43.672000 23.02.2017; }
+       5| StorageDomainDoesNotExist
+          {10-12-49.064000 23.02.2017 - 10-12-49.136000 23.02.2017}
+           5|  Storage domain does not exist 
+              {10-12-49.064000 23.02.2017 - 10-12-49.136000 23.02.2017}
+
+  62| storage.TaskManager.Task
+      {10-05-48.639000 23.02.2017 - 10-48-49.772000 23.02.2017}
+      11| SpmStatusError
+          {10-05-49.797000 23.02.2017 - 10-09-57.186000 23.02.2017}
+          11|  Not SPM 
+              {10-05-49.797000 23.02.2017 - 10-09-57.186000 23.02.2017}
+      25| StoragePoolMasterNotFound
+          {10-05-48.639000 23.02.2017 - 10-09-57.304000 23.02.2017}
+          25|  Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'
+              {10-05-48.639000 23.02.2017 - 10-09-57.304000 23.02.2017}
+      25| StoragePoolUnknown
+          {10-05-48.807000 23.02.2017 - 10-09-57.332000 23.02.2017}
+          25|  Unknown pool id, pool not connected 
+              {10-05-48.807000 23.02.2017 - 10-09-57.332000 23.02.2017}
+       1| VolumeDoesNotExist
+          {10-48-49.772000 23.02.2017; }
+           1|  Volume does not exist 
+              {10-48-49.772000 23.02.2017; }
+
+   1| vds
+      {10-48-49.779000 23.02.2017; }
+       1| VolumeError
+          {10-48-49.779000 23.02.2017; }
+           1|  Bad volume specification 
+              {10-48-49.779000 23.02.2017; }
+
+  10| virt.vm
+      {10-22-06.977000 23.02.2017 - 11-12-43.000000 23.02.2017}
+       1| KeyError
+          {10-48-49.920000 23.02.2017; }
+           1|  '_srcDomXML'
+              {10-48-49.920000 23.02.2017; }
+       5| libvirtError
+          {10-22-06.994000 23.02.2017 - 11-12-43.000000 23.02.2017}
+           2|  operation aborted migration job canceled by client
+              {10-22-06.994000 23.02.2017; 10-57-56.157000 23.02.2017; }
+           2|  operation failed domain save job unexpectedly failed
+              {10-22-59.963000 23.02.2017; 10-58-53.915000 23.02.2017; }
+           1|  unsupported configuration Attaching memory device with size '2097152' would exceed domain's maxMemory config
+              {11-12-43.000000 23.02.2017; }
+       2| operation aborted
+          {10-22-06.977000 23.02.2017; 10-57-56.100000 23.02.2017; }
+           2|  migration job canceled by client 
+              {10-22-06.977000 23.02.2017; 10-57-56.100000 23.02.2017; }
+       2| operation failed
+          {10-22-59.957000 23.02.2017; 10-58-53.906000 23.02.2017; }
+           2|  domain save job unexpectedly failed 
+              {10-22-59.957000 23.02.2017; 10-58-53.906000 23.02.2017; }
+
+________________________________________
+
+Summarized statistics for vdsm-2
+Number of error messages: 81
+________________________________________
+   2| root
+      {11-05-35.055000 23.02.2017; 10-58-54.693000 23.02.2017; }
+       2| libvirtError
+          {11-05-35.055000 23.02.2017; 10-58-54.693000 23.02.2017; }
+           1|  Domain not found no domain with matching uuid '43f02a2d-e563-4f11-a7bc-9ee191cfeba1' 
+              {11-05-35.055000 23.02.2017; }
+           1|  Domain not found no domain with matching uuid 'dd18b0d2-ecd0-43dc-9f86-7e1219780967' 
+              {10-58-54.693000 23.02.2017; }
+
+  39| storage.Dispatcher
+      {10-07-33.282000 23.02.2017 - 10-10-07.469000 23.02.2017}
+      39| Unknown
+          {10-07-33.282000 23.02.2017 - 10-10-07.469000 23.02.2017}
+          15|  "Cannot find master domain uspUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033", code 304 (dispatcher77)
+              {10-07-33.580000 23.02.2017 - 10-09-57.439000 23.02.2017}
+          15|  "Unknown pool id, pool not connected (u00000001-0001-0001-0001-000000000311,)", code 309 (dispatcher77)
+              {10-07-43.604000 23.02.2017 - 10-10-07.465000 23.02.2017}
+           9|  Not SPM (), code 654 (dispatcher77)
+              {10-07-33.282000 23.02.2017 - 10-10-07.469000 23.02.2017}
+
+  38| storage.TaskManager.Task
+      {10-07-33.579000 23.02.2017 - 10-10-07.468000 23.02.2017}
+       8| SpmStatusError
+          {10-07-43.607000 23.02.2017 - 10-10-07.468000 23.02.2017}
+           8|  Not SPM 
+              {10-07-43.607000 23.02.2017 - 10-10-07.468000 23.02.2017}
+      15| StoragePoolMasterNotFound
+          {10-07-33.579000 23.02.2017 - 10-09-57.437000 23.02.2017}
+          15|  Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'
+              {10-07-33.579000 23.02.2017 - 10-09-57.437000 23.02.2017}
+      15| StoragePoolUnknown
+          {10-07-43.603000 23.02.2017 - 10-10-07.463000 23.02.2017}
+          15|  Unknown pool id, pool not connected 
+              {10-07-43.603000 23.02.2017 - 10-10-07.463000 23.02.2017}
+
+   2| virt.vm
+      {11-05-35.054000 23.02.2017; 10-58-54.692000 23.02.2017; }
+       2| Domain not found
+          {11-05-35.054000 23.02.2017; 10-58-54.692000 23.02.2017; }
+           1|  no domain with matching uuid '43f02a2d-e563-4f11-a7bc-9ee191cfeba1' 
+              {11-05-35.054000 23.02.2017; }
+           1|  no domain with matching uuid 'dd18b0d2-ecd0-43dc-9f86-7e1219780967' 
+              {10-58-54.692000 23.02.2017; }
+

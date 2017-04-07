@@ -54,8 +54,12 @@ class ErrorLog:
 			print('Thread was not found: ', self.raw_text.partition(" ERROR ")[2])
 			return False
 	def ParseMessage(self):
+		if ' ERROR ' in self.raw_text:
+			mstext = self.raw_text.partition(" ERROR ")[2]
+		else:
+			mstext = self.raw_text
 		template = re.compile(r"Message: (.*)")
-		t = re.search(template, self.raw_text.partition(" ERROR ")[2])
+		t = re.search(template, mstext)
 		if t is not None and len(t.group(1)) > 5:
 			t_mes = re.split(r":", t.group(1))
 			if len(t_mes) > 1:
@@ -73,7 +77,7 @@ class ErrorLog:
 			#print('MESSAGE = ', self.message)
 			return True
 		else:
-			t_mes = re.split(r"message", self.raw_text.partition(" ERROR ")[2])
+			t_mes = re.split(r"message", mstext)
 			if len(t_mes) == 2:
 				self.message = [re.sub('[:\{\}\'\n]', '', t_mes[1])]
 				self.event = 'Unknown'
@@ -81,7 +85,7 @@ class ErrorLog:
 				#print('Message = ', self.message)
 				return True
 			template = re.compile(r"(\[.*?\]|\(.*?\)|\{.*?\}|\<.*?\>) *")
-			t = re.sub(template, '', self.raw_text.partition(" ERROR ")[2])
+			t = re.sub(template, '', mstext)
 			t = re.sub('\n', '', t)
 			if t is not None and len(t) > 5:
 				t_mes = re.split(r":", t)
@@ -100,15 +104,16 @@ class ErrorLog:
 				#print('Message = ', self.message)
 				return True
 			else:
-				self.message = re.sub(r"\n", '', re.sub(r"\[(.*?)\]", '', re.sub(r"\((.*?)\)", '', self.raw_text.partition(" ERROR ")[2])))
+				self.message = re.sub(r"\n", '', re.sub(r"\[(.*?)\]", '', re.sub(r"\((.*?)\)", '', mstext)))
 				self.event = 'Unknown'
-				print('Message was not found: ', re.sub(r"\n", '', self.raw_text.partition(" ERROR ")[2]))
+				print('Message was not found: >> ', re.sub(r"\n", '', mstext) + ' <<')
 				#print('Event = ', self.event)
 				#print('Message = ', self.message)
 				return False
 
+#not used
 def DatetimeParser(date_time):
-	epoch = datetime.utcfromtimestamp(0)
+	epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 	error_datetime = date_time.partition(",")[0]+'.'+date_time.partition(",")[2][:3]
 	error_tz = date_time.partition(",")[2][3:]
 	if error_tz == 'Z':
@@ -119,7 +124,7 @@ def DatetimeParser(date_time):
 	except ValueError:
 		print(date_time, ': Unknown format')
 	return dt
-
+#not used
 def MessageParser(message):
 	objects = ['SQL', 'SSH', 'host']
 	msg_obj = [word for word in message.split(' ') if word in objects]
@@ -178,7 +183,7 @@ def SummarizeErrorsTimeFirst(error_who_send, error_event, error_thread, error_te
 
 def PrintStatistics(logfile_name, errors_dict, errors_time, errors_num):
 	err_info = '________________________________________\n\n'
-	err_info += "Summarize statistics for " + logfile_name + '\n'
+	err_info += "Summarized statistics for " + logfile_name + '\n'
 	err_info += "Number of error messages: " + str(errors_num) + '\n'
 	err_info += '________________________________________\n'
 	sum_all = []
@@ -199,25 +204,25 @@ def PrintStatistics(logfile_name, errors_dict, errors_time, errors_num):
 	
 	for sender_id, sender in enumerate(sorted(errors_dict.keys())):
 		if np.sum(sum_all[sender_id]) < 3:
-			str_time = ''.join([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y")+'; ' for r in all_time[sender_id] for m in r for m_n in m])
+			str_time = ''.join([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y")+'; ' for r in all_time[sender_id] for m in r for m_n in m])
 		else:
-			str_time = min([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for r in all_time[sender_id] for m in r for m_n in m]) + ' - ' + \
-						max([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for r in all_time[sender_id] for m in r for m_n in m])
+			str_time = min([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for r in all_time[sender_id] for m in r for m_n in m]) + ' - ' + \
+						max([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for r in all_time[sender_id] for m in r for m_n in m])
 		err_info += "%4d| %s\n%s\n" % (np.sum(sum_all[sender_id]), sender, ' '*6+'{'+str_time+'}')
 		for event_id, event in enumerate(sorted(errors_dict[sender].keys())):
 			if sum_all[sender_id][event_id] < 3:
-				str_time = ''.join([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y")+'; ' for m in all_time[sender_id][event_id] for m_n in m])
+				str_time = ''.join([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y")+'; ' for m in all_time[sender_id][event_id] for m_n in m])
 			else:
-				str_time = min([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for m in all_time[sender_id][event_id] for m_n in m]) + ' - ' + \
-							max([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for m in all_time[sender_id][event_id] for m_n in m])
+				str_time = min([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for m in all_time[sender_id][event_id] for m_n in m]) + ' - ' + \
+							max([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for m in all_time[sender_id][event_id] for m_n in m])
 			err_info += "%8d| %s\n%s\n" % (sum_all[sender_id][event_id], event, ' '*10+'{'+str_time+'}')
 			if isinstance(errors_dict[sender][event], dict):
 				for message_id, message in enumerate(sorted(errors_dict[sender][event].keys())):
 					if errors_dict[sender][event][message] < 3:
-						str_time = ''.join([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y")+'; ' for m_n in all_time[sender_id][event_id][message_id]])
+						str_time = ''.join([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y")+'; ' for m_n in all_time[sender_id][event_id][message_id]])
 					else:
-						str_time = min([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for m_n in all_time[sender_id][event_id][message_id]]) + ' - ' + \
-							max([datetime.fromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for m_n in all_time[sender_id][event_id][message_id]])
+						str_time = min([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for m_n in all_time[sender_id][event_id][message_id]]) + ' - ' + \
+							max([datetime.utcfromtimestamp(m_n/1000).strftime("%H-%M-%S.%f %d.%m.%Y") for m_n in all_time[sender_id][event_id][message_id]])
 					err_info += "%12d| %s\n%s\n" % (errors_dict[sender][event][message], message, ' '*14+'{'+str_time+'}')
 		err_info += '\n'
 	return err_info
@@ -307,35 +312,34 @@ def CreateErrorGraph(log_freq, sender_freq, event_freq, message_freq, timeline, 
 	ax1.set_xlabel('Timeline (step=1s)')
 	ax1.set_ylabel('Number of errors')
 	ax1.legend((m, s, r), ('Rare messages', 'Rare senders', 'Rare events'), loc=1)
-
 	G=nx.DiGraph()
 	for t in sorted(d.keys(), key=lambda k: int(k)):
 		for log in sorted(d[t].keys()):
 			if sender_freq[d[t][log]['sender']] < np.median(list(sender_freq.values())):
-				G.add_node(datetime.fromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t][log]['sender']+\
+				G.add_node(datetime.utcfromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t][log]['sender']+\
 								')\nEvent=['+d[t][log]['event']+']\n'+'Suspicious because of sender', \
-							time=datetime.fromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y"),\
+							time=datetime.utcfromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y"),\
 							freq=sender_freq[d[t][log]['sender']], link_type='sender', \
 							thread=d[t][log]['thread'], sender=d[t][log]['sender'], event=d[t][log]['event'], \
 							message=d[t][log]['message'], colorscheme='rdylbu4', style='filled', fillcolor=2)
 			if message_freq[d[t][log]['message']] < np.median(list(message_freq.values())):
-				G.add_node(datetime.fromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t][log]['sender']+\
+				G.add_node(datetime.utcfromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t][log]['sender']+\
 								')\nEvent=['+d[t][log]['event']+']\n'+'Suspicious because of message', \
-							time=datetime.fromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y"),\
+							time=datetime.utcfromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y"),\
 							freq=message_freq[d[t][log]['message']], link_type='message', \
 							thread=d[t][log]['thread'], sender=d[t][log]['sender'], event=d[t][log]['event'], \
 							message=d[t][log]['message'], colorscheme='rdylbu4', style='filled', fillcolor=1)
 			if event_freq[d[t][log]['event']] < np.median(list(event_freq.values())):
-				G.add_node(datetime.fromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t][log]['sender']+\
+				G.add_node(datetime.utcfromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t][log]['sender']+\
 								')\nEvent=['+d[t][log]['event']+']\n'+'Suspicious because of event', \
-							time=datetime.fromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y"),\
+							time=datetime.utcfromtimestamp(int(t)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y"),\
 							freq=event_freq[d[t][log]['event']], link_type='event', \
 							thread=d[t][log]['thread'], sender=d[t][log]['sender'], event=d[t][log]['event'], \
 							message=d[t][log]['message'], colorscheme='rdylbu4', style='filled', fillcolor=3)
 	G_copy = G.copy()
 	for t_susp, attr in sorted(G_copy.nodes(data=True), key=lambda k: k[1]['time']):
 		#check if mean number of following errors is greater than previos (look over 5 seconds)
-		t_su = str(int(datetime.strptime(attr['time'], "%H-%M-%S.%f\n%d.%m.%Y").timestamp() * 1000))
+		t_su = str(int(datetime.strptime(attr['time'], "%H-%M-%S.%f\n%d.%m.%Y").replace(tzinfo=pytz.utc).timestamp() * 1000))
 		step = 20
 		count_err_next = np.mean(timeline[1+int(t_su)//1000-min(map(int, d.keys()))//1000:]) if int(t_su)//1000-min(map(int, d.keys()))//1000+step+1 > len(timeline) \
 							else np.mean(timeline[1+int(t_su)//1000-min(map(int, d.keys()))//1000:int(t_su)//1000-min(map(int, d.keys()))//1000+step+1])
@@ -356,22 +360,22 @@ def CreateErrorGraph(log_freq, sender_freq, event_freq, message_freq, timeline, 
 							err_to_link = prev_error
 							link_label = link_message
 						else:
-							err_to_link = datetime.fromtimestamp(int(t_su)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+attr['sender']+\
+							err_to_link = datetime.utcfromtimestamp(int(t_su)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+attr['sender']+\
 										')\nEvent=['+attr['event']+']\n'+'Suspicious because of '+ attr['link_type']
 							link_label = attr['message']
-						G.add_node(datetime.fromtimestamp(int(t_err)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t_err][log]['sender']+\
+						G.add_node(datetime.utcfromtimestamp(int(t_err)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t_err][log]['sender']+\
 										')\nEvent=['+d[t_err][log]['event']+']\n'+'Suspicious because of time', \
-									time=datetime.fromtimestamp(int(t_err)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y"),\
+									time=datetime.utcfromtimestamp(int(t_err)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y"),\
 									freq = (count_err_next-count_err_prev)*2, link_type = 'time', \
 									thread = d[t_err][log]['thread'], sender = d[t_err][log]['sender'], event = d[t_err][log]['event'], \
 									message = d[t_err][log]['message'], colorscheme='rdylbu4', style='filled', fillcolor=4)
 						G.add_edge(err_to_link, \
-									datetime.fromtimestamp(int(t_err)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t_err][log]['sender']+\
+									datetime.utcfromtimestamp(int(t_err)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t_err][log]['sender']+\
 									')\nEvent=['+d[t_err][log]['event']+']\n'+'Suspicious because of time', \
 									label = link_label)													
 						#added_messages += [d[t_err][log]['message']]
 						#added_events += [d[t_err][log]['event']]
-						prev_error = datetime.fromtimestamp(int(t_err)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t_err][log]['sender']+\
+						prev_error = datetime.utcfromtimestamp(int(t_err)/1000).strftime("%H-%M-%S.%f\n%d.%m.%Y")+'\nSender=('+d[t_err][log]['sender']+\
 										')\nEvent=['+d[t_err][log]['event']+']\n'+'Suspicious because of time'
 						link_message = d[t_err][log]['message']
 						#else:
@@ -389,6 +393,62 @@ def CreateErrorGraph(log_freq, sender_freq, event_freq, message_freq, timeline, 
 	fig.savefig('plt_'+ filename +'.png')
 	nx.drawing.nx_pydot.write_dot(G, filename+".dot")
 
+def LoopOverLines(logname):
+	error_datetime = []
+	error_msg_text = []
+	error_who_send = []
+	error_event = []
+	error_thread = []
+	with open(logname) as f:
+		error_info = {}
+		error_traceback = ''
+		in_traceback_flag = False
+		for line in f:
+			if any(w in line for w in ['INFO', 'DEBUG', 'ERROR']):
+				if error_info:
+					#print(line, '\n', error_info, '\n')
+					error_datetime += [error_info['datetime']]
+					error_who_send += [error_info['who_send']]
+					error_thread += [error_info['thread']]
+					if not in_traceback_flag:
+						error_event += [error_info['event']]
+						error_msg_text += [error_info['msg_text']]
+					else:
+						traceback_message = ErrorLog(error_traceback)
+						traceback_message.ParseMessage()
+						error_event += [traceback_message.event]
+						error_msg_text += [traceback_message.message]
+				error_info = {}
+				error_traceback = ''
+				in_traceback_flag = False
+				if 'ERROR' in line:
+					e = ErrorLog(line)
+					for (method_name, method) in inspect.getmembers(ErrorLog, predicate=inspect.isfunction):
+						if 'Parse' in method_name:
+							method(e)
+					error_info['datetime'] = int(e.date_time.timestamp() * 1000)
+					error_info['who_send'] = e.who_send
+					error_info['thread'] = e.thread
+					error_info['event'] = e.event
+					error_info['msg_text'] = e.message
+			elif 'Traceback' in line:
+				in_traceback_flag = True
+				error_traceback = line
+			elif in_traceback_flag and not line == '':
+				error_traceback = line
+		#adding the last error
+		if 'ERROR' in line or in_traceback_flag:
+			error_datetime += [error_info['datetime']]
+			error_who_send += [error_info['who_send']]
+			error_thread += [error_info['thread']]
+			if not in_traceback_flag:
+				error_event += [error_info['event']]
+				error_msg_text += [error_info['msg_text']]
+			else:
+				error_event += [error_traceback['event']]
+				error_msg_text += [error_traceback['msg_text']]
+	return error_datetime, error_who_send, error_thread, error_event, error_msg_text
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Parse logfiles and summarize errors into standart output.')
 	parser.add_argument('log_directory', metavar='directory', type=str, nargs=1, help='logfiles directory')
@@ -401,48 +461,46 @@ if __name__ == "__main__":
 	all_errors_statistics = []
 	all_errors_statistics_time = []
 	all_errors_time_first = []
-
-	epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
+	found_lognames = []
 	output_text = ''
+
 	for log in args.log_filenames:
-		error_datetime = []
-		error_msg_text = []
-		error_who_send = []
-		error_event = []
-		error_thread = []
 		print('Analysing', args.log_directory[0] + '/' + log + '.log', '...')
 		if not os.path.isfile(args.log_directory[0] + '/' + log + '.log'):
 			print("File not found: %s\n" % log+ '.log')
 			continue
+		#save name of actually opened logfile
+		found_lognames += [log]
 
-		with open(args.log_directory[0] + '/' + log + '.log') as f:
-			for line in f:
-				if 'ERROR' in line:
-					e = ErrorLog(line)
-					for (method_name, method) in inspect.getmembers(ErrorLog, predicate=inspect.isfunction):
-						if 'Parse' in method_name:
-							method(e)
-					error_datetime += [int(e.date_time.timestamp() * 1000)]
-					error_msg_text += [e.message]
-					error_who_send += [e.who_send]
-					error_event += [e.event]
-					error_thread += [e.thread]
+		#gathering all information about errors from a logfile into lists
+		error_datetime, error_who_send, error_thread, error_event, error_msg_text = LoopOverLines(args.log_directory[0] + '/' + log + '.log')
+		#calculating a number of every error's appearing in a file and its time
 		summarize_errors, summarize_errors_time = SummarizeErrors(error_who_send, error_event, error_thread, error_msg_text, error_datetime)
+		#saving them to a list with other log files' errors
 		all_errors_statistics += [summarize_errors]
 		all_errors_statistics_time += [summarize_errors_time]
+		#creating an output string, calculating a number of appearing of every sender, thread, event
 		output_text += PrintStatistics(log, summarize_errors, summarize_errors_time, len(error_datetime))
-
+		
+		#calculating a number of errors for every moment of time (needed for chart and graph)
 		summarize_errors_time_first = SummarizeErrorsTimeFirst(error_who_send, error_event, error_thread, error_msg_text, [str(x) for x in error_datetime])
+		#saving it to a list with other log files' errors' time
 		all_errors_time_first += [summarize_errors_time_first]
 	
 	#Linking related errors to each other
 	if args.dot is not None:
-		log_freq, sender_freq, event_freq, message_freq = CalculateErrorsFrequency(args.log_filenames, all_errors_statistics)
-		timeline, errors_dict = MergeAllErrorsByTime(args.log_filenames, all_errors_time_first)
+		#summarizing errors' appearing number like in PrintStatistics
+		log_freq, sender_freq, event_freq, message_freq = CalculateErrorsFrequency(found_lognames, all_errors_statistics)
+		#summarizing errors' appearing number like in PrintStatistics
+		timeline, errors_dict = MergeAllErrorsByTime(found_lognames, all_errors_time_first)
+		#searching for suspicious errors, linking them with following errors
 		CreateErrorGraph(log_freq, sender_freq, event_freq, message_freq, timeline, errors_dict, args.dot)
 
+	#Saving error's info by time (for a chart)
 	if args.json:
-		DumpJson(args.log_filenames, all_errors_time_first)
+		DumpJson(found_lognames, all_errors_time_first)
+	
+	#Saving to a specified file
 	if args.output is not None:
 		output_file = open(args.output, 'w')
 		output_file.write(output_text)

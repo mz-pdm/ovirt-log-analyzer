@@ -319,8 +319,8 @@ var errors_data =
     },
     "vdsm_1": {
         "1487844348639": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -333,8 +333,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844348807": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -347,8 +347,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844349797": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -361,8 +361,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844359930": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -375,8 +375,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844359969": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -389,8 +389,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844371085": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -403,8 +403,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844371111": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/4"
@@ -417,8 +417,8 @@ var errors_data =
             "thread": "jsonrpc/4"
         },
         "1487844381367": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -431,8 +431,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844381394": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -445,8 +445,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844391765": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -459,8 +459,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844401800": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -473,8 +473,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844401804": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -487,8 +487,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844402035": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -501,8 +501,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844412061": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -515,8 +515,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844412066": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -529,8 +529,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844412188": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/4"
@@ -543,8 +543,8 @@ var errors_data =
             "thread": "jsonrpc/4"
         },
         "1487844412212": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -557,8 +557,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844422505": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -571,8 +571,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844422559": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -585,8 +585,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844432940": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -599,8 +599,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844442971": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -613,8 +613,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844442975": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -627,8 +627,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844443108": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -641,8 +641,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844443138": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -655,8 +655,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844453443": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -669,8 +669,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844453477": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -683,8 +683,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844463857": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -697,8 +697,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844473889": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -711,8 +711,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844473893": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -725,8 +725,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844474005": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -739,8 +739,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844474028": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -753,8 +753,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844484382": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -767,8 +767,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844494408": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -781,8 +781,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844494412": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -795,8 +795,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844494666": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -809,8 +809,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844504696": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -823,8 +823,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844504701": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/4"
@@ -837,8 +837,8 @@ var errors_data =
             "thread": "jsonrpc/4"
         },
         "1487844504820": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -851,8 +851,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844504840": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -865,8 +865,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844515209": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -879,8 +879,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844525236": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -893,8 +893,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844525240": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -907,8 +907,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844525368": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -921,8 +921,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844525392": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -935,8 +935,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844535636": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -949,8 +949,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844535658": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -963,8 +963,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844545909": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -977,8 +977,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844545937": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -991,8 +991,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844556189": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -1005,8 +1005,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844556214": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/4"
@@ -1019,8 +1019,8 @@ var errors_data =
             "thread": "jsonrpc/4"
         },
         "1487844566597": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -1033,8 +1033,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844576622": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -1047,8 +1047,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844576627": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -1061,8 +1061,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844576875": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -1075,8 +1075,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844586902": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -1089,8 +1089,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844586906": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -1103,8 +1103,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844587158": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -1117,8 +1117,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844597182": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/4"
@@ -1131,8 +1131,8 @@ var errors_data =
             "thread": "jsonrpc/4"
         },
         "1487844597186": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -1145,8 +1145,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844597304": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -1159,8 +1159,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844597332": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -1173,456 +1173,456 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844607650": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844607666": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844617684": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844617689": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844627712": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844627715": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844637738": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844637742": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844647765": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844647768": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844657794": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844657797": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844667827": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844667828": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844677858": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844677861": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844687888": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844687890": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844697917": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844697919": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844707948": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844707950": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844717975": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844717977": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844728003": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844728005": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844738030": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844738033": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844748055": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844748058": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844758083": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844758086": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844768111": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844768113": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844769064": {
-            "event": "Unknown",
-            "message": "FINISH thread failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.StoragePool",
             "thread": "upgrade/dd7732a"
         },
         "1487844769078": {
-            "event": "Unknown",
-            "message": "FINISH thread failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.StoragePool",
             "thread": "upgrade/ed2199d"
         },
         "1487844769091": {
-            "event": "Unknown",
-            "message": "Backup domain validation failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.StoragePool",
             "thread": "tasks/1"
         },
         "1487844769115": {
-            "event": "Unknown",
-            "message": "Error producing domain dd7732a3-44fc-4d08-bd5d-1a06273580fc, ignoring ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.StoragePool",
             "thread": "tasks/1"
         },
         "1487844769136": {
-            "event": "Unknown",
-            "message": "Error producing domain ed2199d0-0125-480e-85f0-04e9a3548abe, ignoring ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.StoragePool",
             "thread": "tasks/1"
         },
         "1487844778139": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844778142": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844788165": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844788169": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844798193": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844798195": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844808220": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844808223": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844818247": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844818250": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844828273": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844828277": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844838302": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844838304": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844848333": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844848335": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844858363": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844858365": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844868394": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844868397": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844878425": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844878428": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844888455": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844888457": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
         },
         "1487844898484": {
-            "event": "Unknown",
-            "message": "Setting up monitor for ed2199d0-0125-480e-85f0-04e9a3548abe failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/ed2199d"
         },
         "1487844898486": {
-            "event": "Unknown",
-            "message": "Setting up monitor for dd7732a3-44fc-4d08-bd5d-1a06273580fc failed ",
+            "event": "StorageDomainDoesNotExist",
+            "message": " Storage domain does not exist ",
             "number": 1,
             "sender": "storage.Monitor",
             "thread": "monitor/dd7732a"
@@ -1635,8 +1635,8 @@ var errors_data =
             "thread": "migsrc/43f02a2d"
         },
         "1487845326994": {
-            "event": "Unknown",
-            "message": "Failed to migrate ",
+            "event": "libvirtError",
+            "message": " operation aborted migration job canceled by client",
             "number": 1,
             "sender": "virt.vm",
             "thread": "migsrc/43f02a2d"
@@ -1649,36 +1649,36 @@ var errors_data =
             "thread": "migsrc/43f02a2d"
         },
         "1487845379963": {
-            "event": "Unknown",
-            "message": "Failed to migrate ",
+            "event": "libvirtError",
+            "message": " operation failed domain save job unexpectedly failed",
             "number": 1,
             "sender": "virt.vm",
             "thread": "migsrc/43f02a2d"
         },
         "1487845723672": {
-            "event": "Unknown",
-            "message": "FINISH thread failed ",
+            "event": "SecureError",
+            "message": " Secured object is not in safe state",
             "number": 1,
             "sender": "storage.StoragePool",
             "thread": "upgrade/dd7732a"
         },
         "1487846929772": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "VolumeDoesNotExist",
+            "message": " Volume does not exist ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
         },
         "1487846929779": {
-            "event": "Unknown",
-            "message": "Error restoring VM parameters ",
+            "event": "VolumeError",
+            "message": " Bad volume specification ",
             "number": 2,
             "sender": "vds",
             "thread": "jsonrpc/5"
         },
         "1487846929920": {
-            "event": "Unknown",
-            "message": "The vm start process failed ",
+            "event": "KeyError",
+            "message": " '_srcDomXML'",
             "number": 1,
             "sender": "virt.vm",
             "thread": "vm/43f02a2d"
@@ -1691,8 +1691,8 @@ var errors_data =
             "thread": "migsrc/43f02a2d"
         },
         "1487847476157": {
-            "event": "Unknown",
-            "message": "Failed to migrate ",
+            "event": "libvirtError",
+            "message": " operation aborted migration job canceled by client",
             "number": 1,
             "sender": "virt.vm",
             "thread": "migsrc/43f02a2d"
@@ -1705,22 +1705,22 @@ var errors_data =
             "thread": "migsrc/43f02a2d"
         },
         "1487847533915": {
-            "event": "Unknown",
-            "message": "Failed to migrate ",
+            "event": "libvirtError",
+            "message": " operation failed domain save job unexpectedly failed",
             "number": 1,
             "sender": "virt.vm",
             "thread": "migsrc/43f02a2d"
         },
         "1487847769851": {
-            "event": "Unknown",
-            "message": "Internal server error ",
+            "event": "NotConnectedError",
+            "message": " VM u'dd18b0d2-ecd0-43dc-9f86-7e1219780967' was not started yet or was shut down",
             "number": 1,
             "sender": "jsonrpc.JsonRpcServer",
             "thread": "jsonrpc/4"
         },
         "1487848363000": {
-            "event": "Unknown",
-            "message": "hotplugMemory failed ",
+            "event": "libvirtError",
+            "message": " unsupported configuration Attaching memory device with size '2097152' would exceed domain's maxMemory config",
             "number": 1,
             "sender": "virt.vm",
             "thread": "jsonrpc/2"
@@ -1735,8 +1735,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844453579": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -1749,8 +1749,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844463603": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -1763,8 +1763,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844463607": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -1777,8 +1777,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844463735": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/4"
@@ -1791,8 +1791,8 @@ var errors_data =
             "thread": "jsonrpc/4"
         },
         "1487844463758": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -1805,8 +1805,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844474118": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -1819,8 +1819,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844484143": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -1833,8 +1833,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844484147": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -1847,8 +1847,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844484260": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/4"
@@ -1861,8 +1861,8 @@ var errors_data =
             "thread": "jsonrpc/4"
         },
         "1487844484284": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -1875,8 +1875,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844494531": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -1889,8 +1889,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844494557": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -1903,8 +1903,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844504938": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -1917,8 +1917,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844514963": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -1931,8 +1931,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844514967": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -1945,8 +1945,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844515086": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -1959,8 +1959,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844515109": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -1973,8 +1973,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844525484": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -1987,8 +1987,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844535512": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -2001,8 +2001,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844535515": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -2015,8 +2015,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844535754": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -2029,8 +2029,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844545778": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -2043,8 +2043,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844545782": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -2057,8 +2057,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844546035": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/7"
@@ -2071,8 +2071,8 @@ var errors_data =
             "thread": "jsonrpc/7"
         },
         "1487844556062": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -2085,8 +2085,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844556066": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/4"
@@ -2099,8 +2099,8 @@ var errors_data =
             "thread": "jsonrpc/4"
         },
         "1487844556319": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -2113,8 +2113,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844566344": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/0"
@@ -2127,8 +2127,8 @@ var errors_data =
             "thread": "jsonrpc/0"
         },
         "1487844566348": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -2141,8 +2141,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844566474": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -2155,8 +2155,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844566497": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -2169,8 +2169,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844576753": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/5"
@@ -2183,8 +2183,8 @@ var errors_data =
             "thread": "jsonrpc/5"
         },
         "1487844576776": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -2197,8 +2197,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844587032": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -2211,8 +2211,8 @@ var errors_data =
             "thread": "jsonrpc/2"
         },
         "1487844587055": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/3"
@@ -2225,8 +2225,8 @@ var errors_data =
             "thread": "jsonrpc/3"
         },
         "1487844597437": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolMasterNotFound",
+            "message": " Cannot find master domain u'spUUID=00000001-0001-0001-0001-000000000311, msdUUID=009bfffc-15dd-44e1-a4c8-7e554fe8c033'",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/6"
@@ -2239,8 +2239,8 @@ var errors_data =
             "thread": "jsonrpc/6"
         },
         "1487844607463": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "StoragePoolUnknown",
+            "message": " Unknown pool id, pool not connected ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/1"
@@ -2253,8 +2253,8 @@ var errors_data =
             "thread": "jsonrpc/1"
         },
         "1487844607468": {
-            "event": "Unknown",
-            "message": "Unexpected error ",
+            "event": "SpmStatusError",
+            "message": " Not SPM ",
             "number": 1,
             "sender": "storage.TaskManager.Task",
             "thread": "jsonrpc/2"
@@ -2274,8 +2274,8 @@ var errors_data =
             "thread": "migsrc/dd18b0d2"
         },
         "1487847534693": {
-            "event": "Unknown",
-            "message": "FINISH thread failed ",
+            "event": "libvirtError",
+            "message": " Domain not found no domain with matching uuid 'dd18b0d2-ecd0-43dc-9f86-7e1219780967' ",
             "number": 1,
             "sender": "root",
             "thread": "migsrc/dd18b0d2"
@@ -2288,8 +2288,8 @@ var errors_data =
             "thread": "migsrc/43f02a2d"
         },
         "1487847935055": {
-            "event": "Unknown",
-            "message": "FINISH thread failed ",
+            "event": "libvirtError",
+            "message": " Domain not found no domain with matching uuid '43f02a2d-e563-4f11-a7bc-9ee191cfeba1' ",
             "number": 1,
             "sender": "root",
             "thread": "migsrc/43f02a2d"
