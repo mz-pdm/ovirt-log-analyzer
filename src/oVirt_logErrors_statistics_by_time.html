@@ -9,7 +9,7 @@
       <script type="text/javascript" src="https://code.highcharts.com/highcharts.js"></script>
       <script type="text/javascript" src="https://code.highcharts.com/highcharts-more.js"></script>
       <script type="text/javascript" src="https://code.highcharts.com/modules/exporting.js"></script>
-      <script src="stat_to_plot.js"></script>
+      <script src="result/stat_to_plot.js"></script>
       <script src="https://www.highcharts.com/samples/static/highslide-full.min.js"></script>
       <script src="https://www.highcharts.com/samples/static/highslide.config.js" charset="utf-8"></script>
       <link rel="stylesheet" type="text/css" href="https://www.highcharts.com/samples/static/highslide.css" />
@@ -110,7 +110,7 @@
                                           x: e.pageX || e.clientX,
                                           y: e.pageY || e.clientY
                                         },
-                                        headingText: this.series.name + ' | ' + errors_data[e.point.series.name][(e.point.category).toString()]['thread'],
+                                        headingText: this.series.name + ' | ' + errors_data[e.point.series.name][(e.point.category).toString()]['event'],
                                         maincontentText: GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]),
                                         width: GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]).length * 10 > 500 ? 500 : GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]).length * 5
                                       });
