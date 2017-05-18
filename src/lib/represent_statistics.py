@@ -56,13 +56,30 @@ def print_statistics(logfile_name, errors_dict, errors_time, errors_num):
 		err_info += '\n'
 	return err_info
 
-def dump_json(log_names, all_errors, filename):
+def dump_json(log_names, all_errors, filename, template):
+	html_text = open(template, 'r').read().split('\n')
 	all_data = {}
-	with open(filename, 'w') as outfile:
-		outfile.write('var errors_data = \n')
+	with open(filename+'.html', 'w') as outfile:
 		for log_idx, logname in enumerate(log_names):
 			logname = re.sub('[+\-\s,]', '_', logname)
 			all_data[logname] = all_errors[log_idx]
-		json.dump(all_data, outfile, indent=4, sort_keys=True)
-		outfile.write(';\n')
+		#json.dump(all_data, outfile, indent=4, sort_keys=True)
+		comment_flag = False
+		for line_idx, line in enumerate(html_text):
+			if '-->' in line and comment_flag:
+				comment_flag = False
+				continue
+			elif comment_flag:
+				continue
+			elif '<!--' in line:
+				comment_flag = True
+				continue
+			elif '</script>' in line and line_idx > 50:
+				outfile.write('var errors_data = \n')
+				outfile.write(json.dumps(all_data, indent=4, sort_keys=True))
+				outfile.write(';\n')
+				outfile.write(line + '\n')
+			else:
+				outfile.write(line + '\n')
 		outfile.close()
+

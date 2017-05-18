@@ -1,3 +1,8 @@
+<!-- This is a template for interactive chart.
+You need to generate data for the chart first.
+Run analyse_logs.py with -chart parameter and
+it will generate HTML file from this template 
+with your log data -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -9,12 +14,11 @@
       <script type="text/javascript" src="https://code.highcharts.com/highcharts.js"></script>
       <script type="text/javascript" src="https://code.highcharts.com/highcharts-more.js"></script>
       <script type="text/javascript" src="https://code.highcharts.com/modules/exporting.js"></script>
-      <script src="result/stat_to_plot.js"></script>
       <script src="https://www.highcharts.com/samples/static/highslide-full.min.js"></script>
       <script src="https://www.highcharts.com/samples/static/highslide.config.js" charset="utf-8"></script>
       <link rel="stylesheet" type="text/css" href="https://www.highcharts.com/samples/static/highslide.css" />
   </head>
-  
+
   <body style="margin:0;padding:0">
     <div id="container" style="width: 100%; height: calc(100vh - 5rem);">Loading....</div>
     <script>

@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import pytz
 
-def create_error_graph(log_freq, sender_freq, event_freq, message_freq, timeline, d, filename):
-	fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize = (15,7))
+def create_error_graph(log_freq, sender_freq, event_freq, message_freq, timeline, d, filename, step):
+	fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize = (30,15))
 	ax1.plot(np.linspace(0, len(timeline), len(timeline)), timeline, 'b', zorder=1)
 	for t in sorted(d.keys(), key=lambda k: int(k)):
 		for log in sorted(d[t].keys()):
@@ -64,15 +64,16 @@ def create_error_graph(log_freq, sender_freq, event_freq, message_freq, timeline
 							style='filled', \
 							fillcolor=3)
 	G_copy = G.copy()
-	for t_susp, attr in sorted(G_copy.nodes(data=True), key=lambda k: k[1]['time']):
+	for t_susp, attr in sorted(G_copy.nodes(data=True), key=lambda k: \
+								int(datetime.strptime(k[1]['time'], "%H-%M-%S.%f\n%d.%m.%Y").replace(tzinfo=pytz.utc).timestamp() * 1000)):
 		#check if mean number of following errors is greater than previos (look over 5 seconds)
 		t_su = str(int(datetime.strptime(attr['time'], "%H-%M-%S.%f\n%d.%m.%Y").replace(tzinfo=pytz.utc).timestamp() * 1000))
-		step = 20
-		count_err_next = np.mean(timeline[1+int(t_su)//1000-min(map(int, d.keys()))//1000:]) if int(t_su)//1000-min(map(int, d.keys()))//1000+step+1 > len(timeline) \
+		#step = 1
+		count_err_next = np.mean(timeline[int(t_su)//1000-min(map(int, d.keys()))//1000:]) if int(t_su)//1000-min(map(int, d.keys()))//1000+step+1 >= len(timeline) \
 							else np.mean(timeline[1+int(t_su)//1000-min(map(int, d.keys()))//1000:int(t_su)//1000-min(map(int, d.keys()))//1000+step+1])
-		count_err_prev = np.mean(timeline[0:int(t_su)//1000-min(map(int, d.keys()))//1000]) if int(t_su)//1000-min(map(int, d.keys()))//1000-step < 0 \
+		count_err_prev = np.mean(timeline[0:1+int(t_su)//1000-min(map(int, d.keys()))//1000]) if int(t_su)//1000-min(map(int, d.keys()))//1000-step <= 0 \
 							else np.mean(timeline[int(t_su)//1000-min(map(int, d.keys()))//1000-step:int(t_su)//1000-min(map(int, d.keys()))//1000])
-		next_point = max(map(int, d.keys())) if int(t_su)//1000-min(map(int, d.keys()))//1000+step+1 > len(timeline) \
+		next_point = max(map(int, d.keys())) if int(t_su)//1000-min(map(int, d.keys()))//1000+step+1 >= len(timeline) \
 							else int(t_su)//1000+step+1
 		added_messages = []
 		added_events = []

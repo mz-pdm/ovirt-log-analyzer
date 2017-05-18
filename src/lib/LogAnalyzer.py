@@ -51,7 +51,7 @@ class LogAnalyzer:
 			#creating an output string, calculating a number of appearing of every sender, thread, event
 			output_text += print_statistics(log, self.errors[log], self.errors_time[log], len(self.all_errors[log]['datetime']))
 		out.write(output_text)
-	def dump_to_json(self, path, outfile = 'stat_to_plot.js'):
+	def dump_to_json(self, path, outfile, template = 'chart_errors_statistics_template.html'):
 		sum_errors_time_first = []
 		for log in self.found_logs:
 			#calculating a number of errors for every moment of time (needed for chart and graph)
@@ -61,8 +61,8 @@ class LogAnalyzer:
 																self.all_errors[log]['msg_text'], \
 																[str(x) for x in self.all_errors[log]['datetime']])]
 		#Saving error's info by time (for a chart)
-		dump_json(self.found_logs, sum_errors_time_first, os.path.join(path, outfile))
-	def create_errors_graph(self, path, outfile):
+		dump_json(self.found_logs, sum_errors_time_first, os.path.join(path, outfile), template)
+	def create_errors_graph(self, path, outfile, step = 5): # search related errors in 5-sec sliding window
 		sum_errors_time_first = []
 		for log in self.found_logs:
 			#calculating a number of errors for every moment of time (needed for chart and graph)
@@ -72,7 +72,9 @@ class LogAnalyzer:
 																self.all_errors[log]['msg_text'], \
 																[str(x) for x in self.all_errors[log]['datetime']])]
 		#summarizing errors' appearing number like in PrintStatistics
+		if len(sum_errors_time_first) == 1 and sum_errors_time_first[0] == {}:
+			return
 		timeline, errors_dict = merge_all_errors_by_time(self.found_logs, sum_errors_time_first)
 		#searching for suspicious errors, linking them with following errors
 		create_error_graph(self.log_freq, self.sender_freq, self.event_freq, self.message_freq, \
-							timeline, errors_dict, os.path.join(path, outfile))
+							timeline, errors_dict, os.path.join(path, outfile), step)
