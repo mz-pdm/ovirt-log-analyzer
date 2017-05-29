@@ -1,0 +1,136 @@
+<!-- This is a template for interactive chart.
+You need to generate data for the chart first.
+Run analyse_logs.py with -chart parameter and
+it will generate HTML file from this template 
+with your log data -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <meta charset="utf-8" />
+      <link href="https://www.highcharts.com/highslide/highslide.css" rel="stylesheet" />
+      <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+      <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+      <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+      <script type="text/javascript" src="https://code.highcharts.com/highcharts.js"></script>
+      <script type="text/javascript" src="https://code.highcharts.com/highcharts-more.js"></script>
+      <script type="text/javascript" src="https://code.highcharts.com/modules/exporting.js"></script>
+      <script src="https://www.highcharts.com/samples/static/highslide-full.min.js"></script>
+      <script src="https://www.highcharts.com/samples/static/highslide.config.js" charset="utf-8"></script>
+      <link rel="stylesheet" type="text/css" href="https://www.highcharts.com/samples/static/highslide.css" />
+  </head>
+
+  <body style="margin:0;padding:0">
+    <div id="container" style="width: 100%; height: calc(100vh - 5rem);">Loading....</div>
+    <script>
+    var chart;
+    $(function() {
+      Highcharts.setOptions({"lang": {}, "global": {}});
+      var option = {
+        chart: {
+          renderTo: 'container',
+          type: 'column',
+          margin: 100,
+          zoomType: 'x'
+        },
+        title: {
+          text: 'oVirt log errors statistics'
+        },
+        //subtitle: {
+        //    text: 'Subtitle'
+        //},
+        xAxis: {
+            type: 'datetime',
+            labels: {
+              format: '{value:%Y:%m:%d %H:%M:%S:%H}',
+              align: 'left'
+            },
+            //tickInterval: 1000
+        },
+        yAxis: {
+            title: {
+                text: 'Number of errors'
+            },
+            labels: {
+                formatter: function () {
+                    return this.value;
+                }
+            }
+        },
+        tooltip: {
+            split: true,
+            valueSuffix: ' errors'
+        },
+        plotOptions: {
+            column: {
+                stacking: 'normal',
+                dataLabels: {
+                    lineWidth: 1,
+                    lineColor: '#666666'
+                }
+            }
+        },
+        series: {}
+      }
+      chart = new Highcharts.Chart(option);
+    });
+
+    $(function(){
+      var new_cats = []
+      for (var logname in errors_data) {
+        for (var time in errors_data[logname]) {
+          if($.inArray(time, new_cats)<0) {
+            new_cats.push(time);
+          } 
+        }
+      }
+      new_cats = new_cats.sort()
+      //chart.xAxis[0].setCategories(new_cats);
+      for (var logname in errors_data) {
+        var errors_stat_series = []
+        for (i = 0; i < new_cats.length; i++) {
+          var dt = new Date(Number(new_cats[i]));
+          dt = Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(), dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds(), dt.getMilliseconds());
+          if (new_cats[i] in errors_data[logname]) {
+            //var num_of_errors = 0
+            //for (msg_id in errors_data[logname][new_cats[i]]) {
+            //  num_of_errors += errors_data[logname][new_cats[i]][msg_id]
+            //}
+            //errors_stat_series.push([dt, num_of_errors]);
+            errors_stat_series.push([dt, errors_data[logname][new_cats[i]]['number']]);
+          }// else {
+           //   errors_stat_series.push([dt, 0]);
+          //}
+          console.log('-------');
+        }
+        chart.addSeries({name: logname,
+                          data: errors_stat_series,
+                          point: {
+                            events: {
+                              click: function (e) {
+                                      console.log(e);
+                                      console.log((e.point.category).toString());
+                                      hs.htmlExpand(null, {
+                                        pageOrigin: {
+                                          x: e.pageX || e.clientX,
+                                          y: e.pageY || e.clientY
+                                        },
+                                        headingText: this.series.name + ' | ' + errors_data[e.point.series.name][(e.point.category).toString()]['event'],
+                                        maincontentText: GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]),
+                                        width: GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]).length * 10 > 500 ? 500 : GenErrText(errors_data[e.point.series.name][(e.point.category).toString()]).length * 5
+                                      });
+                              }
+                            }
+                          }
+        });
+      }
+    });
+    var GenErrText = function(time_err){
+      text = ''
+      for (err_key in time_err) {
+        text += '<b>'+err_key + ': </b>' + time_err[err_key] + '<br>'
+      }
+      return text;
+    };
+    </script>
+  </body>
+</html>
