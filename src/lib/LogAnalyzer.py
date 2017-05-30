@@ -1,10 +1,9 @@
 import os
 
-from lib.create_error_definition import ErrorLog, loop_over_lines
-from lib.errors_statistics import summarize_errors, \
-                                    summarize_errors_time_first, \
-                                    merge_all_errors_by_time,   \
-                                    calculate_frequency
+from lib.create_error_definition import loop_over_lines
+from lib.errors_statistics import \
+    summarize_errors, summarize_errors_time_first, \
+    merge_all_errors_by_time, calculate_frequency
 from lib.represent_statistics import print_statistics, dump_json
 from lib.link_errors import create_error_graph
 
@@ -29,9 +28,9 @@ class LogAnalyzer:
             self.found_logs += [log]
             self.all_errors[log] = {}
             # gathering all information about errors from a logfile into lists
+            filename = os.path.join(self.directory, log) + '.log'
             error_datetime, error_who_send, error_thread, error_event, \
-                error_msg_text = loop_over_lines(os.path.join(
-                    self.directory, log) + '.log', self.out_descr)
+                error_msg_text = loop_over_lines(filename, self.out_descr)
             self.all_errors[log]['datetime'] = error_datetime
             self.all_errors[log]['who_send'] = error_who_send
             self.all_errors[log]['thread'] = error_thread
@@ -44,16 +43,12 @@ class LogAnalyzer:
         for log in self.found_logs:
             # calculating a number of every error's appearing in a file and its
             # time
-            sum_errors, sum_errors_time = summarize_errors(self.all_errors[log]
-                                                                ['who_send'],
-                                                           self.all_errors[
-                                                               log]['event'],
-                                                           self.all_errors[
-                                                               log]['thread'],
-                                                           self.all_errors[
-                                                               log]['msg_text'],
-                                                           self.all_errors[log]
-                                                                ['datetime'])
+            sum_errors, sum_errors_time = summarize_errors(
+                self.all_errors[log]['who_send'],
+                self.all_errors[log]['event'],
+                self.all_errors[log]['thread'],
+                self.all_errors[log]['msg_text'],
+                self.all_errors[log]['datetime'])
             self.errors[log] = sum_errors
             self.errors_time[log] = sum_errors_time
 
@@ -67,29 +62,24 @@ class LogAnalyzer:
         for log in self.found_logs:
             # creating an output string, calculating a number of appearing of
             # every sender, thread, event
-            output_text += print_statistics(log, self.errors[log], 
-                                                self.errors_time[log], 
-                                                len(self.all_errors[log]
-                                                            ['datetime']))
+            output_text += print_statistics(
+                log, self.errors[log], self.errors_time[log],
+                len(self.all_errors[log]['datetime']))
         out.write(output_text)
 
-    def dump_to_json(self, path, outfile, 
-                    template='chart_errors_statistics_template.html'):
+    def dump_to_json(self, path, outfile,
+                     template='chart_errors_statistics_template.html'):
         sum_errors_time_first = []
         for log in self.found_logs:
             # calculating a number of errors for every moment of time (needed
             # for chart and graph)
-            sum_errors_time_first += [summarize_errors_time_first(self.all_errors[
-                                                                    log]['who_send'],
-                                                                  self.all_errors[
-                                                                    log]['event'],
-                                                                  self.all_errors[
-                                                                    log]['thread'],
-                                                                  self.all_errors[
-                                                                    log]['msg_text'],
-                                                                  [str(x) for x 
-                                                                  in self.all_errors[
-                                                                  log]['datetime']])]
+            all_errors = [str(x) for x in self.all_errors[log]['datetime']]
+            sum_errors_time_first += [
+                summarize_errors_time_first(self.all_errors[log]['who_send'],
+                                            self.all_errors[log]['event'],
+                                            self.all_errors[log]['thread'],
+                                            self.all_errors[log]['msg_text'],
+                                            all_errors)]
         # Saving error's info by time (for a chart)
         dump_json(self.found_logs, sum_errors_time_first,
                   os.path.join(path, outfile), template)
@@ -100,23 +90,19 @@ class LogAnalyzer:
         for log in self.found_logs:
             # calculating a number of errors for every moment of time (needed
             # for chart and graph)
-            sum_errors_time_first += [summarize_errors_time_first(self.all_errors[
-                                                                    log]['who_send'],
-                                                                  self.all_errors[
-                                                                    log]['event'],
-                                                                  self.all_errors[
-                                                                    log]['thread'],
-                                                                  self.all_errors[
-                                                                    log]['msg_text'],
-                                                                  [str(x) for x 
-                                                                  in self.all_errors[
-                                                                  log]['datetime']])]
+            all_times = [str(x) for x in self.all_errors[log]['datetime']]
+            sum_errors_time_first += [
+                summarize_errors_time_first(self.all_errors[log]['who_send'],
+                                            self.all_errors[log]['event'],
+                                            self.all_errors[log]['thread'],
+                                            self.all_errors[log]['msg_text'],
+                                            all_times)]
         # summarizing errors' appearing number like in PrintStatistics
         if len(sum_errors_time_first) == 1 and sum_errors_time_first[0] == {}:
             return
         timeline, errors_dict = merge_all_errors_by_time(
             self.found_logs, sum_errors_time_first)
         # searching for suspicious errors, linking them with following errors
-        create_error_graph(self.log_freq, self.sender_freq, self.event_freq, \
-                            self.message_freq, timeline, errors_dict, \
-                            os.path.join(path, outfile), step)
+        create_error_graph(self.log_freq, self.sender_freq, self.event_freq,
+                           self.message_freq, timeline, errors_dict,
+                           os.path.join(path, outfile), step)
