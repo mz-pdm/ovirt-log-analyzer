@@ -1,7 +1,7 @@
 """Parsing error messages from logfile
     - loop_over_lines - creates lists with errors' information from one log file, \
      including information in tracebacks' messages
-    - Class ErrorLog - represents information about one error (datetime, \
+    - Class LogLine - represents information about one error (datetime, \
         sender, thread, event, message)
 """
 import numpy as np
@@ -11,18 +11,21 @@ import re
 from datetime import datetime
 
 
-class ErrorLog:
+class LogLine:
     #date_time = 0
     #thread = ''
     #who_send = ''
     #event = ''
     #message = ''
 
-    def __init__(self, line, out_descr):
+    def __init__(self, line, format_template, out_descr):
         self.raw_text = line
         self.out_descr = out_descr
+        self.format = format_template
 
     def parse_date_time(self):
+        dt_next_symbol = self.format.partition("datetime")[1][0]
+        print(">>>", dt_next_symbol)
         dt = self.raw_text.partition(" ERROR ")[0]
         if dt.partition(',')[2][3:] == 'Z':
             dt = dt.replace('Z', '+0000')
@@ -125,13 +128,17 @@ class ErrorLog:
                 #self.out_descr.write('Message = %s' % self.message)
                 return False
 
+def loop_over_lines(logname, file_format, out_descr):
+    #error_datetime = []
+    #error_msg_text = []
+    #error_who_send = []
+    #error_event = []
+    #error_thread = []
+    #print(file_format)
+    file_lines = {}
+    for entity in file_format['template']:
+        file_lines[entity] = []
 
-def loop_over_lines(logname, out_descr):
-    error_datetime = []
-    error_msg_text = []
-    error_who_send = []
-    error_event = []
-    error_thread = []
     with open(logname) as f:
         error_info = {}
         error_traceback = ''
@@ -147,8 +154,8 @@ def loop_over_lines(logname, out_descr):
                         error_event += [error_info['event']]
                         error_msg_text += [error_info['msg_text']]
                     else:
-                        traceback_message = ErrorLog(
-                            error_traceback, out_descr)
+                        traceback_message = LogLine(
+                            error_traceback, file_format, out_descr)
                         traceback_message.parse_message()
                         error_event += [traceback_message.event]
                         error_msg_text += [traceback_message.message]
@@ -156,10 +163,10 @@ def loop_over_lines(logname, out_descr):
                 error_traceback = ''
                 in_traceback_flag = False
                 if ' ERROR ' in line:
-                    e = ErrorLog(line, out_descr)
+                    e = LogLine(line, file_format, out_descr)
                     error_attributes = []
                     for (method_name, method) in inspect.getmembers(
-                                        ErrorLog, predicate=inspect.isfunction):
+                                        LogLine, predicate=inspect.isfunction):
                         if 'parse' in method_name:
                             error_attributes += [method(e)]
                     if not all(error_attributes):
@@ -175,7 +182,7 @@ def loop_over_lines(logname, out_descr):
                 error_traceback = line
             elif in_traceback_flag and not line == '':
                 error_traceback = line
-        # adding the last error
+        # adding the last line
         if ' ERROR ' in line or in_traceback_flag:
             error_datetime += [error_info['datetime']]
             error_who_send += [error_info['who_send']]

@@ -1,0 +1,21 @@
+@Engine
+datetime_tz msg_type sender thread id event message
+r([0-9\+\-Z\:,\ ]+)([A-Z\ ]+?)\ +\[(.*?)\]\ +\((.+?)\)\ +\[(.*?)\](.+)
+@vdsm
+datetime_tz msg_type thread sender task_code event message task
+r([0-9\+\-Z\:,\ ]+)([A-Z\ ]+?)\((.+?)\)\ +\[(.+?)\]\ +(.+?)(\(.+\))
+@supervdsm
+process_name_thread msg_type datetime field1 field2 field3 field4 event
+r(.+)\:\:([A-Z\ ]+?)\:\:([0-9\+\-Z\:,\ ]+)\:\:(.+?)\:\:(.+?)\:\:(.*?)\:\:\((.*?)\)\ +(.+)
+@libvirt_qemu_vm
+datetime_tz event
+r([0-9\+\-ZT\:,.\ ]{10,})(.*?)\:\s(.+)*
+@spm-lock
+datetime event 
+r\[([0-9\+\-Z\:,\ ]+)\]\ +(.+)
+@vdsm-3.6
+thread msg_type datetime field1 field2 field3 field4 event
+r(.+)\:\:([A-Z\ ]+?)\:\:([0-9\+\-Z\:,\ ]+)\:\:(.+?)\:\:(.+?)\:\:(.*?)\:\:\((.*?)\)\ +(.+)
+@vdsm-split
+datetime_tz msg_type thread sender event message task
+r([0-9\+\-Z\:,\ ]+)([A-Z\ ]+?)\((.+?)\)\ +\[(.+?)\]\ +(.+?)(\(.+\))

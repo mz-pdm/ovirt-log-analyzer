@@ -6,6 +6,12 @@ from lib.LogAnalyzer import LogAnalyzer
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Parse logfiles and summarize errors into standart output.')
+    parser.add_argument('format_templates_filename',
+                        metavar='format_filename',
+                        type=str,
+                        nargs=1,
+                        help='filename with formats of log files' + 
+                                '(with path and expansion)')    
     parser.add_argument('log_directory',
                         metavar='directory',
                         type=str,
@@ -17,10 +23,10 @@ if __name__ == "__main__":
                         nargs='+',
                         help='logfiles filenames' + 
                                 '(without expansion)')
-    parser.add_argument("-chart", "--chart_filename",
-                        type=str,
-                        help="Create html file with chart" + 
-                                "represented errors statistics")
+#    parser.add_argument("-chart", "--chart_filename",
+#                        type=str,
+#                        help="Create html file with chart" + 
+#                                "represented errors statistics")
     parser.add_argument("-print", "--output_descriptor",
                         type=str,
                         help="Where to print output" + 
@@ -29,10 +35,10 @@ if __name__ == "__main__":
                         type=str,
                         help="Directs the output to a name" + 
                                 "of your choice (with expansion)")
-    parser.add_argument("-g", "--graph",
-                        type=str,
-                        help="Create dot file and pdf with graph" + 
-                                "of linked errors")
+#    parser.add_argument("-g", "--graph",
+#                        type=str,
+#                        help="Create dot file and pdf with graph" + 
+#                                "of linked errors")
     parser.add_argument("-odir", "--output_directory",
                         type=str,
                         help="Specify directory to save program output")
@@ -57,27 +63,27 @@ if __name__ == "__main__":
     else:
         output_descriptor = sys.stderr
 
-    if args.output_file is not None:
-        output_file = open(os.path.join(
-            output_directory, args.output_file), 'w')
-    else:
-        output_file = sys.stdout
+#    if args.output_file is not None:
+#        output_file = open(os.path.join(
+#            output_directory, args.output_file), 'w')
+#    else:
+#        output_file = sys.stdout
 
     logs = LogAnalyzer(output_descriptor, args.log_directory[
-                       0], args.log_filenames)
+                       0], args.log_filenames, args.format_templates_filename[0])
     logs.load_data()
-    logs.merge_logfiles()
-    logs.print_errors(output_file)
-    logs.calculate_errors_frequency()
-    if args.chart_filename is not None:
-        output_descriptor.write('Creating a chart...\n')
-        logs.dump_to_json(output_directory, args.chart_filename)
-    if args.graph is not None:
-        output_descriptor.write(
-        'Linking errors and creating a .dot file with graph...\n')
-        logs.create_errors_graph(output_directory, args.graph)
-        output_descriptor.write('Run "dot -Tpdf ' + 
-                            os.path.join(output_directory, args.graph) + 
-                            '.dot -o ' + 
-                            os.path.join(output_directory, args.graph) + 
-                            '.pdf" to plot the graph\n')
+#    logs.merge_logfiles()
+#    logs.print_errors(output_file)
+#    logs.calculate_errors_frequency()
+#    if args.chart_filename is not None:
+#        output_descriptor.write('Creating a chart...\n')
+#        logs.dump_to_json(output_directory, args.chart_filename)
+#    if args.graph is not None:
+#        output_descriptor.write(
+#        'Linking errors and creating a .dot file with graph...\n')
+#        logs.create_errors_graph(output_directory, args.graph)
+#        output_descriptor.write('Run "dot -Tpdf ' + 
+#                            os.path.join(output_directory, args.graph) + 
+#                            '.dot -o ' + 
+#                            os.path.join(output_directory, args.graph) + 
+#                            '.pdf" to plot the graph\n')

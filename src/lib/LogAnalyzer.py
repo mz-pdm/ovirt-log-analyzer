@@ -1,6 +1,6 @@
 import os
-
-from lib.create_error_definition import ErrorLog, loop_over_lines
+import re
+from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import summarize_errors, \
                                     summarize_errors_time_first, \
                                     merge_all_errors_by_time,   \
@@ -11,14 +11,30 @@ from lib.link_errors import create_error_graph
 
 class LogAnalyzer:
 
-    def __init__(self, out_descr, directory, filenames):
+    def __init__(self, out_descr, directory, filenames, templates_filename):
         self.out_descr = out_descr
         self.directory = directory
         self.filenames = filenames
+        formats = open(templates_filename, 'r').read().split('\n')
+        self.formats_templates = {}
+        for line in formats:
+            if line[0] == '@':
+                format_name = line[1:]
+            elif "datetime" in line:
+                format_template = line
+            elif line[0] == 'r' and format_name != '' and format_template != '':
+                self.formats_templates[format_name] = {}
+                self.formats_templates[format_name]['template'] = format_template
+                self.formats_templates[format_name]['regexp'] = line[1:]
+                format_name = ''
+                format_template = ''
+            else:
+                self.out_descr.write("Wrong format of template: " + line)
 
     def load_data(self):
         self.found_logs = []
         self.all_errors = {}
+        self.log_file_format = {}
         for log in self.filenames:
             self.out_descr.write('Analysing %s' % os.path.join(
                 self.directory, log) + '.log ...\n')
@@ -27,11 +43,21 @@ class LogAnalyzer:
                 continue
             # save name of actually opened logfile
             self.found_logs += [log]
+            #find format of a log
+            line = open(os.path.join(self.directory, log) + '.log', 'r').readline()
+            for file_format in self.formats_templates.keys():
+                prog = re.compile(self.formats_templates[file_format]['regexp'])
+                result = prog.findall(line)
+                if result is not None and len(result) > 0:
+                    self.log_file_format[log] = file_format
+
             self.all_errors[log] = {}
             # gathering all information about errors from a logfile into lists
             error_datetime, error_who_send, error_thread, error_event, \
                 error_msg_text = loop_over_lines(os.path.join(
-                    self.directory, log) + '.log', self.out_descr)
+                    self.directory, log) + '.log', \
+                    self.formats_templates[self.log_file_format[log]], \
+                    self.out_descr)
             self.all_errors[log]['datetime'] = error_datetime
             self.all_errors[log]['who_send'] = error_who_send
             self.all_errors[log]['thread'] = error_thread
