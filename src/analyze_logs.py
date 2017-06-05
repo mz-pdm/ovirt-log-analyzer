@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     logs = LogAnalyzer(output_descriptor, args.log_directory[
                        0], args.log_filenames, args.format_templates_filename[0])
-    logs.load_data()
+#    logs.load_data()
 #    logs.merge_logfiles()
 #    logs.print_errors(output_file)
 #    logs.calculate_errors_frequency()

@@ -17,17 +17,20 @@ class LogAnalyzer:
         self.filenames = filenames
         formats = open(templates_filename, 'r').read().split('\n')
         self.formats_templates = {}
+        format_num = 0
         for line in formats:
             if line[0] == '@':
                 format_name = line[1:]
-            elif "datetime" in line:
+            elif "date_time" in line:
                 format_template = line
             elif line[0] == 'r' and format_name != '' and format_template != '':
-                self.formats_templates[format_name] = {}
-                self.formats_templates[format_name]['template'] = format_template
-                self.formats_templates[format_name]['regexp'] = line[1:]
+                self.formats_templates[format_num] = {}
+                self.formats_templates[format_num]['name'] = format_name
+                self.formats_templates[format_num]['template'] = format_template
+                self.formats_templates[format_num]['regexp'] = line[1:]
                 format_name = ''
                 format_template = ''
+                format_num += 1
             else:
                 self.out_descr.write("Wrong format of template: " + line)
 
@@ -44,12 +47,15 @@ class LogAnalyzer:
             # save name of actually opened logfile
             self.found_logs += [log]
             #find format of a log
-            line = open(os.path.join(self.directory, log) + '.log', 'r').readline()
-            for file_format in self.formats_templates.keys():
-                prog = re.compile(self.formats_templates[file_format]['regexp'])
+            filename = os.path.join(self.directory, log) + '.log'
+            line = open(filename, 'r').readline()
+            for file_format_id in \
+                    sorted(self.formats_templates.keys(), key=lambda k: int(k)):
+                prog = re.compile(self.formats_templates[file_format_id]['regexp'])
                 result = prog.findall(line)
                 if result is not None and len(result) > 0:
-                    self.log_file_format[log] = file_format
+                    self.log_file_format[log] = file_format_id
+                    break
 
             self.all_errors[log] = {}
             # gathering all information about errors from a logfile into lists

@@ -1,21 +1,18 @@
-@Engine
-datetime_tz msg_type sender thread id event message
-r([0-9\+\-Z\:,\ ]+)([A-Z\ ]+?)\ +\[(.*?)\]\ +\((.+?)\)\ +\[(.*?)\](.+)
-@vdsm
-datetime_tz msg_type thread sender task_code event message task
-r([0-9\+\-Z\:,\ ]+)([A-Z\ ]+?)\((.+?)\)\ +\[(.+?)\]\ +(.+?)(\(.+\))
 @supervdsm
-process_name_thread msg_type datetime field1 field2 field3 field4 event
-r(.+)\:\:([A-Z\ ]+?)\:\:([0-9\+\-Z\:,\ ]+)\:\:(.+?)\:\:(.+?)\:\:(.*?)\:\:\((.*?)\)\ +(.+)
-@libvirt_qemu_vm
-datetime_tz event
-r([0-9\+\-ZT\:,.\ ]{10,})(.*?)\:\s(.+)*
+process_name_thread msg_type date_time field1 field2 field3 field4 message
+r(.+)\:\:(.+)\:\:([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])\:\:(.+)\:\:(.+)\:\:(.+)\:\:\((.*?)\)\ +(.+)
+@engine
+date_time msg_type sender thread id message
+r^([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])(.+)\ +\[(.*?)\]\ +\((.*?)\)\ +\[(.*?)\]\ +(.+)
+@vdsm
+date_time msg_type thread sender message task
+r^([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])(.+)\ +\((.*?)\)\ +\[(.*?)\]\ +(.+)\ +\((.*?)\)
+@sanlock
+date_time code1 code2 message
+r^([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])(.+)\ +\[(.*?)\]\:\ +(.+)
 @spm-lock
-datetime event 
-r\[([0-9\+\-Z\:,\ ]+)\]\ +(.+)
-@vdsm-3.6
-thread msg_type datetime field1 field2 field3 field4 event
-r(.+)\:\:([A-Z\ ]+?)\:\:([0-9\+\-Z\:,\ ]+)\:\:(.+?)\:\:(.+?)\:\:(.*?)\:\:\((.*?)\)\ +(.+)
-@vdsm-split
-datetime_tz msg_type thread sender event message task
-r([0-9\+\-Z\:,\ ]+)([A-Z\ ]+?)\((.+?)\)\ +\[(.+?)\]\ +(.+?)(\(.+\))
+date_time message 
+r^\[([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])\]\ +(.+)
+@libvirt_qemu_vm
+date_time message
+r^([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])(.+)
