@@ -27,29 +27,25 @@ class MessageNotFoundError(LogLineError):
    pass
 
 class LogLine:
-    #date_time = 0
-    #message = ''
-    #...
-    def __init__(self, line, out_descr):
-        self.raw_text = line
+    #fields {'date_time':, 'message':, ...}
+    #out_descr
+    def __init__(self, line_number, out_descr):
         self.out_descr = out_descr
-    def set_date_time(self, new_date_time):
-        self.date_time = new_date_time
-    def set_message(self, new_message):
-        self.message = new_message
-    def parse_fields(self, format_t):
+        self.line_number = line_number
+#    def set_date_time(self, new_date_time):
+#        self.date_time = new_date_time
+#    def set_message(self, new_message):
+#        self.message = new_message
+    def parse_fields(self, line, format_t):
         fields_names = format_t['template'].split(' ')
-        date_time_index = fields_names.index("date_time")
-        message_index = fields_names.index("message")
-        fields = re.findall(format_t['regexp'], self.raw_text)
-        if len(fields) == 0:
-            raise FormatTemplateError(\
-                'parse_fields: Line does not match format "%s":\n%s\n'\
-                    % (format_t['name'], self.raw_text))
-        self.date_time = fields[0][date_time_index]
-        self.message = fields[0][message_index]
+        fields = re.findall(format_t['regexp'], line)
+        if len(fields) == 0 or len(fields[0]) != len(fields_names):
+            raise FormatTemplateError()
+        self.fields = {}
+        for field_id, field in enumerate(fields_names):
+            self.fields[field] = fields[0][field_id]
 
-    def parse_date_time(self, time_zone = pytz.utc):
+    def parse_date_time(self, time_zone, custom_date_time=None):
         #datetime formats:
         #2017-05-12T07:36:00.065548Z
         #2017-05-12 07:35:59.929+0000
@@ -57,12 +53,12 @@ class LogLine:
         #2017-05-12 03:23:31,135-04
         #2017-05-12 03:26:22,349
         #2017-05-12 03:28:13
-
-        dt = self.date_time
+        if custom_date_time is not None:
+            dt = custom_date_time
+        else:
+            dt = self.fields['date_time']
         if dt == '':
-            raise DateTimeNotFoundError(\
-                'parse_date_time: Line does not have date_time field:\n%s\n'\
-                    % self.raw_text)
+            raise DateTimeNotFoundError()
         dt = dt.replace('T', ' ')
         dt = dt.replace('Z', '+0000')
         dt = dt.replace('.', ',')
@@ -70,33 +66,31 @@ class LogLine:
             or ('-' in dt.partition(' ')[2] and \
                 len((dt.partition(' ')[2]).partition('-')[2]) < 4):
             dt += '00'
-
         dt_formats = ["%Y-%m-%d %H:%M:%S,%f%z", \
                         "%Y-%m-%d %H:%M:%S,%f", \
                         "%Y-%m-%d %H:%M:%S"]
-        for dt_format in dt_formats:
+        for dt_format_id, dt_format in enumerate(dt_formats):
             try:
                 date_time = datetime.strptime(
                     dt, dt_format)
-                if dt_formats == 0:
-                    date_time = date_time.astimezone(pytz.utc)
+                if dt_format_id == 0:
+                    self.fields['date_time'] = date_time.astimezone(pytz.utc)
                 else:
                     date_time = date_time.replace(tzinfo=time_zone)
-                    date_time = date_time.astimezone(pytz.utc)
+                    self.fields['date_time'] = date_time.astimezone(pytz.utc)
+                return
                 #self.out_descr.write('Time: %s\n' % date_time)
-                return date_time
             except ValueError:
                 continue
-        raise DateTimeFormatError('Unknown date_time format: %s\n' % dt)
+        raise DateTimeFormatError(dt)
 
-    def parse_message(self, ms_line=None):
-        if ms_line is not None:
-            mstext = ms_line
+    def parse_message(self, custom_message_text = None):
+        if custom_message_text is not None:
+            mstext = custom_message_text
         else:
-            mstext = self.message
+            mstext = self.fields['message']
         if mstext == '':
-            raise MessageNotFoundError('parse_message: \
-                Line does not have message '+'field:\n%s\n' % self.raw_text)
+            raise MessageNotFoundError()
         #template = re.compile(r'([Ee]rr[or]*|[Mm]essage)[\:\=\ \'\"\>]+(.+)')
         template = re.compile(r'([Mm]essage[\:\=\ \'\"]+)(.+)')
         t = re.search(template, mstext)
@@ -107,98 +101,85 @@ class LogLine:
             r"[^^]\(+.{30,}\)+|[^^]\{+.{30,}\}+|[^^]\<+.{30,}\>+|"+
             r"[^^][\w\-]{30,}")
         mstext = re.sub(template, '<...>', mstext)
-        message = re.sub(r'^[\ \:\=]+|[\ \.\n]+$', '', mstext)
-        #print(self.message)
-        return message
+        self.filtered_message = re.sub(r'^[\ \t\.\,\:\=]+|[\ \t\.\,\n]+$', '', mstext)
 
-    def parse_other_fields(self, format_t):
-        pass
-
-#    def parse_date_time(self):
-#        dt_next_symbol = self.format.partition("datetime")[1][0]
-#        print(">>>", dt_next_symbol)
-#        dt = self.raw_text.partition(" ERROR ")[0]
-#        if dt.partition(',')[2][3:] == 'Z':
-#            dt = dt.replace('Z', '+0000')
-#        elif len(dt.partition(',')[2][3:]) == 3:
-#            dt = dt + '00'
-#        try:
-#            self.date_time = datetime.strptime(
-#                dt, "%Y-%m-%d %H:%M:%S,%f%z").replace(tzinfo=pytz.utc)
-#            #self.out_descr.write('Time: %s' % self.date_time)
-#            return True
-#        except ValueError:
-#            self.out_descr.write('Unknown format: %s\n' % dt)
-#            return False
-
-def loop_over_lines(logname, format_template, out_descr):
+def loop_over_lines(logname, format_template, time_zome, out_descr):
     file_lines = {}
     fields_names = format_template['template'].split(' ')
+    fields_names.remove('message')
     for field_name in fields_names:
         file_lines[field_name] = []
+    file_lines['filtered_message'] = []
+    file_lines['line_number'] = []
 
     prog = re.compile(format_template['regexp'])
     with open(logname) as f:
-        prev_date_time = ''
+        prev_fields = {}
         prev_message = ''
         in_traceback_line = ''
         in_traceback_flag = False
-        for line in f:
-            line_data = LogLine(line, out_descr)
+        for line_num, line in enumerate(f):
+            line_data = LogLine(line_num, out_descr)
             try:
-                line_data.parse_fields(format_template)
-                date_time = line_data.parse_date_time()
-                message = line_data.parse_message()
+                line_data.parse_fields(line, format_template)
+                line_data.parse_date_time(time_zome)
+                line_data.parse_message()
+                fields = line_data.fields
+                filtered_message = line_data.filtered_message
                 if in_traceback_flag:
-                    print('quit from traceback')
-                    print(prev_date_time)
-                    print(prev_message+'; '+in_traceback_line+'\n')
-                    file_lines['date_time'] += [prev_date_time]
-                    file_lines['message'] += [prev_message+'; '+\
+                    for field in sorted(fields_names):
+                        file_lines[field] += [prev_fields[field]]
+                    file_lines['filtered_message'] += [prev_message+'; '+\
                                                 in_traceback_line]
+                    file_lines['line_number'] += [prev_line_number]
                     in_traceback_flag = False
-                elif prev_date_time != '':
-                    print(prev_date_time)
-                    print(prev_message+'\n')
-                    file_lines['date_time'] += [prev_date_time]
-                    file_lines['message'] += [prev_message]
-                prev_date_time = date_time
-                prev_message = message
+                elif prev_message != '':
+                    for field in sorted(fields_names):
+                        file_lines[field] += [prev_fields[field]]
+                    file_lines['filtered_message'] += [prev_message]
+                    file_lines['line_number'] += [prev_line_number]
+                prev_fields = fields
+                prev_message = filtered_message
+                prev_line_number = line_num
             except FormatTemplateError as exception_message:
-                #print(str(exception_message))
                 if 'Traceback' in line:
-                    #print('Traceback')
                     in_traceback_flag = True
                 elif in_traceback_flag:
-                    in_traceback_line = LogLine(line, \
-                                            out_descr).parse_message(line)
+                    mess = LogLine(line_num, out_descr)
+                    mess.parse_message(line)
+                    in_traceback_line = mess.filtered_message
                 else:
-                    #print('Date+time was set to ', date_time)
-                    #print('another format')
-                    #print(prev_date_time)
-                    #print(prev_message+'\n')
-                    #file_lines['date_time'] += [prev_date_time]
-                    #file_lines['message'] += [prev_message]
-                    if 'Fake datetime' in prev_message:
-                        prev_message += LogLine(line, \
-                                            out_descr).parse_message(line)
+                    out_descr.write('Warning: parse_fields: Line does not match '+\
+                        'format "%s":\n%s\n'% (format_template['name'], line))
+                    if '!Fake datetime!' in prev_message:
+                        mess = LogLine(line_num, out_descr)
+                        mess.parse_message(line)
+                        prev_message += mess.filtered_message
                     else:
+                        mess = LogLine(line_num, out_descr)
+                        mess.parse_message(line)
                         prev_message = '!Fake datetime! ' + \
-                                    LogLine(line, out_descr).parse_message(line)
+                                    mess.filtered_message
+                        prev_line_number = line_num
             except DateTimeNotFoundError as exception_message:
-                pass
+                out_descr.write('Warning: parse_date_time: '+\
+                            'Line does not have date_time field:\n%s\n' % line)
             except DateTimeFormatError as exception_message:
-                pass
+                out_descr.write('Unknown date_time format: %s\n' % \
+                                    str(exception_message))
             except MessageNotFoundError as exception_message:
-                pass
-        file_lines['date_time'] += [prev_date_time]
+                out_descr.write('Warning: parse_message: '+\
+                            'Line does not have message '+'field:\n%s\n' % line)
+        #adding the last line
+        for field in sorted(fields_names):
+            file_lines[field] += [prev_fields[field]]
         if in_traceback_flag:
-            file_lines['message'] += [prev_message+'; '+in_traceback_line]
+            file_lines['filtered_message'] += [prev_message+'; '+\
+                                                in_traceback_line]
             in_traceback_flag = False
         else:
-            file_lines['message'] += [prev_message]
-        print(prev_date_time)
-        print(prev_message+'\n')
+            file_lines['filtered_message'] += [prev_message]
+        file_lines['line_number'] += [prev_line_number]
 
     #print('++++++++++++++++++++++++')
     #print(file_lines)

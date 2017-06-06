@@ -11,10 +11,11 @@ from lib.link_errors import create_error_graph
 
 class LogAnalyzer:
 
-    def __init__(self, out_descr, directory, filenames, templates_filename):
+    def __init__(self, out_descr, directory, filenames, tz, templates_filename):
         self.out_descr = out_descr
         self.directory = directory
         self.filenames = filenames
+        self.time_zones = tz
         formats = open(templates_filename, 'r').read().split('\n')
         self.formats_templates = {}
         format_num = 0
@@ -46,6 +47,8 @@ class LogAnalyzer:
                 continue
             # save name of actually opened logfile
             self.found_logs += [log]
+            #searching a tzinfo of a log
+            time_zone = self.time_zones[log]
             #find format of a log
             filename = os.path.join(self.directory, log) + '.log'
             line = open(filename, 'r').readline()
@@ -59,16 +62,12 @@ class LogAnalyzer:
 
             self.all_errors[log] = {}
             # gathering all information about errors from a logfile into lists
-            error_datetime, error_who_send, error_thread, error_event, \
-                error_msg_text = loop_over_lines(os.path.join(
+            lines_info = loop_over_lines(os.path.join(
                     self.directory, log) + '.log', \
                     self.formats_templates[self.log_file_format[log]], \
+                    time_zone, \
                     self.out_descr)
-            self.all_errors[log]['datetime'] = error_datetime
-            self.all_errors[log]['who_send'] = error_who_send
-            self.all_errors[log]['thread'] = error_thread
-            self.all_errors[log]['event'] = error_event
-            self.all_errors[log]['msg_text'] = error_msg_text
+            self.all_errors[log] = lines_info
 
     def merge_logfiles(self):
         self.errors = {}
