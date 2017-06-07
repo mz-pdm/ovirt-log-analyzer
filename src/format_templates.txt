@@ -9,7 +9,7 @@ date_time msg_type thread sender message task
 r^([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])(.+)\ +\((.*?)\)\ +\[(.*?)\]\ +(.+)\ +\((.*?)\)
 @sanlock
 date_time code1 code2 message
-r^([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])(.+)\ +\[(.*?)\]\:\ +(.+)
+r^([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])\ +(.+)\ +\[(.*?)\]\:\ +(.+)
 @spm-lock
 date_time message 
 r^\[([0-9\+\-TZ\:,.\ ]{10,}[0-9Z])\]\ +(.+)
