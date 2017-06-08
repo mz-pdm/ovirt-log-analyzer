@@ -69,18 +69,21 @@ class LogLine:
                 len((dt.partition(' ')[2]).partition('-')[2]) < 4):
             dt += '00'
         dt_formats = ["%Y-%m-%d %H:%M:%S,%f%z", \
-                        "%Y-%m-%d %H:%M:%S%z", \
-                        "%Y-%m-%d %H:%M:%S,%f", \
-                        "%Y-%m-%d %H:%M:%S"]
+                        "%Y-%m-%d %H:%M:%S%z"]
         for dt_format in dt_formats:
             try:
-                date_time = datetime.strptime(
-                    dt, dt_format)
-                if '%z' in dt_format:
-                    self.fields['date_time'] = str(date_time.astimezone(pytz.utc))
-                else:
-                    date_time = date_time.replace(tzinfo=time_zone)
-                    self.fields['date_time'] = str(date_time.astimezone(pytz.utc))
+                date_time = datetime.strptime(dt, dt_format)
+                self.fields['date_time'] = str(date_time.astimezone(pytz.utc))
+                return
+                #self.out_descr.write('Time: %s\n' % date_time)
+            except ValueError:
+                continue
+        #if we have time without time zone
+        dt += time_zone
+        for dt_format in dt_formats:
+            try:
+                date_time = datetime.strptime(dt, dt_format)
+                self.fields['date_time'] = str(date_time.astimezone(pytz.utc))
                 return
                 #self.out_descr.write('Time: %s\n' % date_time)
             except ValueError:
@@ -100,7 +103,7 @@ class LogLine:
         if t is not None:
             mstext = t.group(2)
         template = re.compile(\
-            r"[^^][^\ \t\n\,]+=[^\ \t\n\,]+.+|[^^]\"[^\"]{20,}\"|"+\
+            r"[^^][^\ \t\n\,]+=[^\ \t\n\,]+[\W]+|[^^]\"[^\"]{20,}\"|"+\
             r"[^^]\'[^\']{20,}\'|[^^]\[+.{20,}\]+|"+\
             r"[^^]\(+.{20,}\)+|[^^]\{+.{20,}\}+|[^^]\<+.{20,}\>+|"+\
             r"[^^][^\ \t\,\.\;\:]{20,}|[^^][\d\.\:]{10,}|"+\
@@ -112,6 +115,7 @@ class LogLine:
 def loop_over_lines(logname, format_template, time_zome, out_descr):
     file_lines = {}
     fields_names = format_template['template'].split(' ')
+    print('fields names = ', fields_names)
     fields_names.remove('message')
     fields_names.remove('date_time')
     for field_name in fields_names:
@@ -245,7 +249,7 @@ def loop_over_lines(logname, format_template, time_zome, out_descr):
         #file_lines['line_number'] += [prev_line_number]
 
     print('++++++++++++++++++++++++')
-    f = open("lines.js", 'w')
+    f = open("lines_"+logname.split('/')[-1][:-4]+".js", 'w')
     json.dump(file_lines, f, indent=4, sort_keys=True)
     f.close()
     return file_lines
