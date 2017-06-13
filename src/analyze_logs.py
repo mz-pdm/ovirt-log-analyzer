@@ -101,7 +101,7 @@ if __name__ == "__main__":
                         tz_info,
                         args.format_templates_filename[0])
     logs.load_data()
-    #logs.merge_logfiles()
+    logs.merge_logfiles()
     #logs.print_errors(output_file)
     #logs.calculate_errors_frequency()
     #if args.chart_filename is not None:

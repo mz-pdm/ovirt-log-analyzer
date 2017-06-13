@@ -17,22 +17,14 @@ class LogAnalyzer:
         self.time_zones = tz
         formats = open(templates_filename, 'r').read().split('\n')
         self.formats_templates = {}
-        format_num = 0
         for line in formats:
             if line[0] == '@':
                 format_name = line[1:]
-            elif "date_time" in line:
-                format_template = line
-            elif line[0] == 'r' and format_name != '' and format_template != '':
-                self.formats_templates[format_num] = {}
-                self.formats_templates[format_num]['name'] = format_name
-                self.formats_templates[format_num]['template'] = format_template
-                self.formats_templates[format_num]['regexp'] = line[1:]
+            elif line[0:2] == 'r^' and format_name != '':
+                self.formats_templates[format_name] = line[1:]
                 format_name = ''
-                format_template = ''
-                format_num += 1
             else:
-                self.out_descr.write("Wrong format of template: " + line)
+                self.out_descr.write("Wrong format of template: %s\n" % line)
 
     def load_data(self):
         self.found_logs = []
@@ -51,12 +43,11 @@ class LogAnalyzer:
             #find format of a log
             filename = os.path.join(self.directory, log) + '.log'
             line = open(filename, 'r').readline()
-            for file_format_id in \
-                    sorted(self.formats_templates.keys(), key=lambda k: int(k)):
-                prog = re.compile(self.formats_templates[file_format_id]['regexp'])
-                result = prog.findall(line)
-                if result is not None and len(result) > 0:
-                    self.log_file_format[log] = file_format_id
+            for file_format_name in sorted(self.formats_templates.keys()):
+                prog = re.compile(self.formats_templates[file_format_name])
+                result = prog.search(line)
+                if result is not None:
+                    self.log_file_format[log] = file_format_name
                     break
 
             self.all_errors[log] = {}
@@ -84,9 +75,13 @@ class LogAnalyzer:
             self.errors_time[log] = sum_errors_time
 
     def calculate_errors_frequency(self):
+        pass
         # summarizing errors' appearing number like in PrintStatistics
-        self.log_freq, self.sender_freq, self.event_freq, self.message_freq = \
-                            calculate_frequency(self.found_logs, self.errors)
+        #for log in self.found_logs:
+        #    self.log_freq = 
+        #    self.sender_freq = 
+        #    self.event_freq = 
+        #    self.message_freq = 
 
     def print_errors(self, out):
         output_text = ''

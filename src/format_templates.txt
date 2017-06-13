@@ -1,18 +1,12 @@
 @supervdsm
-process_name_thread msg_type date_time field1 field2 field3 field4 message
-r(.+)\:\:(.+)\:\:([0-9][0-9\+\-TZ\:,.\ ]{15,30}[0-9Z])\:\:(.+)\:\:(.+)\:\:(.+)\:\:\((.*?)\)\ +(.+)
+r^(?P<process_name_thread>.+)\:\:(?P<msg_type>.+)\:\:(?P<date_time>[0-9\-]{10}[\sT][0-9]{2}:[0-9]{2}:[0-9]{2}[\.\,0-9]*[\+\-0-9Z]*)\:\:(?P<field1>.+)\:\:(?P<field2>.+)\:\:(?P<field3>.+)\:\:\((?P<field4>.*?)\)\ +(?P<message>.+)$
 @engine
-date_time msg_type sender thread id message
-r^([0-9][0-9\+\-TZ\:,.\ ]{15,30}[0-9Z])(.+)\ +\[(.*?)\]\ +\((.*?)\)\ +\[(.*?)\]\ +(.+)
+r^(?P<date_time>[0-9\-]{10}[\sT][0-9]{2}:[0-9]{2}:[0-9]{2}[\.\,0-9]*[\+\-0-9Z]*)(?P<msg_type>.+)\ +\[(?P<sender>.*?)\]\ +\((?P<thread>.*?)\)\ +\[(?P<id>.*?)\]\ +(?P<message>.+)$
 @vdsm
-date_time msg_type thread sender message task
-r^([0-9][0-9\+\-TZ\:,.\ ]{15,30}[0-9Z])(.+)\ +\((.*?)\)\ +\[(.*?)\]\ +(.+)\ +\((.*?)\)
+r^(?P<date_time>[0-9\-]{10}[\sT][0-9]{2}:[0-9]{2}:[0-9]{2}[\.\,0-9]*[\+\-0-9Z]*)(?P<msg_type>.+)\ +\((?P<thread>.*?)\)\ +\[(?P<sender>.*?)\]\ +(?P<message>.+)\ +\((?P<task>.*?)\)$
 @sanlock
-date_time code1 code2 message
-r^([0-9][0-9\+\-TZ\:,.\ ]{15,30}[0-9Z])\ +(.+)\ +\[(.*?)\]\:\ +(.+)
+r^(?P<date_time>[0-9\-]{10}[\sT][0-9]{2}:[0-9]{2}:[0-9]{2}[\.\,0-9]*[\+\-0-9Z]*)\ +(?P<code1>.+)\ +\[(?P<code2>.*?)\]\:\ +(?P<message>.+)$
 @spm-lock
-date_time message
-r^\[([0-9][0-9\+\-TZ\:,.\ ]{15,30}[0-9Z])\]\ +(.+)
+r^\[(?P<date_time>[0-9\-]{10}[\sT][0-9]{2}:[0-9]{2}:[0-9]{2}[\.\,0-9]*[\+\-0-9Z]*)\]\ +(?P<message>.+)$
 @libvirt_qemu_vm
-date_time message
-r^([0-9][0-9\+\-TZ\:,.\ ]{15,30}[0-9Z])(.+)
+r^(?P<date_time>[0-9\-]{10}[\sT][0-9]{2}:[0-9]{2}:[0-9]{2}[\.\,0-9]*[\+\-0-9Z]*)(?P<message>.+)$

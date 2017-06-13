@@ -28,26 +28,25 @@ class MessageNotFoundError(LogLineError):
    pass
 
 class LogLine:
-    #fields {'date_time':, 'message':, ...}
-    #out_descr
-    def __init__(self, line_number, out_descr):
+    def __init__(self, line_number, format_t, out_descr):
         self.out_descr = out_descr
         self.line_number = line_number
-#    def set_date_time(self, new_date_time):
-#        self.date_time = new_date_time
-#    def set_message(self, new_message):
-#        self.message = new_message
-    def parse_fields(self, line, format_t):
-        print('format>',format_t['name'])
-        fields_names = format_t['template'].split(' ')
-        fields = re.findall(format_t['regexp'], line)
-        if len(fields) == 0 or len(fields[0]) != len(fields_names):
-            raise FormatTemplateError()
         self.fields = {}
-        for field_id, field in enumerate(fields_names):
-            self.fields[field] = fields[0][field_id]
+        fields_names = format_t['template'].split(' ')
+        for field in fields_names:
+            self.fields[field] = ''
 
-    def parse_date_time(self, time_zone, custom_date_time=None):
+    def parse_fields(self, line, format_t):
+        fields_names = format_t['template'].split(' ')
+        fields = re.search(format_t['regexp'], line)
+        fields.groupdict()
+        print(fields)
+        for field in sorted(fields.keys()):
+            if field == 'date_time' and fields[field] == '':
+                raise FormatTemplateError()
+        self.fields = fields
+
+    def parse_date_time(self, time_zone, line):
         #datetime formats:
         #2017-05-12T07:36:00.065548Z
         #2017-05-12 07:35:59.929+0000
@@ -55,12 +54,12 @@ class LogLine:
         #2017-05-12 03:23:31,135-04
         #2017-05-12 03:26:22,349
         #2017-05-12 03:28:13
-        if custom_date_time is not None:
-            dt = custom_date_time
-        else:
-            dt = self.fields['date_time']
-        if dt == '':
+        dt = re.findall(
+            r"[0-9\-]{10}[\sT][0-9]{2}:[0-9]{2}:[0-9]{2}[\.\,0-9]*[\+\-0-9Z]*",\
+            line)
+        if len(dt) == 0:
             raise DateTimeNotFoundError()
+        dt = dt[0]
         dt = dt.replace('T', ' ')
         dt = dt.replace('Z', '+0000')
         dt = dt.replace('.', ',')
@@ -68,6 +67,7 @@ class LogLine:
             or ('-' in dt.partition(' ')[2] and \
                 len((dt.partition(' ')[2]).partition('-')[2]) < 4):
             dt += '00'
+        print('>>> dt = ', dt)
         dt_formats = ["%Y-%m-%d %H:%M:%S,%f%z", \
                         "%Y-%m-%d %H:%M:%S%z"]
         for dt_format in dt_formats:
@@ -110,100 +110,119 @@ class LogLine:
             r"\[+[\d]*\]+|\(+[\d]*\)+|\{+[\d]*\}+|\<+[\d]*\>+")
         mstext = re.sub(template, '<...>', mstext)
         mstext = re.sub(re.compile(r"((\<\.\.\.\>){2,})"), '<...>', mstext)
-        self.filtered_message = re.sub(r'^[\ \t\.\,\:\=]+|[\ \t\.\,\n]+$', '', mstext)
+        self.filtered_message = re.sub(r'^[\ \t\.\,\:\=]+|[\ \t\.\,\n]+$', '', \
+                                        mstext)
 
 def loop_over_lines(logname, format_template, time_zome, out_descr):
     file_lines = {}
-    fields_names = format_template['template'].split(' ')
-    print('fields names = ', fields_names)
-    fields_names.remove('message')
-    fields_names.remove('date_time')
-    for field_name in fields_names:
-        file_lines[field_name] = {}
-    file_lines['filtered_message'] = {}
-
-    prog = re.compile(format_template['regexp'])
+    f = re.compile(format_template)
+    fields_names = list(f.groupindex.keys())
+    fields_names.remove("message")
+    return
     with open(logname) as f:
         prev_fields = {}
         prev_message = ''
         in_traceback_line = ''
         in_traceback_flag = False
+        multiline_line = ''
+        multiline_flag = False
         for line_num, line in enumerate(f):
-            line_data = LogLine(line_num, out_descr)
+            if len(re.findall(r"^(\ *)$", line)) != 0:
+                continue
+            line_data = LogLine(line_num, format_template, out_descr)
             try:
+                line_data.parse_date_time(time_zome, line)
                 line_data.parse_fields(line, format_template)
-                line_data.parse_date_time(time_zome)
                 line_data.parse_message()
                 fields = line_data.fields
                 filtered_message = line_data.filtered_message
                 if in_traceback_flag:
-                    for field in sorted(fields_names):
-                        if prev_fields[field] not in file_lines[field].keys():
-                            file_lines[field][prev_fields[field]] = {}
-                            file_lines[field][prev_fields[field]]['date_time'] = [prev_fields['date_time']]
-                            file_lines[field][prev_fields[field]]['line_number'] = [prev_line_number]
-                        else:
-                            file_lines[field][prev_fields[field]]['date_time'] += [prev_fields['date_time']]
-                            file_lines[field][prev_fields[field]]['line_number'] += [prev_line_number]
-                        #file_lines[field] += [prev_fields[field]]
-                    if prev_message+'; '+in_traceback_line not in file_lines['filtered_message'].keys():
-                        file_lines['filtered_message'][prev_message+'; '+in_traceback_line] = {}
-                        file_lines['filtered_message'][prev_message+'; '+in_traceback_line]['date_time'] = [prev_fields['date_time']]
-                        file_lines['filtered_message'][prev_message+'; '+in_traceback_line]['line_number'] = [prev_line_number]
-                    else:
-                        print('I have such message!')
-                        file_lines['filtered_message'][prev_message+'; '+in_traceback_line]['date_time'] += [prev_fields['date_time']]
-                        file_lines['filtered_message'][prev_message+'; '+in_traceback_line]['line_number'] += [prev_line_number]
-                    #file_lines['filtered_message'] += [prev_message+'; '+\
-                    #                            in_traceback_line]
-                    #file_lines['line_number'] += [prev_line_number]
-                    #print(prev_message)
-                    #print()
+                    if prev_message+' '+in_traceback_line not in \
+                                        file_lines.keys():
+                        file_lines[prev_message+' '+in_traceback_line] = []                
+                    line_info = []
+                    for field in fields_names:
+                        line_info += [prev_fields[field]]
+                    line_info += [prev_line_number]
+                    file_lines[prev_message+' '+in_traceback_line]+=[line_info]
                     in_traceback_flag = False
+                elif multiline_flag:
+                    prev_fields = fields
+                    prev_message = filtered_message
+                    prev_line_number = line_num
+                    mess = LogLine(line_num, format_template, out_descr)
+                    mess.parse_fields(multiline_line, format_template)
+                    mess.parse_message()
+                    if mess.filtered_message not in \
+                                        file_lines.keys():
+                        file_lines[mess.filtered_message] = []
+                    line_info = []
+                    for field in fields_names:
+                        line_info += [mess.fields[field]]
+                    line_info += [prev_line_number]
+                    file_lines[mess.filtered_message] += [line_info]
+                    multiline_flag = False
                 elif prev_message != '':
-                    for field in sorted(fields_names):
-                        if prev_fields[field] not in file_lines[field].keys():
-                            file_lines[field][prev_fields[field]] = {}
-                            file_lines[field][prev_fields[field]]['date_time'] = [prev_fields['date_time']]
-                            file_lines[field][prev_fields[field]]['line_number'] = [prev_line_number]
-                        else:
-                            file_lines[field][prev_fields[field]]['date_time'] += [prev_fields['date_time']]
-                            file_lines[field][prev_fields[field]]['line_number'] += [prev_line_number]
-                        #file_lines[field] += [prev_fields[field]]
-                    if prev_message not in file_lines['filtered_message'].keys():
-                        file_lines['filtered_message'][prev_message] = {}
-                        file_lines['filtered_message'][prev_message]['date_time'] = [prev_fields['date_time']]
-                        file_lines['filtered_message'][prev_message]['line_number'] = [prev_line_number]
-                    else:
-                        print('I have such message!')
-                        file_lines['filtered_message'][prev_message]['date_time'] += [prev_fields['date_time']]
-                        file_lines['filtered_message'][prev_message]['line_number'] += [prev_line_number]
-                    #for field in sorted(fields_names):
-                    #    file_lines[field] += [prev_fields[field]]
-                    #file_lines['filtered_message'] += [prev_message]
-                    #file_lines['line_number'] += [prev_line_number]
-                    #print(prev_message)
-                    #print()
+                    if prev_message not in file_lines.keys():
+                        file_lines[prev_message] = []
+                    line_info = []
+                    for field in fields_names:
+                        line_info += [prev_fields[field]]
+                    line_info += [prev_line_number]
+                    file_lines[prev_message] += [line_info]
                 prev_fields = fields
                 prev_message = filtered_message
                 prev_line_number = line_num
             except FormatTemplateError as exception_message:
                 if 'Traceback' in line:
+                    #Just remebber that we are in traceback
                     in_traceback_flag = True
                 elif in_traceback_flag:
-                    mess = LogLine(line_num, out_descr)
+                    #Remember a line if we are in a traceback. 
+                    #The last line will be concatenated with a message
+                    mess = LogLine(line_num, format_template, out_descr)
                     mess.parse_message(line)
                     in_traceback_line = mess.filtered_message
+                elif multiline_flag:
+                    print("mintiline flag")
+                    if line_data.fields["date_time"] == '':
+                        multiline_line += line
+                    else:
+                        mess = LogLine(line_num, format_template, out_descr)
+                        mess.parse_message(multiline_line)
+                        if mess.filtered_message not in \
+                                            file_lines.keys():
+                            file_lines[mess.filtered_message] = []
+                        line_info = []
+                        for field in fields_names:
+                            line_info += [mess.fields[field]]
+                        line_info += [prev_line_number]
+                        file_lines[mess.filtered_message] += [line_info]
+                    multiline_flag = False
+                elif line_data.fields["date_time"] != '':
+                    #We are in a line with datetime, but the analyzer didn't 
+                    #find all fields from a template
+                    print("mintiline flag")
+                    multiline_flag = True
+                    multiline_line = line
+                    prev_line_number = line_num
                 else:
-                    out_descr.write('Warning: parse_fields: Line does not match '+\
-                        'format "%s": %s\n'% (format_template['name'], line))
-                    if '!Fake datetime!' in prev_message:
-                        mess = LogLine(line_num, out_descr)
+                    #The analyzer didn't find a datetime in a line, 
+                    #the message will receive datetime from previous 
+                    #message with a mark "Fake datetime"
+                    out_descr.write('Warning: parse_fields: '+\
+                            'Line does not match format "%s": %s\n'% \
+                            (format_template['name'], line))
+                    if multiline_flag:
+                        multiline_line += line
+                    elif '!Fake datetime!' in prev_message:
+                        mess = LogLine(line_num, format_template, out_descr)
                         mess.parse_message(line)
                         prev_message += mess.filtered_message
-                        prev_message = re.sub(re.compile(r"((\<\.\.\.\>){2,})"), '<...>', prev_message)
+                        prev_message = re.sub(re.compile(r"((\<\.\.\.\>){2,})"), 
+                                                '<...>', prev_message)
                     else:
-                        mess = LogLine(line_num, out_descr)
+                        mess = LogLine(line_num, format_template, out_descr)
                         mess.parse_message(line)
                         prev_message = '!Fake datetime! ' + \
                                     mess.filtered_message
@@ -218,37 +237,39 @@ def loop_over_lines(logname, format_template, time_zome, out_descr):
                 out_descr.write('Warning: parse_message: '+\
                             'Line does not have message '+'field: %s\n' % line)
         #adding the last line
-        for field in sorted(fields_names):
-            if prev_fields[field] not in file_lines[field].keys():
-                file_lines[field][prev_fields[field]] = {}
-                file_lines[field][prev_fields[field]]['date_time'] = [prev_fields['date_time']]
-                file_lines[field][prev_fields[field]]['line_number'] = [prev_line_number]
-            else:
-                file_lines[field][prev_fields[field]]['date_time'] += [prev_fields['date_time']]
-                file_lines[field][prev_fields[field]]['line_number'] += [prev_line_number]
-            #file_lines[field] += [prev_fields[field]]
+        print("last_line...")
         if in_traceback_flag:
-            if prev_message+'; '+in_traceback_line not in file_lines['filtered_message'].keys():
-                file_lines['filtered_message'][prev_message+'; '+in_traceback_line] = {}
-                file_lines['filtered_message'][prev_message+'; '+in_traceback_line]['date_time'] = [prev_fields['date_time']]
-                file_lines['filtered_message'][prev_message+'; '+in_traceback_line]['line_number'] = [prev_line_number]
-            else:
-                print('I have such message!')
-                file_lines['filtered_message'][prev_message+'; '+in_traceback_line]['date_time'] += [prev_fields['date_time']]
-                file_lines['filtered_message'][prev_message+'; '+in_traceback_line]['line_number'] += [prev_line_number]
+            if prev_message+' '+in_traceback_line not in \
+                                file_lines.keys():
+                file_lines[prev_message+' '+in_traceback_line] = []
+            line_info = []
+            for field in fields_names:
+                line_info += [prev_fields[field]]
+            line_info += [prev_line_number]
+            file_lines[prev_message+' '+in_traceback_line] = [line_info]
             in_traceback_flag = False
+        elif multiline_flag:
+            mess = LogLine(prev_line_number, format_template, out_descr)
+            mess.parse_fields(multiline_line, format_template)
+            mess.parse_message()
+            if mess.filtered_message not in \
+                                file_lines.keys():
+                file_lines[mess.filtered_message] = []
+            line_info = []
+            for field in fields_names:
+                line_info += [mess.fields[field]]
+            line_info += [prev_line_number]
+            file_lines[mess.filtered_message] += [line_info]
+            multiline_flag = False
         else:
-            if prev_message not in file_lines['filtered_message'].keys():
-                file_lines['filtered_message'][prev_message] = {}
-                file_lines['filtered_message'][prev_message]['date_time'] = [prev_fields['date_time']]
-                file_lines['filtered_message'][prev_message]['line_number'] = [prev_line_number]
-            else:
-                print('I have such message!')
-                file_lines['filtered_message'][prev_message]['date_time'] += [prev_fields['date_time']]
-                file_lines['filtered_message'][prev_message]['line_number'] += [prev_line_number]
-        #file_lines['line_number'] += [prev_line_number]
+            if prev_message not in file_lines.keys():
+                file_lines[prev_message] = []
+            line_info = []
+            for field in fields_names:
+                line_info += [prev_fields[field]]
+            line_info += [prev_line_number]
+            file_lines[prev_message] += [line_info]
 
-    print('++++++++++++++++++++++++')
     f = open("lines_"+logname.split('/')[-1][:-4]+".js", 'w')
     json.dump(file_lines, f, indent=4, sort_keys=True)
     f.close()
