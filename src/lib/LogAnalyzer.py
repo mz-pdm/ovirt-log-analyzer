@@ -17,12 +17,14 @@ class LogAnalyzer:
         self.time_zones = tz
         formats = open(templates_filename, 'r').read().split('\n')
         self.formats_templates = {}
+        format_num = 0
         for line in formats:
             if line[0] == '@':
                 format_name = line[1:]
             elif line[0:2] == 'r^' and format_name != '':
-                self.formats_templates[format_name] = line[1:]
+                self.formats_templates[format_num] = line[1:]
                 format_name = ''
+                format_num += 1
             else:
                 self.out_descr.write("Wrong format of template: %s\n" % line)
 
@@ -43,11 +45,11 @@ class LogAnalyzer:
             #find format of a log
             filename = os.path.join(self.directory, log) + '.log'
             line = open(filename, 'r').readline()
-            for file_format_name in sorted(self.formats_templates.keys()):
-                prog = re.compile(self.formats_templates[file_format_name])
+            for file_format_num in sorted(self.formats_templates.keys()):
+                prog = re.compile(self.formats_templates[file_format_num])
                 result = prog.search(line)
                 if result is not None:
-                    self.log_file_format[log] = file_format_name
+                    self.log_file_format[log] = file_format_num
                     break
 
             self.all_errors[log] = {}
