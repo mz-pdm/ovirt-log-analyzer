@@ -1,15 +1,22 @@
 import os
 import re
 from lib.create_error_definition import loop_over_lines
-from lib.errors_statistics import \
-    summarize_errors, summarize_errors_time_first, \
-    merge_all_errors_by_time, calculate_frequency
+from lib.errors_statistics import merge_all_errors_by_time
 from lib.represent_statistics import print_statistics, dump_json
 from lib.link_errors import create_error_graph
 
 
 class LogAnalyzer:
-
+    #out_descr
+    #directory
+    #filenames[]
+    #time_zones[]
+    #formats_templates{0:'...',}
+    #----
+    #found_logs['log1',...]
+    #log_file_format{"log1":...,}
+    #all_errors{"log1":...,}
+    #format_fields{'log1':...}
     def __init__(self, out_descr, directory, filenames, tz, templates_filename):
         self.out_descr = out_descr
         self.directory = directory
@@ -32,6 +39,7 @@ class LogAnalyzer:
         self.found_logs = []
         self.all_errors = {}
         self.log_file_format = {}
+        self.format_fields = {}
         for log in self.filenames:
             self.out_descr.write('Analysing %s' % os.path.join(
                 self.directory, log) + '.log ...\n')
@@ -40,12 +48,11 @@ class LogAnalyzer:
                 continue
             # save name of actually opened logfile
             self.found_logs += [log]
-            #searching a tzinfo of a log
-            time_zone = self.time_zones[log]
             #find format of a log
             filename = os.path.join(self.directory, log) + '.log'
             line = open(filename, 'r').readline()
-            for file_format_num in sorted(self.formats_templates.keys()):
+            for file_format_num in sorted(self.formats_templates.keys(), \
+                                            key=lambda k:int(k)):
                 prog = re.compile(self.formats_templates[file_format_num])
                 result = prog.search(line)
                 if result is not None:
@@ -57,34 +64,20 @@ class LogAnalyzer:
             filename = os.path.join(self.directory, log) + '.log'
             lines_info = loop_over_lines(filename, \
                     self.formats_templates[self.log_file_format[log]], \
-                    time_zone, \
+                    self.time_zones[log], \
                     self.out_descr)
             self.all_errors[log] = lines_info
+            #saving logfile format fields names
+            format_template = re.compile(self.formats_templates[
+                                            self.log_file_format[log]])
+            fields_names = list(sorted(format_template.groupindex.keys()))
+            fields_names.remove("message")
+            fields_names.append("line_number")
+            self.format_fields[log] = fields_names
 
-    def merge_logfiles(self):
-        self.errors = {}
-        self.errors_time = {}
-        for log in self.found_logs:
-            # calculating a number of every error's appearing in a file and its
-            # time
-            sum_errors, sum_errors_time = summarize_errors(
-                self.all_errors[log]['who_send'],
-                self.all_errors[log]['event'],
-                self.all_errors[log]['thread'],
-                self.all_errors[log]['msg_text'],
-                self.all_errors[log]['datetime'])
-            self.errors[log] = sum_errors
-            self.errors_time[log] = sum_errors_time
-
-    def calculate_errors_frequency(self):
-        pass
-        # summarizing errors' appearing number like in PrintStatistics
-        #for log in self.found_logs:
-        #    self.log_freq = 
-        #    self.sender_freq = 
-        #    self.event_freq = 
-        #    self.message_freq = 
-
+    def find_rare_errors(self):
+        timeline, line_number_info = merge_all_errors_by_time(self.all_errors, self.format_fields)
+        
     def print_errors(self, out):
         output_text = ''
         for log in self.found_logs:
@@ -97,20 +90,21 @@ class LogAnalyzer:
 
     def dump_to_json(self, path, outfile,
                      template='chart_errors_statistics_template.html'):
-        sum_errors_time_first = []
-        for log in self.found_logs:
-            # calculating a number of errors for every moment of time (needed
-            # for chart and graph)
-            all_errors = [str(x) for x in self.all_errors[log]['datetime']]
-            sum_errors_time_first += [
-                summarize_errors_time_first(self.all_errors[log]['who_send'],
-                                            self.all_errors[log]['event'],
-                                            self.all_errors[log]['thread'],
-                                            self.all_errors[log]['msg_text'],
-                                            all_errors)]
-        # Saving error's info by time (for a chart)
-        dump_json(self.found_logs, sum_errors_time_first,
-                  os.path.join(path, outfile), template)
+        return
+        #sum_errors_time_first = []
+        #for log in self.found_logs:
+        #    # calculating a number of errors for every moment of time (needed
+        #    # for chart and graph)
+        #    all_errors = [str(x) for x in self.all_errors[log]['datetime']]
+        #    sum_errors_time_first += [
+        #        summarize_errors_time_first(self.all_errors[log]['who_send'],
+        #                                    self.all_errors[log]['event'],
+        #                                    self.all_errors[log]['thread'],
+        #                                    self.all_errors[log]['msg_text'],
+        #                                    all_errors)]
+        ## Saving error's info by time (for a chart)
+        #dump_json(self.found_logs, sum_errors_time_first,
+        #          os.path.join(path, outfile), template)
 
     # search related errors in 5-sec sliding window
     def create_errors_graph(self, path, outfile, step=5):
