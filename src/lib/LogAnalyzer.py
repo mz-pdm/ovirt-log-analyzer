@@ -17,11 +17,17 @@ class LogAnalyzer:
     #log_file_format{"log1":...,}
     #all_errors{"log1":...,}
     #format_fields{'log1':...}
-    def __init__(self, out_descr, directory, filenames, tz, templates_filename):
+    def __init__(self, out_descr, directory, filenames, tz, \
+                time_ranges, vms, events, hosts, templates_filename):
         self.out_descr = out_descr
         self.directory = directory
         self.filenames = filenames
         self.time_zones = tz
+        self.time_ranges = time_ranges
+        self.vms = vms
+        self.events = events
+        self.hosts = hosts
+        #parse formats file
         formats = open(templates_filename, 'r').read().split('\n')
         self.formats_templates = {}
         format_num = 0
@@ -65,7 +71,11 @@ class LogAnalyzer:
             lines_info = loop_over_lines(filename, \
                     self.formats_templates[self.log_file_format[log]], \
                     self.time_zones[log], \
-                    self.out_descr)
+                    self.out_descr, \
+                    self.time_ranges, \
+                    self.vms, \
+                    self.events, \
+                    self.hosts)
             self.all_errors[log] = lines_info
             #saving logfile format fields names
             format_template = re.compile(self.formats_templates[

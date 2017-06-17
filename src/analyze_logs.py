@@ -12,7 +12,6 @@ if __name__ == "__main__":
     parser.add_argument('log_directory',
                         metavar='directory',
                         type=str,
-                        nargs=1,
                         help='logfiles directory')
     parser.add_argument('log_filenames',
                         metavar='filename',
@@ -32,12 +31,10 @@ if __name__ == "__main__":
     #                            "represented errors statistics")
     parser.add_argument("-print", "--output_descriptor",
                         type=str,
-                        nargs=1,
                         help='Where to print output' + 
                                 '(filename, "stdout" or "stderr")')
     parser.add_argument("-o", "--output_file",
                         type=str,
-                        nargs=1,
                         help='Directs the output to a name' + 
                                 'of your choice (with expansion)')
     #parser.add_argument("-g", "--graph",
@@ -46,22 +43,34 @@ if __name__ == "__main__":
     #                            "of linked errors")
     parser.add_argument("-odir", "--output_directory",
                         type=str,
-                        nargs=1,
                         help='Specify directory to save program output')
     parser.add_argument('-format', '--format_templates_filename',
                         type=str,
-                        nargs=1,
                         help='filename with formats of log files' + 
                                 '(with path and expansion)')  
-    parser.add_argument("-time_range",
-                        metavar='time',
+    parser.add_argument("-time", "--time_range",
                         type=str,
                         nargs='+',
-                        help='Specify time range (in UTC) for analysis. ' + \
+                        help='Specify time range(s) (in UTC) for analysis. ' + \
                         'Type even number of space-separated times (1st for '+\
                         'time range beginning and 2nd for ending) in the ' + \
-                        'following format (use quotes)' + \
-                        '"2000-01-31T21:10:00,123 2000-01-31T22:10:00,123"')
+                        'following format (example)' + \
+                        '2000-01-31T21:10:00,123 2000-01-31T22:10:00,123')
+    parser.add_argument("-vm",
+                        type=str,
+                        nargs='+',
+                        help='Specify VM id(s) to find information about them')
+    parser.add_argument("-host",
+                        type=str,
+                        nargs='+',
+                        help='Specify host id(s) to find information about them')
+    parser.add_argument("-event",
+                        type=str,
+                        nargs='+',
+                        help='Specify event(s) to find information about them'+\
+                        ' (raw text of event, part of message or key word), '+\
+                        'use quotes for messages with spaces '+\
+                        '(e.g. -event warning "down with error" failure)')
 
     args = parser.parse_args()
 
@@ -126,6 +135,24 @@ if __name__ == "__main__":
                 exit()
             time_range_info += [date_time_1, date_time_2]
 
+    # VMs
+    if args.vm is not None:
+        vm_info = args.vm
+    else:
+        vm_info = []
+    
+    # Hosts
+    if args.host is not None:
+        host_info = args.host
+    else:
+        host_info = []
+    
+    # VMs
+    if args.event is not None:
+        event_info = args.event
+    else:
+        event_info = []
+
     #Output desctiptor
     if args.output_descriptor is not None:
         if args.output_descriptor == "stdout":
@@ -133,32 +160,37 @@ if __name__ == "__main__":
         elif args.output_descriptor == "stderr":
             output_descriptor = sys.stderr
         else:
-            sys.stderr = open(os.path.join(
-                output_directory, args.output_descriptor), 'w')
+            sys.stderr = open(os.path.join(output_directory, \
+                        args.output_descriptor), 'w')
             output_descriptor = sys.stderr
     else:
         output_descriptor = sys.stderr
 
     #Output file
-    #if args.output_file is not None:
-    #    output_file = open(os.path.join(
-    #        output_directory, args.output_file), 'w')
-    #else:
-    #    output_file = sys.stdout
+    if args.output_file is not None:
+        output_file = open(os.path.join(
+            output_directory, args.output_file), 'w')
+    else:
+        output_file = sys.stdout
     
     #Format templates
     if args.format_templates_filename is not None:
-        format_file = args.format_templates_filename[0]
+        format_file = args.format_templates_filename
     else:
         format_file = os.path.join("format_templates.txt")
+    
     #The algorythm
-    logs = LogAnalyzer(output_descriptor, \
-                        args.log_directory[0], \
-                        args.log_filenames, \
+    logs = LogAnalyzer(output_descriptor,
+                        args.log_directory,
+                        args.log_filenames,
                         tz_info,
+                        time_range_info,
+                        vm_info,
+                        event_info,
+                        host_info,
                         format_file)
     logs.load_data()
-    logs.find_rare_errors()
+    #logs.find_rare_errors()
     #logs.print_errors(output_file)
     #if args.chart_filename is not None:
     #    output_descriptor.write('Creating a chart...\n')

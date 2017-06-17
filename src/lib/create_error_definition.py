@@ -12,37 +12,35 @@ import json
 from datetime import datetime
 
 class LogLineError(Exception):
-   """Base class for logline exceptions"""
-   pass
+    """Base class for logline exceptions"""
+    pass
 class FormatTemplateError(LogLineError):
-   """Raised when the line format does not match the log file template"""
-   pass
+    """Raised when the line format does not match the log file template"""
+    pass
 class DateTimeNotFoundError(LogLineError):
-   """Raised when the datetime was not parsed"""
-   pass
+    """Raised when the datetime was not parsed"""
+    pass
 class DateTimeFormatError(LogLineError):
-   """Raised when the datetime format was not recognized"""
-   pass
+    """Raised when the datetime format was not recognized"""
+    pass
 class MessageNotFoundError(LogLineError):
-   """Raised when the message was not parsed"""
-   pass
-
-class LogInformation:
-    def __init__(self, out_descr, vm_numbers, time_ranges, events, host_ids):
-        self.out_descr = out_descr
-        self.vm_numbers = vm_numbers
-        self.time_ranges = time_ranges
-        self.events = events
-        self.host_ids = host_ids
-        self.log_info = {}
-    def check_user_task():
-        pass
+    """Raised when the message was not parsed"""
+    pass
+class NotSatisfyConditions(LogLineError):
+    """Raised whel line's datetime is not included into user-defined time range, 
+    or message doesn't contain defined VM, host or event"""
+    pass
 
 class LogLine:
     #out_descr
     #fields {"date_time": [], ..., "filtered_message": [], "line_number": []}
-    def __init__(self, fields_names, out_descr):
+    def __init__(self, fields_names, out_descr, \
+                vm_numbers, time_ranges, events, host_ids):
         self.out_descr = out_descr
+        self.time_ranges = time_ranges
+        self.vm_numbers = vm_numbers
+        self.events = events
+        self.host_ids = host_ids
         self.fields = {}
         for field in fields_names:
             self.fields[field] = ''
@@ -100,7 +98,7 @@ class LogLine:
             raise FormatTemplateError()
         fields = fields.groupdict()
         if self.fields["date_time"] == '':
-            print('STH WRONG')
+            pass #STH WRONG
         for field in sorted(fields.keys()):
             if field == "date_time":
                 continue
@@ -117,30 +115,63 @@ class LogLine:
         t = re.search(template, mstext)
         if t is not None:
             mstext = t.group(2)
-        template = re.compile(\
-            r"[^^]\"[^\"]{20,}\"|"+\
-            r"[^^]\'[^\']{20,}\'|"+\
-            r"[^^]\[+.*\]+|"+\
-            r"[^^]\(+.*\)+|"+\
-            r"[^^]\{+.*\}+|"+\
-            r"[^^]\<+.*\>+|"+\
-            r"[^^][^\ \t\,\;\=]{20,}|"+\
-            r"[\d]+")
-        mstext = re.sub(template, '<...>', mstext)
-        mstext = re.sub(re.compile(
-            r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"), '<...>', mstext)
-        mstext = re.sub(re.compile(
-            r"(([\ \.\,\:\;\+\-\{\}]*"+\
-            r"\<\.\.\.\>[\ \.\,\:\;\+\-\{\}]*)+)"), '<...>', mstext)
+        #template = re.compile(\
+        #    r"[^^]\"[^\"]{20,}\"|"+\
+        #    r"[^^]\'[^\']{20,}\'|"+\
+        #    r"[^^]\[+.*\]+|"+\
+        #    r"[^^]\(+.*\)+|"+\
+        #    r"[^^]\{+.*\}+|"+\
+        #    r"[^^]\<+.*\>+|"+\
+        #    r"[^^][^\ \t\,\;\=]{20,}|"+\
+        #    r"[\d]+")
+        #mstext = re.sub(template, '<...>', mstext)
+        #mstext = re.sub(re.compile(
+        #    r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"), '<...>', mstext)
+        #mstext = re.sub(re.compile(
+        #    r"(([\ \.\,\:\;\+\-\{\}]*"+\
+        #    r"\<\.\.\.\>[\ \.\,\:\;\+\-\{\}]*)+)"), '<...>', mstext)
         self.fields["filtered_message"] = re.sub(
             r'^[\ \t\.\,\:\=]+|[\ \t\.\,\n]+$', '', \
             mstext)
 
-def loop_over_lines(logname, format_template, time_zome, out_descr):
+    def check_constraints(self):
+        for needed_dt in range(0, len(self.time_ranges)-1, 2):
+            if self.fields["date_time"] < self.time_ranges[needed_dt] or \
+                    self.fields["date_time"] > self.time_ranges[needed_dt+1]:
+                raise NotSatisfyConditions()
+        for needed_vm in self.vm_numbers:
+            if not needed_vm in self.fields["filtered_message"]:
+                raise NotSatisfyConditions()
+        for needed_host in self.host_ids:
+            if not needed_host in self.fields["filtered_message"]:
+                raise NotSatisfyConditions()
+        for needed_event in self.events:
+            if not needed_event in self.fields["filtered_message"]:
+                raise NotSatisfyConditions()
+#def parallelize_parsing(logname, format_template, time_zome, out_descr):
+#    file_lines = {}
+#    format_template = re.compile(format_template)
+#    #fields_names = list(sorted(format_template.groupindex.keys()))
+#    #fields_names.remove("message")
+#    fields_names = ["date_time"]
+#    n_threads = 5
+#    f = open(logname, 'r')
+#    n = f.seek(0, 2)
+#    print(">>", n)
+#    for thread_pos in range(0, n-n%n_threads, n//n_threads):
+#        print(thread_pos)
+#        f.seek(thread_pos)
+#        f.readline()
+#        line = f.readline()
+#        if LogLine(fields_names, out_descr).parse_date_time(time_zome, line)
+
+def loop_over_lines(logname, format_template, time_zome, out_descr, \
+                    time_ranges, vm_numbers, events, host_ids):
     file_lines = {}
     format_template = re.compile(format_template)
-    fields_names = list(sorted(format_template.groupindex.keys()))
-    fields_names.remove("message")
+    #fields_names = list(sorted(format_template.groupindex.keys()))
+    #fields_names.remove("message")
+    fields_names = ["date_time"]
     with open(logname) as f:
         prev_fields = {}
         in_traceback_line = ''
@@ -150,30 +181,39 @@ def loop_over_lines(logname, format_template, time_zome, out_descr):
         for line_num, line in enumerate(f):
             if len(re.findall(r"^(\ *)$", line)) != 0:
                 continue
-            line_data = LogLine(fields_names, out_descr)
+            line_data = LogLine(fields_names, out_descr, \
+                        vm_numbers, time_ranges, events, host_ids)
             try:
                 line_data.parse_date_time(time_zome, line)
                 line_data.parse_fields(format_template, line)
                 line_data.parse_message()
-
+                line_data.check_constraints()
                 if in_traceback_flag:
-                    mess = LogLine(fields_names, out_descr)
-                    mess.parse_message(prev_fields["filtered_message"]+\
-                                        ' '+in_traceback_line)
-                    if mess.fields["filtered_message"] not in file_lines.keys():
-                        file_lines[mess.fields["filtered_message"]] = []                
-                    line_info = []
-                    for field in fields_names:
-                        line_info += [prev_fields[field]]
-                    line_info += [prev_line_number]
-                    file_lines[mess.fields["filtered_message"]]+=line_info
-                    in_traceback_flag = False
+                    try:
+                        mess = LogLine(fields_names, out_descr, \
+                                vm_numbers, time_ranges, events, host_ids)
+                        mess.parse_message(prev_fields["filtered_message"]+\
+                                            ' '+in_traceback_line)
+                        mess.check_constraints()
+                        if mess.fields["filtered_message"] not in file_lines.keys():
+                            file_lines[mess.fields["filtered_message"]] = []                
+                        line_info = []
+                        for field in fields_names:
+                            line_info += [prev_fields[field]]
+                        line_info += [prev_line_number]
+                        file_lines[mess.fields["filtered_message"]]+=line_info
+                        in_traceback_flag = False
+                    except NotSatisfyConditions:
+                        prev_fields = {}
+                        continue
                 elif multiline_flag:
                     try:
-                        mess = LogLine(fields_names, out_descr)
+                        mess = LogLine(fields_names, out_descr,\
+                                vm_numbers, time_ranges, events, host_ids)
                         mess.parse_date_time(time_zome, multiline_line)
                         mess.parse_fields(format_template, multiline_line)
                         mess.parse_message()
+                        mess.check_constraints()
                         if mess.fields["filtered_message"] not in \
                                                             file_lines.keys():
                             file_lines[mess.fields["filtered_message"]] = []                
@@ -182,6 +222,9 @@ def loop_over_lines(logname, format_template, time_zome, out_descr):
                             line_info += [mess.fields[field]]
                         line_info += [prev_line_number]
                         file_lines[mess.fields["filtered_message"]]+=line_info
+                    except NotSatisfyConditions:
+                        prev_fields = {}
+                        continue
                     except (DateTimeNotFoundError, DateTimeFormatError) as \
                                                             exception_message:
                         if multiline_line not in file_lines.keys():
@@ -216,7 +259,17 @@ def loop_over_lines(logname, format_template, time_zome, out_descr):
                     pass
                 prev_fields = line_data.fields
                 prev_line_number = line_num
-
+            except NotSatisfyConditions:
+                if prev_fields != {}:
+                    if prev_fields["filtered_message"] not in file_lines.keys():
+                        file_lines[prev_fields["filtered_message"]] = []
+                    line_info = []
+                    for field in fields_names:
+                        line_info += [prev_fields[field]]
+                    line_info += [prev_line_number]
+                    file_lines[prev_fields["filtered_message"]] += line_info
+                    prev_fields = {}
+                continue
             except (DateTimeNotFoundError, DateTimeFormatError) as \
                                             exception_message:
                 if prev_fields == {}:
@@ -274,23 +327,30 @@ def loop_over_lines(logname, format_template, time_zome, out_descr):
                             'Line does not have message '+'field: %s\n' % line)
         #adding the last line
         if in_traceback_flag:
-            mess = LogLine(fields_names, out_descr)
-            mess.parse_message(prev_fields["filtered_message"]+\
-                                ' '+in_traceback_line)
-            if mess.fields["filtered_message"] not in file_lines.keys():
-                file_lines[mess.fields["filtered_message"]] = []                
-            line_info = []
-            for field in fields_names:
-                line_info += [prev_fields[field]]
-            line_info += [prev_line_number]
-            file_lines[mess.fields["filtered_message"]]+=line_info
-            in_traceback_flag = False
+            try:
+                mess = LogLine(fields_names, out_descr,\
+                        vm_numbers, time_ranges, events, host_ids)
+                mess.parse_message(prev_fields["filtered_message"]+\
+                                    ' '+in_traceback_line)
+                mess.check_constraints()
+                if mess.fields["filtered_message"] not in file_lines.keys():
+                    file_lines[mess.fields["filtered_message"]] = []                
+                line_info = []
+                for field in fields_names:
+                    line_info += [prev_fields[field]]
+                line_info += [prev_line_number]
+                file_lines[mess.fields["filtered_message"]]+=line_info
+                in_traceback_flag = False
+            except NotSatisfyConditions:
+                pass
         elif multiline_flag:
             try:
-                mess = LogLine(fields_names, out_descr)
+                mess = LogLine(fields_names, out_descr,\
+                        vm_numbers, time_ranges, events, host_ids)
                 mess.parse_date_time(time_zome, multiline_line)
                 mess.parse_fields(format_template, multiline_line)
                 mess.parse_message()
+                mess.check_constraints()
                 if mess.fields["filtered_message"] not in file_lines.keys():
                     file_lines[mess.fields["filtered_message"]] = []                
                 line_info = []
@@ -298,6 +358,8 @@ def loop_over_lines(logname, format_template, time_zome, out_descr):
                     line_info += [mess.fields[field]]
                 line_info += [prev_line_number]
                 file_lines[mess.fields["filtered_message"]]+=line_info
+            except NotSatisfyConditions:
+                pass
             except FormatTemplateError as exception_message:
                 #out_descr.write('Warning: parse_fields: '+\
                 #    'Line does not match format "%s": %s\n'% \
@@ -325,3 +387,4 @@ def loop_over_lines(logname, format_template, time_zome, out_descr):
     json.dump(file_lines, f, indent=4, sort_keys=True)
     f.close()
     return file_lines
+
