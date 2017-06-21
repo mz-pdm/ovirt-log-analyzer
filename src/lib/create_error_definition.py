@@ -5,10 +5,9 @@
         sender, thread, event, message)
 """
 import numpy as np
-import inspect
 import pytz
 import re
-import json
+import os
 from datetime import datetime
 
 class LogLineError(Exception):
@@ -35,7 +34,7 @@ class SatisfyConditions(LogLineError):
 
 class LogLine:
     #out_descr
-    #fields {"date_time": [], ..., "filtered_message": [], "line_number": []}
+    #fields {"date_time": [], ..., "message": [], "line_number": []}
     def __init__(self, fields_names, line_num, out_descr, time_ranges):
         self.out_descr = out_descr
         self.time_ranges = time_ranges
@@ -88,10 +87,11 @@ class LogLine:
         if self.fields['date_time'] == '':
             raise DateTimeFormatError("Warning: Unknown date_time format: "+\
                                         "%s\n" % dt)
-        for needed_dt in range(0, len(self.time_ranges)-1, 2):
-            if self.fields['date_time'] < self.time_ranges[needed_dt] or \
-                self.fields['date_time'] > self.time_ranges[needed_dt+1]:
-                raise DateTimeNotInTimeRange()
+        #Check user-defined time range
+        if not any([self.fields['date_time'] >= tr[0] and \
+                    self.fields['date_time'] <= tr[1] \
+                    for tr in self.time_ranges]):
+            raise DateTimeNotInTimeRange()
 
     def parse_fields(self, pattern, line):
         line = re.sub(r'^[\t\ ]+|[\t\ ]+$', '', line)
@@ -116,22 +116,7 @@ class LogLine:
         t = re.search(self.msg_template, mstext)
         if t is not None:
             mstext = t.group(2)
-        #template = re.compile(\
-        #    r"[^^]\"[^\"]{20,}\"|"+\
-        #    r"[^^]\'[^\']{20,}\'|"+\
-        #    r"[^^]\[+.*\]+|"+\
-        #    r"[^^]\(+.*\)+|"+\
-        #    r"[^^]\{+.*\}+|"+\
-        #    r"[^^]\<+.*\>+|"+\
-        #    r"[^^][^\ \t\,\;\=]{20,}|"+\
-        #    r"[\d]+")
-        #mstext = re.sub(template, '<...>', mstext)
-        #mstext = re.sub(re.compile(
-        #    r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"), '<...>', mstext)
-        #mstext = re.sub(re.compile(
-        #    r"(([\ \.\,\:\;\+\-\{\}]*"+\
-        #    r"\<\.\.\.\>[\ \.\,\:\;\+\-\{\}]*)+)"), '<...>', mstext)
-        self.fields["filtered_message"] = re.sub(
+        self.fields["message"] = re.sub(
             r'^[\ \t\.\,\:\=]+|[\ \t\.\,\n]+$', '', \
             mstext)
 
@@ -175,18 +160,18 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
         try:
             mess = LogLine(fields_names, prev_fields['line_num'], \
                             out_descr, time_ranges)
-            mess.parse_message(prev_fields["filtered_message"]+\
+            mess.parse_message(prev_fields["message"]+\
                                 ' '+in_traceback_line)
             line_info = []
             for field in fields_names:
                 line_info += [prev_fields[field]]
-            line_info += [mess.fields["filtered_message"]]
+            line_info += [mess.fields["message"]]
             return prev_line, line_info, in_traceback_flag, multiline_flag
         except MessageNotFoundError as exception_message:
             if show_warnings:
                 out_descr.write('Warning: parse_message: '+\
                             'Line does not have message field: %s\n' % \
-                            prev_fields["filtered_message"]+\
+                            prev_fields["message"]+\
                                 ' '+in_traceback_line)
             return prev_line, [], in_traceback_flag, multiline_flag
     elif multiline_flag:
@@ -204,7 +189,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
             line_info = []
             for field in fields_names:
                 line_info += [mess.fields[field]]
-            line_info += [mess.fields["filtered_message"]]
+            line_info += [mess.fields["message"]]
             return prev_line, line_info, in_traceback_flag, multiline_flag
         except (DateTimeNotFoundError, DateTimeFormatError) as \
                                                 exception_message:
@@ -231,25 +216,26 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
         line_info = []
         for field in fields_names:
             line_info += [prev_fields[field]]
-        line_info += [prev_fields["filtered_message"]]
+        line_info += [prev_fields["message"]]
         return prev_line, line_info, in_traceback_flag, multiline_flag
 
-def loop_over_lines(logname, format_template, time_zome, out_descr, \
+def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
                     events, host_ids, time_ranges, vm_numbers, show_warnings):
+    full_filename = os.path.join(directory, logname) + '.log'
     format_template = re.compile(format_template)
     fields_names = list(sorted(format_template.groupindex.keys()))
     fields_names.remove("message")
     fields_names.remove("date_time")
     fields_names = ['date_time', 'line_num'] + fields_names
-    out = open('result1.txt', 'w')
+    #out = open('result_'+logname+'.txt', 'w')
     file_lines = []
-    with open(logname) as f:
+    with open(full_filename) as f:
         prev_fields = {}
         in_traceback_line = ''
         in_traceback_flag = False
         multiline_line = ''
         multiline_flag = False
-        count = 0
+        #count = 0
         store = True
         if events + host_ids + vm_numbers == []:
             need_to_check = False
@@ -260,7 +246,7 @@ def loop_over_lines(logname, format_template, time_zome, out_descr, \
                                                      and "OBJECT_" in line):
                 #the line is empty
                 continue
-            line_data = LogLine(fields_names, str(line_num), \
+            line_data = LogLine(fields_names, logname+':'+str(line_num), \
                                 out_descr, time_ranges)
             try:
                 line_data.parse_date_time(time_zome, line)
@@ -391,8 +377,4 @@ def loop_over_lines(logname, format_template, time_zome, out_descr, \
                 #out.write('>>>%d'%count)
                 #out.write(prev_line)
                 #out.write('\n')
-
-    f = open("lines_"+logname.split('/')[-1][:-4]+".js", 'w')
-    json.dump(file_lines, f, indent=4, sort_keys=True)
-    f.close()
-    return file_lines, fields_names + ['filtered_message']
+    return file_lines, fields_names + ['message']

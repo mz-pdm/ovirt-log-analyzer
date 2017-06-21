@@ -17,7 +17,7 @@ class LogAnalyzer:
     #all_errors{"log1":...,}
     #format_fields{'log1':...}
     def __init__(self, out_descr, directory, filenames, tz, \
-                time_ranges, vms, events, hosts, templates_filename, warnings):
+                time_ranges, vms, events, hosts, templates_filename):
         self.out_descr = out_descr
         self.directory = directory
         self.filenames = filenames
@@ -26,7 +26,6 @@ class LogAnalyzer:
         self.vms = vms
         self.events = events
         self.hosts = hosts
-        self.show_warnings = warnings
         #parse formats file
         formats = open(templates_filename, 'r').read().split('\n')
         self.formats_templates = {}
@@ -35,16 +34,21 @@ class LogAnalyzer:
             if line[0] == '@':
                 format_name = line[1:]
             elif line[0:2] == 'r^' and format_name != '':
+                try:
+                    re.compile(line[1:])
+                except:
+                    self.out_descr.write("Wrong format of regexp: %s\n" \
+                                        % line[1:])
+                    exit()
                 self.formats_templates[format_num] = line[1:]
                 format_name = ''
                 format_num += 1
             else:
                 self.out_descr.write("Wrong format of template: %s\n" % line)
 
-    def load_data(self):
+    def load_data(self, show_warnings):
         self.found_logs = []
         self.all_errors = {}
-        self.log_file_format = {}
         self.format_fields = {}
         for log in self.filenames:
             self.out_descr.write('Analysing %s' % os.path.join(
@@ -55,33 +59,36 @@ class LogAnalyzer:
             # save name of actually opened logfile
             self.found_logs += [log]
             #find format of a log
-            filename = os.path.join(self.directory, log) + '.log'
-            line = open(filename, 'r').readline()
+            full_filename = os.path.join(self.directory, log) + '.log'
+            line = open(full_filename, 'r').readline()
             for file_format_num in sorted(self.formats_templates.keys(), \
                                             key=lambda k:int(k)):
                 prog = re.compile(self.formats_templates[file_format_num])
                 result = prog.search(line)
                 if result is not None:
-                    self.log_file_format[log] = file_format_num
+                    log_file_format = file_format_num
                     break
             # gathering all information about errors from a logfile into lists
-            filename = os.path.join(self.directory, log) + '.log'
-            lines_info, fields_names = loop_over_lines(filename, \
-                    self.formats_templates[self.log_file_format[log]], \
+            lines_info, fields_names = loop_over_lines(
+                    self.directory, \
+                    log, \
+                    self.formats_templates[log_file_format], \
                     self.time_zones[log], \
                     self.out_descr, \
                     self.events, \
                     self.hosts,
                     self.time_ranges, \
                     self.vms, \
-                    self.show_warnings)
+                    show_warnings)
             if lines_info == []:
                 continue
             self.all_errors[log] = lines_info
             #saving logfile format fields names
-            format_template = re.compile(self.formats_templates[
-                                            self.log_file_format[log]])
+            format_template = re.compile(self.formats_templates[log_file_format])
             self.format_fields[log] = fields_names
+        if self.all_errors == {}:
+            self.out_descr.write('No matches.\n')
+            exit()
 
     def find_rare_errors(self):
         timeline, merged_errors = merge_all_errors_by_time(self.all_errors, \
@@ -94,8 +101,8 @@ class LogAnalyzer:
                                 for h in s])
         set_headers.remove("date_time")
         set_headers.remove("line_num")
-        set_headers.remove("filtered_message")
-        list_headers = ["date_time", "line_num", "filtered_message"]
+        set_headers.remove("message")
+        list_headers = ["date_time", "line_num", "message"]
         list_headers += sorted(list(set_headers))
         #print_all_headers(errors_list, list_headers, self.format_fields, out)
         print_only_dt_message(errors_list, out)

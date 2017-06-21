@@ -92,17 +92,18 @@ if __name__ == "__main__":
         tz_info[filename] = '+0000'
     if args.tzinfo is not None:
         if len(args.tzinfo)%2 != 0:
-            print('Wrong number of arguments for time zone (-tz). Must be even')
+            print('Argparser: Wrong number of arguments for time zone (-tz). '+\
+                    'Must be even')
             exit()
         for file_idx in range(0,len(args.tzinfo)-1,2):
             if args.tzinfo[file_idx] not in args.log_filenames:
-                print('Wrong filename "%s" in time zone (was not listed in '+\
-                    'log_filenames)' % args.tzinfo[file_idx])
+                print('Argparser: Wrong filename "%s" in time zone '+ \
+                    '(was not listed in log_filenames)' % args.tzinfo[file_idx])
                 exit()
             elif re.fullmatch(r"^[\+\-][\d]{2}00$", \
                             args.tzinfo[file_idx+1]) \
                         is None:
-                print('Wrong time zone format %s for file %s'% \
+                print('Argparser: Wrong time zone format %s for file %s'% \
                         (args.tzinfo[file_idx+1], args.tzinfo[file_idx]))
                 exit()
             tz_info[args.tzinfo[file_idx]] = args.tzinfo[file_idx+1]
@@ -111,18 +112,18 @@ if __name__ == "__main__":
     time_range_info = []
     if args.time_range is not None:
         if len(args.time_range)%2 != 0:
-            print('Wrong number of arguments for time range (-time). '+\
-                    'Must be even')
+            print('Argparser: Wrong number of arguments for time range ' + \
+                    '(-time). Must be even')
             exit()
         for tr_idx in range(0,len(args.time_range)-1,2):
-            print(args.time_range[tr_idx])
             try:
                 date_time_1 = datetime.strptime(args.time_range[tr_idx], \
                                                 "%Y-%m-%dT%H:%M:%S,%f")
                 date_time_1 = date_time_1.replace(tzinfo=pytz.utc)
                 date_time_1 = date_time_1.timestamp()
             except ValueError:
-                print('Wrong datetime format: %s'% args.time_range[tr_idx])
+                print('Argparser: Wrong datetime format: %s' \
+                        % args.time_range[tr_idx])
                 exit()
             try:
                 date_time_2 = datetime.strptime(args.time_range[tr_idx+1], \
@@ -130,14 +131,15 @@ if __name__ == "__main__":
                 date_time_2 = date_time_2.replace(tzinfo=pytz.utc)
                 date_time_2 = date_time_2.timestamp()
             except ValueError:
-                print('Wrong datetime format: %s'% args.time_range[tr_idx+1])
+                print('Argparser: Wrong datetime format: %s' \
+                        % args.time_range[tr_idx+1])
                 exit()
             if date_time_2 < date_time_1:
-                print("Provided date time range doesn't overlaps: "+\
+                print("Argparser: Provided date time range doesn't overlaps: "+\
                         "%s %s" % (args.time_range[tr_idx], \
                                     args.time_range[tr_idx+1]))
                 exit()
-            time_range_info += [date_time_1, date_time_2]
+            time_range_info += [[date_time_1, date_time_2]]
 
     # VMs
     if args.vm is not None:
@@ -183,7 +185,6 @@ if __name__ == "__main__":
     else:
         format_file = os.path.join("format_templates.txt")
     
-    #The algorythm
     logs = LogAnalyzer(output_descriptor,
                         args.log_directory,
                         args.log_filenames,
@@ -192,9 +193,8 @@ if __name__ == "__main__":
                         vm_info,
                         event_info,
                         host_info,
-                        format_file,
-                        args.warn)
-    logs.load_data()
+                        format_file)
+    logs.load_data(args.warn)
     #now just all relevant lines
     messages = logs.find_rare_errors()
     logs.print_errors(messages, output_file)
