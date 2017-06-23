@@ -33,8 +33,6 @@ class SatisfyConditions(LogLineError):
     pass
 
 class LogLine:
-    #out_descr
-    #fields {"date_time": [], ..., "message": [], "line_number": []}
     def __init__(self, fields_names, line_num, out_descr, time_ranges):
         self.out_descr = out_descr
         self.time_ranges = time_ranges
@@ -88,7 +86,8 @@ class LogLine:
             raise DateTimeFormatError("Warning: Unknown date_time format: "+\
                                         "%s\n" % dt)
         #Check user-defined time range
-        if not any([self.fields['date_time'] >= tr[0] and \
+        if self.time_ranges != [] and \
+            not any([self.fields['date_time'] >= tr[0] and \
                     self.fields['date_time'] <= tr[1] \
                     for tr in self.time_ranges]):
             raise DateTimeNotInTimeRange()
@@ -121,41 +120,23 @@ class LogLine:
             mstext)
 
 def check_constraints(line, events, host_ids, vm_numbers):
-    if not any([keyword in line for keyword in events + \
+    if any([keyword in line for keyword in events + \
                                                 host_ids + \
                                                 vm_numbers + \
-                                                ['ERROR']]):
-        return False
-    else:
+                                                ["ERROR", "Traceback"]]):
         return True
-
-#TODO
-#def parallelize_parsing(logname, format_template, time_zome, out_descr):
-#    file_lines = {}
-#    format_template = re.compile(format_template)
-#    #fields_names = list(sorted(format_template.groupindex.keys()))
-#    #fields_names.remove("message")
-#    fields_names = ["date_time"]
-#    n_threads = 5
-#    f = open(logname, 'r')
-#    n = f.seek(0, 2)
-#    for thread_pos in range(0, n-n%n_threads, n//n_threads):
-#        print(thread_pos)
-#        f.seek(thread_pos)
-#        f.readline()
-#        line = f.readline()
-#        if LogLine(fields_names, out_descr).parse_date_time(time_zome, line)
+    else:
+        return False
 
 def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
                         multiline_line, fields_names, out_descr, time_zome, \
                         time_ranges, events, host_ids, vm_numbers, \
-                        need_to_check, format_template, prev_fields, prev_line,\
+                        format_template, prev_fields, prev_line,\
                         show_warnings):
     if in_traceback_flag:
         in_traceback_flag = False
         prev_line = prev_line + in_traceback_line
-        if need_to_check and not check_constraints(prev_line, \
-                                            events, host_ids, vm_numbers):
+        if not check_constraints(prev_line, events, host_ids, vm_numbers):
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
             mess = LogLine(fields_names, prev_fields['line_num'], \
@@ -177,8 +158,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
     elif multiline_flag:
         multiline_flag = False
         prev_line = multiline_line
-        if need_to_check and not check_constraints(prev_line, \
-                                            events, host_ids, vm_numbers):
+        if not check_constraints(prev_line, events, host_ids, vm_numbers):
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
             mess = LogLine(fields_names, prev_fields['line_num'], \
@@ -210,8 +190,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
                         'Line does not have message field: %s\n' % line)
             return prev_line, [], in_traceback_flag, multiline_flag
     else:
-        if need_to_check and not check_constraints(prev_line, \
-                                            events, host_ids, vm_numbers):
+        if not check_constraints(prev_line, events, host_ids, vm_numbers):
             return prev_line, [], in_traceback_flag, multiline_flag
         line_info = []
         for field in fields_names:
@@ -237,10 +216,6 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
         multiline_flag = False
         #count = 0
         store = True
-        if events + host_ids + vm_numbers == []:
-            need_to_check = False
-        else:
-            need_to_check = True
         for line_num, line in enumerate(f):
             if len(re.findall(r"^(\ *)$", line)) != 0 or ('libvirt' in logname\
                                                      and "OBJECT_" in line):
@@ -259,7 +234,7 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
                             in_traceback_line, multiline_flag, \
                             multiline_line, fields_names, out_descr, \
                             time_zome, time_ranges, events, host_ids, \
-                            vm_numbers, need_to_check, format_template, \
+                            vm_numbers, format_template, \
                             prev_fields, prev_line, show_warnings)
                     if line_info != []:
                         file_lines += [line_info]
@@ -278,7 +253,7 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
                             in_traceback_line, multiline_flag, \
                             multiline_line, fields_names, out_descr, \
                             time_zome, time_ranges, events, host_ids, \
-                            vm_numbers, need_to_check, format_template, \
+                            vm_numbers, format_template, \
                             prev_fields, prev_line, show_warnings)
                     if line_info != []:
                         file_lines += [line_info]
@@ -321,7 +296,7 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
                                 in_traceback_line, multiline_flag, \
                                 multiline_line, fields_names, out_descr, \
                                 time_zome, time_ranges, events, host_ids, \
-                                vm_numbers, need_to_check, format_template, \
+                                vm_numbers, format_template, \
                                 prev_fields, prev_line, show_warnings)
                         if line_info != []:
                             file_lines += [line_info]
@@ -346,7 +321,7 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
                             in_traceback_line, multiline_flag, \
                             multiline_line, fields_names, out_descr, time_zome,\
                             time_ranges, events, host_ids, vm_numbers, \
-                            need_to_check, format_template, prev_fields, \
+                            format_template, prev_fields, \
                             prev_line, show_warnings)
                     if line_info != []:
                         file_lines += [line_info]
@@ -369,7 +344,7 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
                     in_traceback_line, multiline_flag, \
                     multiline_line, fields_names, out_descr, time_zome, \
                     time_ranges, events, host_ids, vm_numbers, \
-                    need_to_check, format_template, prev_fields, \
+                    format_template, prev_fields, \
                     prev_line, show_warnings)
             if line_info != []:
                 file_lines += [line_info]

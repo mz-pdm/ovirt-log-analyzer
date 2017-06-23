@@ -5,26 +5,39 @@ import argparse
 import pytz
 from datetime import datetime
 from lib.LogAnalyzer import LogAnalyzer
+from lib.detect_running_components import find_all_vm_host
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Parse logfiles and summarize errors into standart output.')  
+    parser.add_argument('-l','--list_vm_host',
+                        action = 'store_true',
+                        help='Print all VMs and hosts in given time range (or'+\
+                        ' without it in all log)')
     parser.add_argument('log_directory',
                         metavar='directory',
                         type=str,
                         help='logfiles directory')
-    parser.add_argument('log_filenames',
-                        metavar='filename',
+    parser.add_argument('-f','--filenames',
                         type=str,
                         nargs='+',
                         help='logfiles filenames' + 
                                 '(without expansion)')
+    parser.add_argument( "--default_tzinfo",
+                        type=str,
+                        nargs='+',
+                        help='Specify time zones for all files (will be used)'+\
+                            ' if file datetime does not have tz '+\
+                            '(example: --default_tzinfo -0400). '\
+                            'If not specified - UTC is used')
     parser.add_argument( "--tzinfo",
                         type=str,
                         nargs='+',
-                        help='Specify time zones for files '+\
-                            '(example: -tz engine -0400 vdsm +0100). '\
-                            'Default time zone: UTC')
+                        help='Specify time zones for files (will be used)'+\
+                            ' if file datetime does not have tz '+\
+                            '(example: --tzinfo engine -0400 vdsm +0100). '\
+                            'Default time zone: UTC or set with '+\
+                            '--default_tzinfo')
     parser.add_argument("-p" ,"--print",
                         type=str,
                         help='Where to print the output ' + 
@@ -35,7 +48,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--output_dir",
                         type=str,
                         help='Specify directory to save program output')
-    parser.add_argument('-f', '--format_templates',
+    parser.add_argument('--format_file',
                         type=str,
                         help='Filename with formats of log files ' + 
                                 '(with path and expansion). Default: ' + \
@@ -78,6 +91,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    #Logfilenames
+    if args.filenames is not None:
+        files = args.filenames
+    else:
+        files = os.listdir(args.log_directory)
+        files = [f[:-4] for f in files if f[-3:] == 'log']
     #Output directory
     if args.output_dir is not None:
         if not os.path.isdir(args.output_dir):
@@ -88,15 +107,20 @@ if __name__ == "__main__":
     
     # Time zones
     tz_info = {}
-    for filename in args.log_filenames:
-        tz_info[filename] = '+0000'
+    if args.default_tzinfo is not None:
+        default_tz = args.default_tzinfo
+    else:
+        default_tz = '+0000'
+
+    for filename in files:
+        tz_info[filename] = default_tz
     if args.tzinfo is not None:
         if len(args.tzinfo)%2 != 0:
             print('Argparser: Wrong number of arguments for time zone (-tz). '+\
                     'Must be even')
             exit()
         for file_idx in range(0,len(args.tzinfo)-1,2):
-            if args.tzinfo[file_idx] not in args.log_filenames:
+            if args.tzinfo[file_idx] not in args.files:
                 print('Argparser: Wrong filename "%s" in time zone '+ \
                     '(was not listed in log_filenames)' % args.tzinfo[file_idx])
                 exit()
@@ -180,14 +204,31 @@ if __name__ == "__main__":
         output_file = sys.stdout
     
     #Format templates
-    if args.format_templates is not None:
-        format_file = args.format_templates
+    if args.format_file is not None:
+        format_file = args.format_file
     else:
         format_file = os.path.join("format_templates.txt")
     
+    if args.list_vm_host:
+        vm_ids, host_ids = find_all_vm_host(output_descriptor,
+                            args.log_directory,
+                            files,
+                            tz_info,
+                            time_range_info)
+        output_descriptor.write('------- List of VMs -------\n')
+        for vm in sorted(vm_ids.keys()):
+            output_descriptor.write('ID: %s\n' % vm)
+            output_descriptor.write('name: %s\n' % vm_ids[vm])
+            output_descriptor.write('\n')
+        output_descriptor.write('------- List of Hosts -------\n')
+        for host in sorted(host_ids.keys()):
+            output_descriptor.write('ID: %s\n' % host)
+            output_descriptor.write('name: %s\n' % host_ids[host])
+            output_descriptor.write('\n')
+        exit()
     logs = LogAnalyzer(output_descriptor,
                         args.log_directory,
-                        args.log_filenames,
+                        files,
                         tz_info,
                         time_range_info,
                         vm_info,
