@@ -93,10 +93,10 @@ if __name__ == "__main__":
 
     #Logfilenames
     if args.filenames is not None:
-        files = args.filenames
+        files = sorted(args.filenames)
     else:
         files = os.listdir(args.log_directory)
-        files = [f[:-4] for f in files if f[-3:] == 'log']
+        files = [f for f in files if '.log' in f]
     #Output directory
     if args.output_dir is not None:
         if not os.path.isdir(args.output_dir):

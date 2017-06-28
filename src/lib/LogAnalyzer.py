@@ -1,5 +1,9 @@
 import os
+import sys
+import lzma
 import re
+from functools import partial
+from multiprocessing import Pool, Manager, Queue
 from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import merge_all_errors_by_time
 from lib.represent_statistics import print_only_dt_message, print_all_headers
@@ -20,15 +24,13 @@ class LogAnalyzer:
                 time_ranges, vms, events, hosts, templates_filename):
         self.out_descr = out_descr
         self.directory = directory
-        self.filenames = filenames
-        self.time_zones = tz
         self.time_ranges = time_ranges
         self.vms = vms
         self.events = events
         self.hosts = hosts
         #parse formats file
         formats = open(templates_filename, 'r').read().split('\n')
-        self.formats_templates = {}
+        formats_templates = {}
         format_num = 0
         for line in formats:
             if line[0] == '@':
@@ -40,55 +42,70 @@ class LogAnalyzer:
                     self.out_descr.write("Wrong format of regexp: %s\n" \
                                         % line[1:])
                     exit()
-                self.formats_templates[format_num] = line[1:]
+                formats_templates[format_num] = line[1:]
                 format_name = ''
                 format_num += 1
             else:
                 self.out_descr.write("Wrong format of template: %s\n" % line)
-
-    def load_data(self, show_warnings):
         self.found_logs = []
-        self.all_errors = {}
-        self.format_fields = {}
-        for log in self.filenames:
-            self.out_descr.write('Analysing %s' % os.path.join(
-                self.directory, log) + '.log ...\n')
-            if not os.path.isfile(os.path.join(self.directory, log) + '.log'):
-                self.out_descr.write("File not found: %s\n" % log + '.log')
+        self.log_files_format = []
+        self.time_zones = []
+        for log in filenames:
+            full_filename = os.path.join(self.directory, log)
+            if not os.path.isfile(full_filename):
+                self.out_descr.write("File not found: %s\n" % log)
+                continue
+            #find format of a log
+            if log[-4:] == '.log':
+                f = open(full_filename)
+                line = f.readline()
+                f.close()
+            elif log[-3:] == '.xz':
+                f = lzma.open(full_filename, 'rt')
+                line = f.readline()
+                f.close()
+            else:
+                self.out_descr.write("Unknown file extension: %s" % log)
                 continue
             # save name of actually opened logfile
             self.found_logs += [log]
-            #find format of a log
-            full_filename = os.path.join(self.directory, log) + '.log'
-            line = open(full_filename, 'r').readline()
-            for file_format_num in sorted(self.formats_templates.keys(), \
+            #save log's time zome
+            self.time_zones += [tz[log]]
+            for file_format_num in sorted(formats_templates.keys(), \
                                             key=lambda k:int(k)):
-                prog = re.compile(self.formats_templates[file_format_num])
+                prog = re.compile(formats_templates[file_format_num])
                 result = prog.search(line)
                 if result is not None:
-                    log_file_format = file_format_num
+                    self.log_files_format += [prog]
                     break
-            # gathering all information about errors from a logfile into lists
-            lines_info, fields_names = loop_over_lines(
-                    self.directory, \
-                    log, \
-                    self.formats_templates[log_file_format], \
-                    self.time_zones[log], \
-                    self.out_descr, \
-                    self.events, \
-                    self.hosts,
-                    self.time_ranges, \
-                    self.vms, \
-                    show_warnings)
-            if lines_info == []:
-                continue
-            self.all_errors[log] = lines_info
+
+    def load_data(self, show_warnings):
+        self.all_errors = {}
+        self.format_fields = {}
+        m = Manager()
+        q = m.Queue()
+        partial_process_files = partial(process_files, \
+                                    log=self.found_logs, \
+                                    formats_templates=self.log_files_format, \
+                                    directory=self.directory, \
+                                    time_zones=self.time_zones, \
+                                    out_descr=q, \
+                                    events=self.events, \
+                                    hosts=self.hosts, \
+                                    time_ranges=self.time_ranges, \
+                                    vms=self.vms, \
+                                    show_warnings=show_warnings)
+        idxs = range(len(self.found_logs))
+        with Pool(5) as p:
+            result = p.map(partial_process_files, (idxs))
+        for idx, log in enumerate(self.found_logs):
+            self.all_errors[log] = result[idx][0]
             #saving logfile format fields names
-            format_template = re.compile(self.formats_templates[log_file_format])
-            self.format_fields[log] = fields_names
+            self.format_fields[log] = result[idx][1]
         if self.all_errors == {}:
             self.out_descr.write('No matches.\n')
             exit()
+        print(q.get())
 
     def find_rare_errors(self):
         timeline, merged_errors = merge_all_errors_by_time(self.all_errors, \
@@ -107,6 +124,23 @@ class LogAnalyzer:
         #print_all_headers(errors_list, list_headers, self.format_fields, out)
         print_only_dt_message(errors_list, out)
 
+def process_files(idx, log, formats_templates, directory, time_zones, out_descr, 
+                    events, hosts, time_ranges, vms, show_warnings):
+    # gathering all information about errors from a logfile into lists
+    print('Analysing %s' % os.path.join(directory, log[idx])+'...\n')
+    lines_info, fields_names = loop_over_lines(
+            directory, \
+            log[idx], \
+            formats_templates[idx], \
+            time_zones[idx], \
+            out_descr, \
+            events, \
+            hosts, \
+            time_ranges, \
+            vms, \
+            show_warnings)
+    return lines_info, fields_names
+    
     #def dump_to_json(self, path, outfile,
     #                 template='chart_errors_statistics_template.html'):
     #    pass

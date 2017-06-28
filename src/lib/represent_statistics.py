@@ -33,11 +33,12 @@ def print_all_headers(errors, headers, log_format_headers, out):
         out.write("\n")
 
 def print_only_dt_message(errors, out):
+    max_len = max(len(err[1]) for err in errors)
     for err in errors:
-        out.write("%s | %s | %s\n" % (
-            datetime.utcfromtimestamp(err[0]).strftime("%H-%M-%S.%f %d.%m.%Y"),\
-                                        err[1], err[-1]))
-        out.write("\n")
+        out.write("%12s %s | %*s | %s\n" % (
+            datetime.utcfromtimestamp(err[0]).strftime("%H:%M:%S,%f")[:-3],\
+            datetime.utcfromtimestamp(err[0]).strftime("%d-%m-%Y"),\
+            max_len, err[1], err[-1]))
 
 #def dump_json(log_names, all_errors, filename, template):
 #    html_text = open(template, 'r').read().split('\n')
