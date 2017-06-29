@@ -47,8 +47,8 @@ def find_all_vm_host(output_descriptor,
                         files,
                         tz_info,
                         time_range_info):
-    vm_ids = {}
-    host_ids = {}
+    vm_names = {}
+    host_names = {}
 
     for log in files:
         full_filename = os.path.join(log_directory, log)
@@ -64,30 +64,58 @@ def find_all_vm_host(output_descriptor,
                 parse_date_time(line, tz_info[log], time_range_info):
                 continue
             if 'vmId' in line:
-                res_name = re.findall(r"vmName\ *=\ *(.+?),", line)
-                if len(res_name) == 0:
-                    res_name = re.findall(r"vm\ *=\ *'VM\ *\[(.+?)\]'", line)
-                res_id = re.findall(r"vmId=\'(.+?)\'", line)
-                if len(res_name) == 1 and len(res_id) == 1:
-                    vm_ids[res_id[0]] = res_name[0]
-            elif '=VM]' in line:
-                res_name = re.findall(r"\[(.+?)=VM_NAME\]", line)
-                if len(res_name) == 0:
-                    res_name = re.findall(r"\[(.+?)=VM\]", line)
-                res_id = re.findall(r"vmId=\'(.+?)\'", line)
-                if len(res_name) == 1 and len(res_id) == 1:
-                    vm_ids[res_id[0]] = res_name[0]
+                if re.search(r"vmId=\'(.+?)\'", line) is not None:
+                    res_id = re.search(r"vmId=\'(.+?)\'", line).group(1)
+                elif re.search(
+                        r"\'vmId\'\ *[:=]\ *u*\'(.+?)\'", line) is not None:
+                    res_id = re.search(
+                        r"\'vmId\'\ *[:=]\ *u*\'(.+?)\'", line).group(1)
+                else:
+                    res_id = ''
+                if re.search(r"vmName\ *=\ *(.+?),", line) is not None:
+                    res_name = re.search(r"vmName\ *=\ *(.+?),", line).group(1)
+                elif re.search(r"vm\ *=\ *\'VM\ *\[(.+?)\]\'", line) is not None:
+                    res_name = re.search(
+                        r"vm\ *=\ *\'VM\ *\[(.+?)\]\'", line).group(1)
+                elif re.search(r"\[(.+?)=VM_NAME\]", line) is not None:
+                    res_name = re.search(r"\[(.+?)=VM_NAME\]", line).group(1)
+                elif re.search(r"\[(.+?)=VM\]", line) is not None:
+                    res_name = re.search(r"\[(.+?)=VM\]", line).group(1)
+                elif re.search(
+                        r"\'vmName\'\ *[:=]\ *u*\'(.+?)\'", line) is not None:
+                    res_name = re.search(
+                        r"\'vmName\'\ *[:=]\ *u*\'(.+?)\'", line).group(1)
+                else:
+                    res_name = ''
+                if res_name != '' and res_id != '':
+                    if res_name not in vm_names.keys():
+                        vm_names[res_name] = []
+                    if res_id not in vm_names[res_name]:
+                        vm_names[res_name] += [res_id]
             if 'hostId' in line and 'HostName' in line:
-                res_name = re.findall(r"HostName\ *=\ *(.+?),", line)
-                res_id = re.findall(r"hostId=\'(.+?)\'", line)
-                if len(res_name) == 1 and len(res_id) == 1:
-                    host_ids[res_id[0]] = res_name[0]
+                res_name = re.search(r"HostName\ *=\ *(.+?),", line)
+                if res_name is not None:
+                    res_name = res_name.group(1)
+                else:
+                    res_name = ''
+                res_id = re.search(r"hostId=\'(.+?)\'", line)
+                if res_id is not None:
+                    res_id = res_id.group(1)
+                else:
+                    res_id = ''
+                if res_name != '' and res_id != '':
+                    if res_name not in host_names.keys():
+                       host_names[res_name] = [] 
+                    if res_id not in host_names[res_name]:
+                        host_names[res_name] += [res_id]
             other_vm = re.search(r'VM\ *\'(.{30,40}?)\'\ *\((.*?)\)', line)
             if other_vm is not None:
-                print('>>', other_vm.group(0))
-                vm_ids[other_vm.group(1)] = other_vm.group(2)
+                if other_vm.group(2) not in vm_names.keys():
+                    vm_names[other_vm.group(2)] = []
+                if other_vm.group(1) not in vm_names[other_vm.group(2)]:
+                    vm_names[other_vm.group(2)] += [other_vm.group(1)]
         f.close()
-    return vm_ids, host_ids
+    return vm_names, host_names
 
 def find_vm_subtasks(output_descriptor,
                         log_directory,

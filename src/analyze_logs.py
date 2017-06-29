@@ -210,20 +210,22 @@ if __name__ == "__main__":
         format_file = os.path.join("format_templates.txt")
     
     if args.list_vm_host:
-        vm_ids, host_ids = find_all_vm_host(output_descriptor,
+        vm_names, host_names = find_all_vm_host(output_descriptor,
                             args.log_directory,
                             files,
                             tz_info,
                             time_range_info)
         output_descriptor.write('------- List of VMs -------\n')
-        for vm in sorted(vm_ids.keys()):
-            output_descriptor.write('ID: %s\n' % vm)
-            output_descriptor.write('name: %s\n' % vm_ids[vm])
+        for vm in sorted(vm_names.keys()):
+            output_descriptor.write('name: %s\n' % vm)
+            for i in range(len(vm_names[vm])):
+                output_descriptor.write('ID: %s\n' % vm_names[vm][i])
             output_descriptor.write('\n')
         output_descriptor.write('------- List of Hosts -------\n')
-        for host in sorted(host_ids.keys()):
-            output_descriptor.write('ID: %s\n' % host)
-            output_descriptor.write('name: %s\n' % host_ids[host])
+        for host in sorted(host_names.keys()):
+            output_descriptor.write('name: %s\n' % host)
+            for i in range(len(host_names[host])):
+                output_descriptor.write('ID: %s\n' % host_names[host][i])
             output_descriptor.write('\n')
         exit()
     logs = LogAnalyzer(output_descriptor,
