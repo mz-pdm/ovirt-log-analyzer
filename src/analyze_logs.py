@@ -164,6 +164,7 @@ if __name__ == "__main__":
                                     args.time_range[tr_idx+1]))
                 exit()
             time_range_info += [[date_time_1, date_time_2]]
+        time_range_info = sorted(time_range_info, key=lambda k: k[0])
 
     # VMs
     if args.vm is not None:

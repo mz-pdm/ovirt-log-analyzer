@@ -23,20 +23,30 @@ def merge_all_errors_by_time(all_errors, fields_names):
         timeline[int(error[0]) - int(min_time)] += 1
     return timeline, all_times
 
+#many events in short time
+#errors, warnings
+#check 5-sec window
+#tracebacks
+#repeated actions
+#error, down, warn
+#many messages in the same millisecond
 def calculate_errors_frequency(all_errors, timeline, fields):
-    pass
-    #template = re.compile(\
-    #    r"[^^]\"[^\"]{20,}\"|"+\
-    #    r"[^^]\'[^\']{20,}\'|"+\
-    #    r"[^^]\[+.*\]+|"+\
-    #    r"[^^]\(+.*\)+|"+\
-    #    r"[^^]\{+.*\}+|"+\
-    #    r"[^^]\<+.*\>+|"+\
-    #    r"[^^][^\ \t\,\;\=]{20,}|"+\
-    #    r"[\d]+")
-    #mstext = re.sub(template, '<...>', mstext)
-    #mstext = re.sub(re.compile(
-    #    r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"), '<...>', mstext)
-    #mstext = re.sub(re.compile(
-    #    r"(([\ \.\,\:\;\+\-\{\}]*"+\
-    #    r"\<\.\.\.\>[\ \.\,\:\;\+\-\{\}]*)+)"), '<...>', mstext)
+    template = re.compile(\
+        r"[^^]\"[^\"]{20,}\"|"+\
+        r"[^^]\'[^\']{20,}\'|"+\
+        r"[^^]\[+.*\]+|"+\
+        r"[^^]\(+.*\)+|"+\
+        r"[^^]\{+.*\}+|"+\
+        r"[^^]\<+.*\>+|"+\
+        r"[^^][^\ \t\,\;\=]{20,}|"+\
+        r"[\d]+")
+    msid = fields.index("message")
+    for err in all_errors:
+        mstext = err[msid]
+        mstext = re.sub(template, '<...>', mstext)
+        mstext = re.sub(re.compile(
+            r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"), '<...>', mstext)
+        mstext = re.sub(re.compile(
+            r"(([\ \.\,\:\;\+\-\{\}]*"+\
+            r"\<\.\.\.\>[\ \.\,\:\;\+\-\{\}]*)+)"), '<...>', mstext)
+        print(mstext)

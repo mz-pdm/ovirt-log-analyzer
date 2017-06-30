@@ -5,9 +5,11 @@ import re
 from functools import partial
 from multiprocessing import Pool, Manager, Queue
 from lib.create_error_definition import loop_over_lines
-from lib.errors_statistics import merge_all_errors_by_time
+from lib.errors_statistics import merge_all_errors_by_time, \
+                                    calculate_errors_frequency
 from lib.represent_statistics import print_only_dt_message, print_all_headers
 from lib.link_errors import create_error_graph
+from lib.ProgressPool import ProgressPool
 
 class LogAnalyzer:
     #out_descr
@@ -78,26 +80,26 @@ class LogAnalyzer:
                 if result is not None:
                     self.log_files_format += [prog]
                     break
-
     def load_data(self, show_warnings):
         self.all_errors = {}
         self.format_fields = {}
         m = Manager()
         q = m.Queue()
-        partial_process_files = partial(process_files, \
-                                    log=self.found_logs, \
-                                    formats_templates=self.log_files_format, \
-                                    directory=self.directory, \
-                                    time_zones=self.time_zones, \
-                                    out_descr=q, \
-                                    events=self.events, \
-                                    hosts=self.hosts, \
-                                    time_ranges=self.time_ranges, \
-                                    vms=self.vms, \
-                                    show_warnings=show_warnings)
         idxs = range(len(self.found_logs))
-        with Pool(5) as p:
-            result = p.map(partial_process_files, (idxs))
+        result = ProgressPool(
+                    [(process_files, "thread_{}".format(i), [i, \
+                                        self.found_logs, \
+                                        self.log_files_format, \
+                                        self.directory, \
+                                        self.time_zones, \
+                                        q, \
+                                        self.events, \
+                                        self.hosts, \
+                                        self.time_ranges, \
+                                        self.vms, \
+                                        show_warnings]) \
+                                        for i in idxs], processes = 5)
+            
         for idx, log in enumerate(self.found_logs):
             self.all_errors[log] = result[idx][0]
             #saving logfile format fields names
@@ -105,29 +107,39 @@ class LogAnalyzer:
         if self.all_errors == {}:
             self.out_descr.write('No matches.\n')
             exit()
-        print(q.get())
+        if not q.empty():
+            warns = q.get()
+            for warn in warns:
+                self.out_descr.write(warn)
 
     def find_rare_errors(self):
         timeline, merged_errors = merge_all_errors_by_time(self.all_errors, \
                                                             self.format_fields)
+        try:
+            del self.all_errors
+        except:
+            pass
         self.timeline = timeline
-        return merged_errors
-        
-    def print_errors(self, errors_list, out):
         set_headers = set([h for s in list(self.format_fields.values()) \
                                 for h in s])
         set_headers.remove("date_time")
         set_headers.remove("line_num")
         set_headers.remove("message")
-        list_headers = ["date_time", "line_num", "message"]
-        list_headers += sorted(list(set_headers))
-        #print_all_headers(errors_list, list_headers, self.format_fields, out)
+        self.list_headers = ["date_time", "line_num", "message"] + \
+                                sorted(list(set_headers))
+        #calculate_errors_frequency(merged_errors, self.list_headers)
+        return merged_errors
+        
+    def print_errors(self, errors_list, out):
+        #print_all_headers(errors_list, self.list_headers, self.format_fields, out)
         print_only_dt_message(errors_list, out)
 
 def process_files(idx, log, formats_templates, directory, time_zones, out_descr, 
-                    events, hosts, time_ranges, vms, show_warnings):
+                    events, hosts, time_ranges, vms, show_warnings, \
+                    progressbar = None, text_header = None):
+    text_header.update_mapping(type_op="Parsing:")
     # gathering all information about errors from a logfile into lists
-    print('Analysing %s' % os.path.join(directory, log[idx])+'...\n')
+    #print('Analysing %s' % os.path.join(directory, log[idx])+'...\n')
     lines_info, fields_names = loop_over_lines(
             directory, \
             log[idx], \
@@ -138,7 +150,8 @@ def process_files(idx, log, formats_templates, directory, time_zones, out_descr,
             hosts, \
             time_ranges, \
             vms, \
-            show_warnings)
+            show_warnings,\
+            progressbar)
     return lines_info, fields_names
     
     #def dump_to_json(self, path, outfile,

@@ -32,7 +32,10 @@ class DateTimeNotInTimeRange(LogLineError):
 class SatisfyConditions(LogLineError):
     """Raised when message doesn't contain defined VM, host or event"""
     pass
-
+class DateTimeGreaterTimeRanges(LogLineError):
+    """Raised when datetime is greater all defined time ranges (there is no \
+    need to continue parsing lines)"""
+    pass
 class LogLine:
     def __init__(self, fields_names, line_num, out_descr, time_ranges):
         self.out_descr = out_descr
@@ -91,7 +94,11 @@ class LogLine:
             not any([self.fields['date_time'] >= tr[0] and \
                     self.fields['date_time'] <= tr[1] \
                     for tr in self.time_ranges]):
-            raise DateTimeNotInTimeRange()
+            if all([self.fields['date_time'] > tr[1] \
+                    for tr in self.time_ranges]):
+                raise DateTimeGreaterTimeRanges()
+            else:
+                raise DateTimeNotInTimeRange()
 
     def parse_fields(self, pattern, line):
         line = re.sub(r'^[\t\ ]+|[\t\ ]+$', '', line)
@@ -121,10 +128,11 @@ class LogLine:
             mstext)
 
 def check_constraints(line, events, host_ids, vm_numbers):
-    if any([keyword in line for keyword in events + \
+    if any([keyword.upper() in line.upper() for keyword in events + \
                                                 host_ids + \
                                                 vm_numbers + \
-                                                ["ERROR", "Traceback"]]):
+                                                ["ERROR", "Traceback",\
+                                                "down", "warn"]]):
         return True
     else:
         return False
@@ -200,7 +208,8 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
         return prev_line, line_info, in_traceback_flag, multiline_flag
 
 def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
-                    events, host_ids, time_ranges, vm_numbers, show_warnings):
+                    events, host_ids, time_ranges, vm_numbers, show_warnings, \
+                    progressbar=lambda x: x):
     full_filename = os.path.join(directory, logname)
     #format_template = re.compile(format_template)
     fields_names = list(sorted(format_template.groupindex.keys()))
@@ -213,6 +222,10 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
         f = open(full_filename)
     elif logname[-3:] == '.xz':
         f = lzma.open(full_filename, 'rt')
+    f.seek(0, os.SEEK_END)
+    num = f.tell()
+    f.seek(0,0)
+    prev_pos = f.tell()
     prev_fields = {}
     in_traceback_line = ''
     in_traceback_flag = False
@@ -220,10 +233,14 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
     multiline_flag = False
     #count = 0
     store = True
+    progressbar.start(max_value=num)
+    count = 0
     for line_num, line in enumerate(f):
         if len(re.findall(r"^(\ *)$", line)) != 0 or ('libvirt' in logname\
                                                  and "OBJECT_" in line):
             #the line is empty
+            count += len(line)
+            progressbar.update(count)
             continue
         line_data = LogLine(fields_names, logname+':'+str(line_num), \
                             out_descr, time_ranges)
@@ -266,14 +283,32 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
                     #out.write(prev_line)
                     #out.write('\n')
             store = False
+        except DateTimeGreaterTimeRanges:
+            if store and prev_fields != {}:
+                prev_line, line_info, \
+                in_traceback_flag, \
+                multiline_flag = create_line_info(in_traceback_flag, \
+                        in_traceback_line, multiline_flag, \
+                        multiline_line, fields_names, out_descr, \
+                        time_zome, time_ranges, events, host_ids, \
+                        vm_numbers, format_template, \
+                        prev_fields, prev_line, show_warnings)
+                if line_info != []:
+                    file_lines += [line_info]
+                    #count += 1
+                    #out.write('>>>%d'%count)
+                    #out.write(prev_line)
+                    #out.write('\n')
+            count = num
+            progressbar.update(count)
+            break
         except (DateTimeNotFoundError, DateTimeFormatError) as \
                                         exception_message:
             if prev_fields == {}:
                 if show_warnings:
                     out_descr.put(str(line_num) + ': ')
                     out_descr.put(str(exception_message))
-                continue
-            if in_traceback_flag:
+            elif in_traceback_flag:
                 #Remember a line if we are in a traceback. 
                 #The line will be concatenated with a message
                 line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', ' ', line)
@@ -340,6 +375,9 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
             if show_warnings:
                 out_descr.put('Warning: parse_message: '+\
                         'Line does not have message field: %s\n' % line)
+        count += len(line)
+        progressbar.update(count)
+
     #adding the last line
     if store and prev_fields != {}:
         prev_line, line_info, \
@@ -357,4 +395,5 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
             #out.write(prev_line)
             #out.write('\n')
     f.close()
+    progressbar.finish()
     return file_lines, fields_names + ['message']
