@@ -155,7 +155,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
             line_info = []
             for field in fields_names:
                 line_info += [prev_fields[field]]
-            line_info += [mess.fields["message"]]
+            #line_info += [mess.fields["message"]]
             return prev_line, line_info, in_traceback_flag, multiline_flag
         except MessageNotFoundError as exception_message:
             if show_warnings:
@@ -178,7 +178,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
             line_info = []
             for field in fields_names:
                 line_info += [mess.fields[field]]
-            line_info += [mess.fields["message"]]
+            #line_info += [mess.fields["message"]]
             return prev_line, line_info, in_traceback_flag, multiline_flag
         except (DateTimeNotFoundError, DateTimeFormatError) as \
                                                 exception_message:
@@ -204,7 +204,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag, \
         line_info = []
         for field in fields_names:
             line_info += [prev_fields[field]]
-        line_info += [prev_fields["message"]]
+        #line_info += [prev_fields["message"]]
         return prev_line, line_info, in_traceback_flag, multiline_flag
 
 def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
@@ -215,7 +215,7 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
     fields_names = list(sorted(format_template.groupindex.keys()))
     fields_names.remove("message")
     fields_names.remove("date_time")
-    fields_names = ['date_time', 'line_num'] + fields_names
+    fields_names = ['date_time', 'line_num', 'message'] + fields_names
     #out = open('result_'+logname+'.txt', 'w')
     file_lines = []
     if logname[-4:] == '.log':
@@ -396,4 +396,4 @@ def loop_over_lines(directory, logname, format_template, time_zome, out_descr, \
             #out.write('\n')
     f.close()
     progressbar.finish()
-    return file_lines, fields_names + ['message']
+    return file_lines, fields_names# + ['message']

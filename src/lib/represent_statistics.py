@@ -19,7 +19,6 @@ import numpy as np
 import re
 import json
 from datetime import datetime
-from tabulate import tabulate
 
 def print_all_headers(errors, headers, log_format_headers, out):
     for err in errors:
@@ -32,13 +31,16 @@ def print_all_headers(errors, headers, log_format_headers, out):
                 out.write("%s %s\n" % (h, ''))
         out.write("\n")
 
-def print_only_dt_message(errors, out):
+def print_only_dt_message(errors, out, headers):
     max_len = max(len(err[1]) for err in errors)
+    dt_idx = headers.index("date_time")
+    line_idx = headers.index("line_num")
+    msg_idx = headers.index("message")
     for err in errors:
         out.write("%12s %s | %*s | %s\n" % (
-            datetime.utcfromtimestamp(err[0]).strftime("%H:%M:%S,%f")[:-3],\
-            datetime.utcfromtimestamp(err[0]).strftime("%d-%m-%Y"),\
-            max_len, err[1], err[-1]))
+            datetime.utcfromtimestamp(err[dt_idx]).strftime("%H:%M:%S,%f")[:-3],\
+            datetime.utcfromtimestamp(err[dt_idx]).strftime("%d-%m-%Y"),\
+            max_len, err[line_idx], err[msg_idx]))
 
 #def dump_json(log_names, all_errors, filename, template):
 #    html_text = open(template, 'r').read().split('\n')

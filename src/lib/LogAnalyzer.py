@@ -87,7 +87,7 @@ class LogAnalyzer:
         q = m.Queue()
         idxs = range(len(self.found_logs))
         result = ProgressPool(
-                    [(process_files, "thread_{}".format(i), [i, \
+                    [(process_files, "{}".format(self.found_logs[i]), [i, \
                                         self.found_logs, \
                                         self.log_files_format, \
                                         self.directory, \
@@ -113,26 +113,19 @@ class LogAnalyzer:
                 self.out_descr.write(warn)
 
     def find_rare_errors(self):
-        timeline, merged_errors = merge_all_errors_by_time(self.all_errors, \
-                                                            self.format_fields)
+        timeline, merged_errors, self.all_fields = merge_all_errors_by_time(
+                                            self.all_errors, self.format_fields)
         try:
             del self.all_errors
         except:
             pass
-        self.timeline = timeline
-        set_headers = set([h for s in list(self.format_fields.values()) \
-                                for h in s])
-        set_headers.remove("date_time")
-        set_headers.remove("line_num")
-        set_headers.remove("message")
-        self.list_headers = ["date_time", "line_num", "message"] + \
-                                sorted(list(set_headers))
-        #calculate_errors_frequency(merged_errors, self.list_headers)
+        #self.timeline = timeline
+        #calculate_errors_frequency(merged_errors, timeline, headers)
         return merged_errors
         
     def print_errors(self, errors_list, out):
         #print_all_headers(errors_list, self.list_headers, self.format_fields, out)
-        print_only_dt_message(errors_list, out)
+        print_only_dt_message(errors_list, out, self.all_fields)
 
 def process_files(idx, log, formats_templates, directory, time_zones, out_descr, 
                     events, hosts, time_ranges, vms, show_warnings, \
