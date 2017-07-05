@@ -49,25 +49,74 @@ def merge_all_errors_by_time(all_errors, fields_names):
 #repeated actions
 #error, down, warn
 #many messages in the same millisecond
-def calculate_errors_frequency(all_errors, timeline, fields):
+
+def return_nonsimilar_part(str1, str2, keywords):
+    str1_word = str1.split(' ')
+    str2_word = str2.split(' ')
+    set1 = set(str1_word)
+    set2 = set(str2_word)
+    diff1 = set1-set2
+    diff2 = set2-set1
+    #print('diff1 =',diff1, 'diff2 =',diff2)
+    return diff1, diff2
+
+import editdistance
+import json
+from sklearn.cluster import DBSCAN
+def calculate_events_frequency(all_errors, keywords, timeline, fields):
     template = re.compile(\
-        r"[^^]\"[^\"]{20,}\"|"+\
-        r"[^^]\'[^\']{20,}\'|"+\
-        r"[^^]\[+.*\]+|"+\
+        #r"[^^][^\ \t\,\;\=]{20,}|"+\
+        #r"[^^]\"[^\"]{30,}\"|"+\
+        #r"[^^]\'[^\']{30,}\'|"+\
         r"[^^]\(+.*\)+|"+\
+        r"[^^]\[+.*\]+|"+\
         r"[^^]\{+.*\}+|"+\
-        r"[^^]\<+.*\>+|"+\
-        r"[^^][^\ \t\,\;\=]{20,}|"+\
-        r"[\d]+")
-    #print(all_errors)
-    #print(fields)
+        r"[^^]\<+.*\>+")
+        #r"[\d]+")
     msid = fields.index("message")
-    for err in all_errors:
-        mstext = err[msid]
-        mstext = re.sub(template, '<...>', mstext)
+    timeid = fields.index("date_time")
+    events = {}
+    for err_id in range(len(all_errors)):
+        mstext = all_errors[err_id][msid]
+        mstext = re.sub(template, '<...>', mstext)#<...>
+        for keyword in keywords:
+            mstext = re.sub(keyword, '<...>', mstext)
         mstext = re.sub(re.compile(
             r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"), '<...>', mstext)
         mstext = re.sub(re.compile(
             r"(([\ \.\,\:\;\+\-\{\}]*"+\
             r"\<\.\.\.\>[\ \.\,\:\;\+\-\{\}]*)+)"), '<...>', mstext)
-        #print(mstext)
+        if mstext not in events.keys():
+            events[mstext] = []
+        events[mstext] += [all_errors[err_id][timeid]]
+
+    messages = sorted(events.keys())
+    similar = np.zeros((len(messages), len(messages)))
+    for err0 in range(len(messages)):
+        for err1 in range(err0+1, len(messages)):
+            dist = editdistance.eval(messages[err0].lower(), 
+                                        messages[err1].lower())
+            similar[err0, err1] = np.round(dist/len(messages[err0]),1)
+            similar[err1, err0] = np.round(dist/len(messages[err1]),1)
+            #similar[err0, err1] = np.round(((max_len - \
+            #                        editdistance.eval(messages[err0].lower(), \
+            #                        messages[err1].lower()))/max_len)*100,1)
+            #if similar[err0, err1] > 80:
+                #print('------', similar[err0, err1], '------')
+                #print(messages[err0])
+                #print(messages[err1])
+                #return_nonsimilar_part(messages[err0], messages[err1], keywords)
+                #print()
+    np.fill_diagonal(similar, 0)
+    #print(similar)
+    
+    d = DBSCAN(metric='precomputed', min_samples=2)
+    clust = d.fit_predict(similar)
+    #print(clust)
+    #print(list(clust).count(-1), 'of', len(list(clust)))
+    f = open("result.json", 'w')
+    messages = sorted(zip(clust,messages), key=lambda k:k[0])
+    for mid in messages:
+        f.write("%d : %s\n" % (mid[0], mid[1]))
+    f.close()
+    #json.dump(events, f, indent=4, sort_keys=True)

@@ -210,12 +210,12 @@ if __name__ == "__main__":
     else:
         format_file = os.path.join("format_templates.txt")
     
-    if args.list_vm_host:
-        vm_names, host_names = find_all_vm_host(output_descriptor,
+    vm_names, host_names = find_all_vm_host(output_descriptor,
                             args.log_directory,
                             files,
                             tz_info,
                             time_range_info)
+    if args.list_vm_host:
         output_descriptor.write('------- List of VMs -------\n')
         for vm in sorted(vm_names.keys()):
             output_descriptor.write('name: %s\n' % vm)
@@ -237,7 +237,9 @@ if __name__ == "__main__":
                         vm_info,
                         event_info,
                         host_info,
-                        format_file)
+                        format_file,
+                        vm_names, 
+                        host_names)
     logs.load_data(args.warn)
     #now just all relevant lines
     messages = logs.find_rare_errors()

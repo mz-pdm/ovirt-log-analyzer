@@ -6,7 +6,7 @@ from functools import partial
 from multiprocessing import Pool, Manager, Queue
 from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import merge_all_errors_by_time, \
-                                    calculate_errors_frequency
+                                    calculate_events_frequency
 from lib.represent_statistics import print_only_dt_message, print_all_headers
 from lib.link_errors import create_error_graph
 from lib.ProgressPool import ProgressPool
@@ -23,13 +23,16 @@ class LogAnalyzer:
     #all_errors{"log1":...,}
     #format_fields{'log1':...}
     def __init__(self, out_descr, directory, filenames, tz, \
-                time_ranges, vms, events, hosts, templates_filename):
+                time_ranges, vms, events, hosts, templates_filename, \
+                vm_names, host_names):
         self.out_descr = out_descr
         self.directory = directory
         self.time_ranges = time_ranges
         self.vms = vms
         self.events = events
         self.hosts = hosts
+        self.all_vms = vm_names
+        self.all_hosts = host_names
         #parse formats file
         formats = open(templates_filename, 'r').read().split('\n')
         formats_templates = {}
@@ -119,8 +122,14 @@ class LogAnalyzer:
             del self.all_errors
         except:
             pass
-        #self.timeline = timeline
-        #calculate_errors_frequency(merged_errors, timeline, headers)
+        self.timeline = timeline
+        keywords = set(self.events + self.hosts + self.vms + \
+                        list(self.all_vms.keys()) + \
+                        [i for s in self.all_vms.values() for i in s] + \
+                        list(self.all_hosts.keys()) + \
+                        [i for s in self.all_hosts.values() for i in s])
+        calculate_events_frequency(merged_errors, keywords, timeline, 
+                                    self.all_fields)
         return merged_errors
         
     def print_errors(self, errors_list, out):
