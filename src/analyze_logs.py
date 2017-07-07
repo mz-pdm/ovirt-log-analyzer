@@ -5,7 +5,7 @@ import argparse
 import pytz
 from datetime import datetime
 from lib.LogAnalyzer import LogAnalyzer
-from lib.detect_running_components import find_all_vm_host
+from lib.detect_running_components import find_vms_tasks_hosts
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     else:
         format_file = os.path.join("format_templates.txt")
     
-    vm_names, host_names = find_all_vm_host(output_descriptor,
+    vm_names, host_names, tasks = find_vms_tasks_hosts(output_descriptor,
                             args.log_directory,
                             files,
                             tz_info,

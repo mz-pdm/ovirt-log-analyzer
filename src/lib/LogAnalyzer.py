@@ -83,6 +83,7 @@ class LogAnalyzer:
                 if result is not None:
                     self.log_files_format += [prog]
                     break
+
     def load_data(self, show_warnings):
         self.all_errors = {}
         self.format_fields = {}

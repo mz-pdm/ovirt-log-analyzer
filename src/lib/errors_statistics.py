@@ -57,7 +57,6 @@ def return_nonsimilar_part(str1, str2, keywords):
     set2 = set(str2_word)
     diff1 = set1-set2
     diff2 = set2-set1
-    #print('diff1 =',diff1, 'diff2 =',diff2)
     return diff1, diff2
 
 import editdistance
@@ -98,17 +97,7 @@ def calculate_events_frequency(all_errors, keywords, timeline, fields):
                                         messages[err1].lower())
             similar[err0, err1] = np.round(dist/len(messages[err0]),1)
             similar[err1, err0] = np.round(dist/len(messages[err1]),1)
-            #similar[err0, err1] = np.round(((max_len - \
-            #                        editdistance.eval(messages[err0].lower(), \
-            #                        messages[err1].lower()))/max_len)*100,1)
-            #if similar[err0, err1] > 80:
-                #print('------', similar[err0, err1], '------')
-                #print(messages[err0])
-                #print(messages[err1])
-                #return_nonsimilar_part(messages[err0], messages[err1], keywords)
-                #print()
     np.fill_diagonal(similar, 0)
-    #print(similar)
     
     d = DBSCAN(metric='precomputed', min_samples=2)
     clust = d.fit_predict(similar)
