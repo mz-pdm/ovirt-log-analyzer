@@ -5,9 +5,15 @@ from multiprocessing import Pool
 def runner_parallel(inp):
     function, args, name, queue, order_idx = inp
     idx = int(multiprocessing.current_process().name.split("-")[1])
-    custom_text = progressbar.FormatCustomText('{} - %(type_op)s: '.format(name), dict(type_op = "Start"))
-    widget_style = [custom_text, progressbar.Percentage(), ' (', progressbar.SimpleProgress(), ')', ' ', progressbar.Bar(), ' ', progressbar.Timer(), ' ', progressbar.AdaptiveETA()]
-    args += [ProgressBar(widgets = widget_style, fd = Writer((0, idx - 1), queue)), custom_text]
+    custom_text = progressbar.FormatCustomText(
+                            '{} - %(type_op)s: '.format(name), \
+                            dict(type_op = "Start"))
+    widget_style = [custom_text, progressbar.Percentage(), ' (', \
+                            progressbar.SimpleProgress(), ')', ' ', \
+                            progressbar.Bar(), ' ', progressbar.Timer(), ' ', \
+                            progressbar.AdaptiveETA()]
+    args += [ProgressBar(widgets = widget_style, fd = Writer((0, idx - 1), \
+                            queue)), custom_text]
     return (function(*args), order_idx)
 
 class Writer(object):
@@ -28,8 +34,12 @@ def ProgressPool(run_args, processes = 2):
     manager = multiprocessing.Manager()
     the_queue = manager.Queue()
     result = []
-    widget_style = ['All: ', progressbar.Percentage(), ' (', progressbar.SimpleProgress(), ')', ' ', progressbar.Bar(), ' ', progressbar.Timer(), ' ', progressbar.AdaptiveETA()]
-    run_args = [(func, args, name, the_queue, order_idx) for order_idx, (func, name, args) in enumerate(run_args)]
+    widget_style = ['All: ', progressbar.Percentage(), ' (', \
+                            progressbar.SimpleProgress(), ')', ' ', \
+                            progressbar.Bar(), ' ', progressbar.Timer(), ' ', \
+                            progressbar.AdaptiveETA()]
+    run_args = [(func, args, name, the_queue, order_idx) \
+                    for order_idx, (func, name, args) in enumerate(run_args)]
     if len(run_args) < processes:
         processes = len(run_args)
     if processes == 0:
@@ -38,7 +48,8 @@ def ProgressPool(run_args, processes = 2):
         interface = curses.initscr()
         curses.noecho()
         curses.cbreak()
-        main_pb = ProgressBar(widgets = widget_style, fd = Writer((0, 0), interface = interface), max_value=len(run_args))
+        main_pb = ProgressBar(widgets = widget_style, fd = Writer((0, 0), \
+                            interface = interface), max_value=len(run_args))
         with Pool(processes = processes) as pool:
             workers = pool.imap_unordered(runner_parallel, run_args)
             idx = 0

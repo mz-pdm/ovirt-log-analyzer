@@ -1,9 +1,7 @@
-import os
-import sys
-import lzma
+import os, sys
 import re
-from functools import partial
-from multiprocessing import Pool, Manager, Queue
+import lzma
+from multiprocessing import Manager, Queue
 from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import merge_all_errors_by_time, \
                                     calculate_events_frequency
@@ -90,6 +88,7 @@ class LogAnalyzer:
         m = Manager()
         q = m.Queue()
         idxs = range(len(self.found_logs))
+        print(self.found_logs)
         result = ProgressPool(
                     [(process_files, "{}".format(self.found_logs[i]), [i, \
                                         self.found_logs, \
@@ -130,7 +129,7 @@ class LogAnalyzer:
                         list(self.all_hosts.keys()) + \
                         [i for s in self.all_hosts.values() for i in s])
         calculate_events_frequency(merged_errors, keywords, timeline, 
-                                    self.all_fields)
+                                    self.all_fields, self.directory)
         return merged_errors
         
     def print_errors(self, errors_list, out):

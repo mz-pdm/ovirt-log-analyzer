@@ -5,10 +5,9 @@
         sender, thread, event, message)
 """
 import numpy as np
-import pytz
+import os, re
 import lzma
-import re
-import os
+import pytz
 from datetime import datetime
 
 class LogLineError(Exception):

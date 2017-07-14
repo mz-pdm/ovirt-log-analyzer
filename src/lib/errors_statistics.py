@@ -10,7 +10,6 @@ This module contains methods of collecting errors' statistics
 """
 import numpy as np
 import re
-import matplotlib.pyplot as plt
 
 def merge_all_errors_by_time(all_errors, fields_names):
     all_times = []
@@ -62,7 +61,7 @@ def return_nonsimilar_part(str1, str2, keywords):
 import editdistance
 import json
 from sklearn.cluster import DBSCAN
-def calculate_events_frequency(all_errors, keywords, timeline, fields):
+def calculate_events_frequency(all_errors, keywords, timeline, fields, dirname):
     template = re.compile(\
         #r"[^^][^\ \t\,\;\=]{20,}|"+\
         #r"[^^]\"[^\"]{30,}\"|"+\
@@ -99,13 +98,17 @@ def calculate_events_frequency(all_errors, keywords, timeline, fields):
             similar[err1, err0] = np.round(dist/len(messages[err1]),1)
     np.fill_diagonal(similar, 0)
     
-    d = DBSCAN(metric='precomputed', min_samples=2)
+    d = DBSCAN(metric='precomputed', min_samples=2, eps=0.65)
     clust = d.fit_predict(similar)
     #print(clust)
     #print(list(clust).count(-1), 'of', len(list(clust)))
-    f = open("result.json", 'w')
+    f = open("result_"+dirname.split('/')[-2]+".txt", 'w')
     messages = sorted(zip(clust,messages), key=lambda k:k[0])
+    cur_mid = messages[0][0]
     for mid in messages:
+        if mid[0] != cur_mid:
+            f.write('\n')
+            cur_mid = mid[0]
         f.write("%d : %s\n" % (mid[0], mid[1]))
     f.close()
     #json.dump(events, f, indent=4, sort_keys=True)

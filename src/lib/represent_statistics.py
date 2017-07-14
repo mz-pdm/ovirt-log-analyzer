@@ -16,8 +16,7 @@ This module contains methods of saving errors' statistics
         error message)
 """
 import numpy as np
-import re
-import json
+import re, json
 from datetime import datetime
 
 def print_all_headers(errors, headers, log_format_headers, out):

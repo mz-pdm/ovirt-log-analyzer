@@ -1,47 +1,48 @@
 import os
-import re
 import sys
 import argparse
+import re
 import pytz
 from datetime import datetime
 from lib.LogAnalyzer import LogAnalyzer
 from lib.detect_running_components import find_vms_tasks_hosts
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='Parse logfiles and summarize errors into standart output.')  
-    parser.add_argument('-l','--list_vm_host',
-                        action = 'store_true',
-                        help='Print all VMs and hosts in given time range (or'+\
-                        ' without it in all log)')
+        description='Parse logfiles and summarize errors into standart ' +
+        'output.')
+    parser.add_argument('-l', '--list_vm_host',
+                        action='store_true',
+                        help='Print all VMs and hosts in given time range ' +
+                        '(or without it in all log)')
     parser.add_argument('log_directory',
                         metavar='directory',
                         type=str,
                         help='logfiles directory')
-    parser.add_argument('-f','--filenames',
+    parser.add_argument('-f', '--filenames',
                         type=str,
                         nargs='+',
-                        help='logfiles filenames' + 
-                                '(without expansion)')
-    parser.add_argument( "--default_tzinfo",
+                        help='logfiles filenames' +
+                        '(without expansion)')
+    parser.add_argument("--default_tzinfo",
                         type=str,
                         nargs='+',
-                        help='Specify time zones for all files (will be used)'+\
-                            ' if file datetime does not have tz '+\
-                            '(example: --default_tzinfo -0400). '\
-                            'If not specified - UTC is used')
-    parser.add_argument( "--tzinfo",
+                        help='Specify time zones for all files ' +
+                        '(will be used) if file datetime does not have ' +
+                        'time zome ' +
+                        '(example: --default_tzinfo -0400). ' +
+                        'If not specified - UTC is used')
+    parser.add_argument("--tzinfo",
                         type=str,
                         nargs='+',
-                        help='Specify time zones for files (will be used)'+\
-                            ' if file datetime does not have tz '+\
-                            '(example: --tzinfo engine -0400 vdsm +0100). '\
-                            'Default time zone: UTC or set with '+\
-                            '--default_tzinfo')
-    parser.add_argument("-p" ,"--print",
+                        help='Specify time zones for files (will be used)' +
+                        ' if file datetime does not have tz ' +
+                        '(example: --tzinfo engine -0400 vdsm +0100). ' +
+                        'Default time zone: UTC or set with ' +
+                        '--default_tzinfo')
+    parser.add_argument("-p", "--print",
                         type=str,
                         help='Where to print the output ' + 
-                                '(filename, "stdout" or "stderr")')
+                        '(filename, "stdout" or "stderr")')
     parser.add_argument("-o", "--out",
                         type=str,
                         help='Directs the output to the file')
@@ -51,15 +52,15 @@ if __name__ == "__main__":
     parser.add_argument('--format_file',
                         type=str,
                         help='Filename with formats of log files ' + 
-                                '(with path and expansion). Default: ' + \
-                                '"format_templates.txt"')  
+                        '(with path and expansion). Default: ' +
+                        '"format_templates.txt"')  
     parser.add_argument("-t", "--time_range",
                         type=str,
                         nargs='+',
-                        help='Specify time range(s) (in UTC) for analysis. ' + \
-                        'Type even number of space-separated times (1st for '+\
-                        'time range beginning and 2nd for ending) in the ' + \
-                        'following format (example) ' + \
+                        help='Specify time range(s) (in UTC) for analysis. ' +
+                        'Type even number of space-separated times (1st for ' +
+                        'time range beginning and 2nd for ending) in the ' +
+                        'following format (example) ' +
                         '2000-01-31T21:10:00,123 2000-01-31T22:10:00,123')
     parser.add_argument("--vm",
                         type=str,
@@ -72,23 +73,18 @@ if __name__ == "__main__":
     parser.add_argument("--event",
                         type=str,
                         nargs='+',
-                        help='Specify event(s) to find information about'+\
-                        ' (raw text of event, part of message or a key word),'+\
-                        ' use quotes for messages with spaces '+\
+                        help='Specify event(s) to find information about' +
+                        ' (raw text of event, part of message or a key word),' +
+                        ' use quotes for messages with spaces ' +
                         '(example: --event warning "down with error" failure)')
-    parser.add_argument('-w','--warn',
-                        action = 'store_true',
-                        help='Print parser warnings about different log ' + \
+    parser.add_argument('-w', '--warn',
+                        action='store_true',
+                        help='Print parser warnings about different log ' +
                             'lines format')
     #parser.add_argument("-chart", "--chart_filename",
     #                    type=str,
     #                    help="Create html file with chart" + 
-    #                            "represented errors statistics")
-    #parser.add_argument("-g", "--graph",
-    #                    type=str,
-    #                    help="Create dot file and pdf with graph" + 
-    #                            "of linked errors")
-
+    #                    "represented errors statistics")
     args = parser.parse_args()
 
     #Logfilenames
@@ -116,12 +112,12 @@ if __name__ == "__main__":
         tz_info[filename] = default_tz
     if args.tzinfo is not None:
         if len(args.tzinfo)%2 != 0:
-            print('Argparser: Wrong number of arguments for time zone (-tz). '+\
+            print('Argparser: Wrong number of arguments for time zone (-tz). ' +
                     'Must be even')
             exit()
         for file_idx in range(0,len(args.tzinfo)-1,2):
             if args.tzinfo[file_idx] not in args.files:
-                print('Argparser: Wrong filename "%s" in time zone '+ \
+                print('Argparser: Wrong filename "%s" in time zone ' +
                     '(was not listed in log_filenames)' % args.tzinfo[file_idx])
                 exit()
             elif re.fullmatch(r"^[\+\-][\d]{2}00$", \
@@ -136,12 +132,12 @@ if __name__ == "__main__":
     time_range_info = []
     if args.time_range is not None:
         if len(args.time_range)%2 != 0:
-            print('Argparser: Wrong number of arguments for time range ' + \
+            print('Argparser: Wrong number of arguments for time range ' +
                     '(-time). Must be even')
             exit()
         for tr_idx in range(0,len(args.time_range)-1,2):
             try:
-                date_time_1 = datetime.strptime(args.time_range[tr_idx], \
+                date_time_1 = datetime.strptime(args.time_range[tr_idx],
                                                 "%Y-%m-%dT%H:%M:%S,%f")
                 date_time_1 = date_time_1.replace(tzinfo=pytz.utc)
                 date_time_1 = date_time_1.timestamp()
@@ -150,7 +146,7 @@ if __name__ == "__main__":
                         % args.time_range[tr_idx])
                 exit()
             try:
-                date_time_2 = datetime.strptime(args.time_range[tr_idx+1], \
+                date_time_2 = datetime.strptime(args.time_range[tr_idx+1],
                                                 "%Y-%m-%dT%H:%M:%S,%f")
                 date_time_2 = date_time_2.replace(tzinfo=pytz.utc)
                 date_time_2 = date_time_2.timestamp()
@@ -159,8 +155,8 @@ if __name__ == "__main__":
                         % args.time_range[tr_idx+1])
                 exit()
             if date_time_2 < date_time_1:
-                print("Argparser: Provided date time range doesn't overlaps: "+\
-                        "%s %s" % (args.time_range[tr_idx], \
+                print("Argparser: Provided date time range doesn't overlaps: " +
+                        "%s %s" % (args.time_range[tr_idx],
                                     args.time_range[tr_idx+1]))
                 exit()
             time_range_info += [[date_time_1, date_time_2]]
@@ -249,12 +245,3 @@ if __name__ == "__main__":
     #if args.chart_filename is not None:
     #    output_descriptor.write('Creating a chart...\n')
     #    logs.dump_to_json(output_directory, args.chart_filename)
-    #if args.graph is not None:
-    #    output_descriptor.write(
-    #    'Linking errors and creating a .dot file with graph...\n')
-    #    logs.create_errors_graph(output_directory, args.graph)
-    #    output_descriptor.write('Run "dot -Tpdf ' + 
-    #                        os.path.join(output_directory, args.graph) + 
-    #                        '.dot -o ' + 
-    #                        os.path.join(output_directory, args.graph) + 
-    #                        '.pdf" to plot the graph\n')
