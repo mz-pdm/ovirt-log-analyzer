@@ -45,7 +45,7 @@ class SatisfyConditions(LogLineError):
 
 
 class DateTimeGreaterTimeRanges(LogLineError):
-    """Raised when datetime is greater all defined time ranges (there is no \
+    """Raised when datetime is greater all defined time ranges (there is no
     need to continue parsing lines)"""
     pass
 

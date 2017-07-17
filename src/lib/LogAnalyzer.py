@@ -33,7 +33,7 @@ class LogAnalyzer:
         self.hosts = hosts
         # parse formats file
         formats = open(templates_filename, 'r').read().split('\n')
-        formats_templates = {}
+        self.formats_templates = []
         format_num = 0
         for line in formats:
             if line[0] == '@':
@@ -45,7 +45,8 @@ class LogAnalyzer:
                     self.out_descr.write("Wrong format of regexp: %s\n" %
                                          line[1:])
                     exit()
-                formats_templates[format_num] = line[1:]
+                self.formats_templates += [{'name': format_name,
+                                       'regexp':line[1:]}]
                 format_name = ''
                 format_num += 1
             else:
@@ -74,13 +75,45 @@ class LogAnalyzer:
             self.found_logs += [log]
             # save log's time zome
             self.time_zones += [tz[log]]
-            for file_format_num in sorted(formats_templates.keys(),
-                                          key=lambda k: int(k)):
-                prog = re.compile(formats_templates[file_format_num])
+            for file_format_num in range(len(self.formats_templates)):
+                prog = re.compile(self.formats_templates[file_format_num][
+                                                    'regexp'])
                 result = prog.search(line)
                 if result is not None:
                     self.log_files_format += [prog]
                     break
+
+    def find_vms_and_hosts(self):
+        vm_names, host_names = find_all_vm_host(self.out_descr,
+                                                self.directory,
+                                                self.found_logs,
+                                                self.time_zones,
+                                                self.time_ranges)
+        self.all_vms = vm_names
+        self.all_hosts = host_names
+        if self.vms == []:
+            for k in vm_names.keys():
+                self.vms += [k]
+                for i in vm_names[k]:
+                    self.vms += [i]
+        if self.hosts == []:
+            for k in host_names.keys():
+                self.hosts += [k]
+                for i in host_names[k]:
+                    self.hosts += [i]
+
+    def find_vm_tasks(self):
+        engine_formats = [fmt['regexp'] for fmt in self.formats_templates if\
+                         'engine' in fmt['name']]
+        tasks = find_vm_tasks(self.out_descr,
+                              self.directory,
+                              self.found_logs,
+                              engine_formats,
+                              self.time_zones,
+                              self.time_ranges,
+                              self.vms,
+                              self.hosts)
+        self.all_tasks = tasks
 
     def load_data(self, show_warnings, show_progressbar):
         self.all_errors = {}
@@ -88,7 +121,6 @@ class LogAnalyzer:
         m = Manager()
         q = m.Queue()
         idxs = range(len(self.found_logs))
-        print(self.found_logs)
         if show_progressbar:
             result = ProgressPool([(process_files,
                                     "{}".format(self.found_logs[i]),
@@ -101,6 +133,7 @@ class LogAnalyzer:
                                      self.hosts,
                                      self.time_ranges,
                                      self.vms,
+                                     self.all_tasks,
                                      show_warnings])
                                    for i in idxs], processes=5)
         else:
@@ -156,22 +189,6 @@ class LogAnalyzer:
         # print_all_headers(errors_list, self.list_headers,
         #                   self.format_fields, out)
         print_only_dt_message(errors_list, out, self.all_fields)
-
-    def find_vms_tasks_hosts(self):
-        tasks = find_vm_tasks(self.out_descr,
-                              self.directory,
-                              self.found_logs,
-                              self.time_zones,
-                              self.time_ranges)
-        vm_names, host_names = find_all_vm_host(self.out_descr,
-                                                self.directory,
-                                                self.found_logs,
-                                                self.time_zones,
-                                                self.time_ranges,
-                                                tasks)
-        self.all_vms = vm_names
-        self.all_hosts = host_names
-        self.all_tasks = tasks
 
 
 def star(input):

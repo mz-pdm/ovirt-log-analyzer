@@ -3,6 +3,7 @@ import re
 import lzma
 import json
 import pytz
+import numpy as np
 from datetime import datetime
 
 
@@ -50,8 +51,7 @@ def find_all_vm_host(output_descriptor,
                      log_directory,
                      files,
                      tz_info,
-                     time_range_info,
-                     tasks):
+                     time_range_info):
     vm_names = {}
     host_names = {}
     for log in files:
@@ -161,9 +161,12 @@ def find_all_vm_host(output_descriptor,
 def find_vm_tasks(output_descriptor,
                   log_directory,
                   files,
+                  engine_formats,
                   tz_info,
-                  time_range_info):
+                  time_range_info,
+                  user_vms, user_hosts):
     commands_threads = {}
+    needed_threads = set()
     for log in files:
         if 'engine' not in log:
             continue
@@ -175,10 +178,30 @@ def find_vm_tasks(output_descriptor,
         else:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
+        firstline = f.readline()
+        for fmt in engine_formats:
+            prog = re.compile(fmt)
+            fields = prog.search(firstline)
+            if fields is not None:
+                engine_format = prog
+        if fields is None:
+            # Format is not found
+            continue
+        f.seek(0, 0)
         for line_num, line in enumerate(f):
-            if (time_range_info != [] and not
-                    parse_date_time(line, tz_info[log], time_range_info)):
+            fields = engine_format.search(line)
+            if fields is None:
+                # Tracebacks will be added anyway
                 continue
+            fields = fields.groupdict()
+            if (time_range_info != [] and not
+                    parse_date_time(fields["date_time"], tz_info[log],
+                                    time_range_info)):
+                continue
+            if (any([vm in fields["message"] for vm in user_vms]) or
+                    any([host in fields["message"] for host in user_hosts])):
+                needed_threads.add(fields["thread"])
+
             com = re.search(r"\((.+?)\)\ +\[.*?\]\ +Running command:\ +" +
                             r"([^\s]+)Command", line)
             if (com is not None):
@@ -232,7 +255,8 @@ def find_vm_tasks(output_descriptor,
                                          'command_name': finish.group(2)}]
                         com_id = -1
                         commands_threads[finish.group(1)][com_id][
-                                        'command_start_name'] = finish.group(2)
+                                        'command_start_name'] = \
+                            finish.group(2)
                         commands_threads[finish.group(1)][com_id][
                                         'log_id'] = finish.group(3)
                 for task in commands_threads[finish.group(1)]:
@@ -244,9 +268,79 @@ def find_vm_tasks(output_descriptor,
                             parse_date_time(line,
                                             tz_info,
                                             time_range_info)
+                        commands_threads[finish.group(1)][
+                                         com_id]['duration'] = \
+                            commands_threads[finish.group(1)][
+                                         com_id]['finish_time'] -\
+                            commands_threads[finish.group(1)][
+                                         com_id]['start_time']
         f.close()
     json.dump(commands_threads, open('tasks_' +
                                      log_directory.split('/')[-2] +
                                      '.json',
                                      'w'), indent=4, sort_keys=True)
+    commands_threads = select_needed_commands(commands_threads,
+                                                         needed_threads)
+    json.dump(commands_threads, open('filetredtasks_' +
+                                     log_directory.split('/')[-2] +
+                                     '.json',
+                                     'w'), indent=4, sort_keys=True)
     return commands_threads
+
+
+def select_needed_commands(all_threads, needed_threads):
+    vm_threads = {}
+    operations_time = {}
+    long_operations = {}
+    for thread in all_threads:
+        if thread in needed_threads:
+            vm_threads[thread] = all_threads[thread]
+        for command in all_threads[thread]:
+            if ('duration' in command):
+                if command['command_start_name'] not in \
+                        operations_time.keys():
+                    operations_time[command['command_start_name']] = []
+                operations_time[command['command_start_name']] += \
+                    [{'duration': command['duration'], 'start_time': \
+                     command['start_time']}]
+    
+    commands_ex_time = [t['duration'] for c in operations_time \
+                        for t in operations_time[c]]
+    ex_median = np.median(commands_ex_time)
+    ex_std = np.std(commands_ex_time)
+
+    for command in sorted(operations_time.keys()):
+        com_time = [c_id['duration'] for c_id in operations_time[command]]
+        med_com_time = np.median(com_time)
+        std_com_time = np.std(com_time)
+        for c_id in operations_time[command]:
+            if ((c_id['duration'] > med_com_time + 3*std_com_time) or
+                    (c_id['duration'] > ex_median + 3*ex_std)):
+                if command not in long_operations.keys():
+                    long_operations[command] = []
+                long_operations[command] += [c_id['start_time']]
+    for thread in all_threads:
+        for command in all_threads[thread]:
+            found = False
+            if 'duration' not in command.keys():
+                continue
+            if command['command_start_name'] not in long_operations.keys():
+                continue
+            if command['start_time'] not in long_operations[command[
+                                            'command_start_name']]:
+                continue
+            if thread not in vm_threads.keys():
+                vm_threads[thread] = [command]
+                continue
+            for existed_commands in vm_threads[thread]:
+                if 'duration' not in existed_commands.keys():
+                    continue
+                if existed_commands['command_start_name'] == \
+                        command['command_start_name'] and \
+                        existed_commands['start_time'] == \
+                        command['start_time']:
+                    found = True
+            if found:
+                continue
+            vm_threads[thread] += [command]
+    return vm_threads
