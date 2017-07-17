@@ -103,7 +103,8 @@ class LogLine:
             except ValueError:
                 continue
         if self.fields['date_time'] == '':
-            raise DateTimeFormatError("Warning: Unknown date_time format: " +
+            raise DateTimeFormatError("Warning: parse_date_time: " +
+                                      "Unknown date_time format: " +
                                       "%s\n" % dt)
         # Check user-defined time range
         if self.time_ranges != [] and \
@@ -177,6 +178,10 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
             for field in fields_names:
                 line_info += [prev_fields[field]]
             # line_info += [mess.fields["message"]]
+            if show_warnings:
+                out_descr.put('Info: create_line_info: ' +
+                              'Line matched: %s\n' %
+                              in_traceback_line)
             return prev_line, line_info, in_traceback_flag, multiline_flag
         # if message is empty
         except MessageNotFoundError:
@@ -206,14 +211,24 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
             for field in fields_names:
                 line_info += [mess.fields[field]]
             # line_info += [mess.fields["message"]]
+            if show_warnings:
+                out_descr.put('Info: create_line_info: ' +
+                              'Line matched: %s\n' %
+                              multiline_line)
             return prev_line, line_info, in_traceback_flag, multiline_flag
         except (DateTimeNotFoundError, DateTimeFormatError):
+            if show_warnings:
+                out_descr.put(str(exception_message))
             line_info = []
             for field in fields_names:
                 line_info += [prev_fields[field]]
             line_info += [multiline_line]
             return prev_line, line_info, in_traceback_flag, multiline_flag
         except FormatTemplateError:
+            if show_warnings:
+                out_descr.put('Warning: parse_fields: ' +
+                              'Line does not match format "%s": %s\n' %
+                              (format_template, multiline_line))
             line_info = []
             for field in fields_names:
                 line_info += [prev_fields[field]]
@@ -239,7 +254,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
 
 def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                     events, host_ids, time_ranges, vm_numbers, show_warnings,
-                    progressbar=lambda x: x):
+                    progressbar=None):
     full_filename = os.path.join(directory, logname)
     # format_template = re.compile(format_template)
     fields_names = list(sorted(format_template.groupindex.keys()))
@@ -261,7 +276,8 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
     multiline_line = ''
     multiline_flag = False
     store = True
-    progressbar.start(max_value=num)
+    if progressbar:
+        progressbar.start(max_value=num)
     count = 0
     prev_line = ''
     line = ''
@@ -273,7 +289,8 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
         # if line is empty and other cases when we don't need to parse it
         if re_skip.match(line) is not None:
             count += len(line)
-            progressbar.update(count)
+            if progressbar:
+                progressbar.update(count)
             continue
         line_data = LogLine(fields_names, logname+':'+str(line_num),
                             out_descr, time_ranges)
@@ -296,12 +313,6 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                 # if we normally parsed the previous line, we save it
                 if line_info != []:
                     file_lines += [line_info]
-                    # the following block is for debugging the number of \
-                    # requred messages
-                    # #count += 1
-                    # #out.write('>>>%d' % count)
-                    # #out.write(prev_line)
-                    # #out.write('\n')
             # we saved if it was nessesary the previous line, the current
             # became the previous
             prev_fields = line_data.fields
@@ -320,10 +331,6 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                      prev_fields, prev_line, show_warnings)
                 if line_info != []:
                     file_lines += [line_info]
-                    # count += 1
-                    # out.write('>>>%d'%count)
-                    # out.write(prev_line)
-                    # out.write('\n')
             store = False
         # if the date time is treater all the user-defined time ranges, we can
         # stop parsing
@@ -338,12 +345,9 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                      prev_fields, prev_line, show_warnings)
                 if line_info != []:
                     file_lines += [line_info]
-                    # count += 1
-                    # out.write('>>>%d'%count)
-                    # out.write(prev_line)
-                    # out.write('\n')
             count = num
-            progressbar.update(count)
+            if progressbar:
+                progressbar.update(count)
             break
         # if the parser didn't find the date time
         except (DateTimeNotFoundError, DateTimeFormatError) as \
@@ -383,10 +387,6 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                          prev_line, show_warnings)
                     if line_info != []:
                         file_lines += [line_info]
-                        # count += 1
-                        # out.write('>>>%d'%count)
-                        # out.write(prev_line)
-                        # out.write('\n')
                 multiline_flag = True
                 line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', ' ', line)
                 multiline_line = '!Fake datetime! ' + line
@@ -408,10 +408,6 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                      prev_line, show_warnings)
                 if line_info != []:
                     file_lines += [line_info]
-                    # count += 1
-                    # out.write('>>>%d'%count)
-                    # out.write(prev_line)
-                    # out.write('\n')
             multiline_flag = True
             line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', '', line)
             multiline_line = line
@@ -422,7 +418,8 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                               'Line does not have message field: %s\n' % line)
         # for progressbar
         count += len(line)
-        progressbar.update(count)
+        if progressbar:
+            progressbar.update(count)
 
     # adding the last line
     if store and prev_fields != {}:
@@ -435,10 +432,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                              prev_line, show_warnings)
         if line_info != []:
             file_lines += [line_info]
-            # count += 1
-            # out.write('>>>%d'%count)
-            # out.write(prev_line)
-            # out.write('\n')
     f.close()
-    progressbar.finish()
+    if progressbar:
+        progressbar.finish()
     return file_lines, fields_names  # + ['message']
