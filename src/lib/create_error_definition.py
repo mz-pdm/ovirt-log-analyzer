@@ -143,10 +143,12 @@ class LogLine:
         self.fields["message"] = self.re_punctuation.sub('', mstext)
 
 
-def check_constraints(line, events, host_ids, vm_numbers):
+def check_constraints(line, events, host_ids, vm_numbers, tasks):
     if any([keyword.upper() in line.upper()
             for keyword in events + host_ids + vm_numbers +
             ["ERROR", "Traceback", "down", "warn"]]):
+        return True
+    if any([thread in line for thread in tasks.keys()]):
         return True
     else:
         return False
@@ -155,7 +157,7 @@ def check_constraints(line, events, host_ids, vm_numbers):
 def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
                      multiline_line, fields_names, out_descr, time_zone,
                      time_ranges, events, host_ids, vm_numbers,
-                     format_template, prev_fields, prev_line,
+                     format_template, prev_fields, prev_line, tasks,
                      show_warnings):
     # write a concatenated string that include a Traceback message (try to
     # match the template first (if there were any fields that appear in the
@@ -164,7 +166,8 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
         in_traceback_flag = False
         prev_line = prev_line + in_traceback_line
         # check if the line satisfy user conditions
-        if not check_constraints(prev_line, events, host_ids, vm_numbers):
+        if not check_constraints(prev_line, events, host_ids, vm_numbers,
+                                 tasks):
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
             # try to match with the log file format template
@@ -198,7 +201,8 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
         multiline_flag = False
         prev_line = multiline_line
         # check if the line satisfy user conditions
-        if not check_constraints(prev_line, events, host_ids, vm_numbers):
+        if not check_constraints(prev_line, events, host_ids, vm_numbers,
+                                 tasks):
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
             # try to match with the log file format template
@@ -243,7 +247,8 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
     # that was a normal line, check used constraints and save
     else:
         # check if the line satisfy user conditions
-        if not check_constraints(prev_line, events, host_ids, vm_numbers):
+        if not check_constraints(prev_line, events, host_ids, vm_numbers,
+                                 tasks):
             return prev_line, [], in_traceback_flag, multiline_flag
         line_info = []
         for field in fields_names:
@@ -253,8 +258,8 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
 
 
 def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
-                    events, host_ids, time_ranges, vm_numbers, show_warnings,
-                    progressbar=None):
+                    events, host_ids, time_ranges, vm_numbers, tasks,
+                    show_warnings, progressbar=None):
     full_filename = os.path.join(directory, logname)
     # format_template = re.compile(format_template)
     fields_names = list(sorted(format_template.groupindex.keys()))
@@ -309,7 +314,8 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                      multiline_line, fields_names, out_descr,
                                      time_zone, time_ranges, events, host_ids,
                                      vm_numbers, format_template,
-                                     prev_fields, prev_line, show_warnings)
+                                     prev_fields, prev_line, tasks,
+                                     show_warnings)
                 # if we normally parsed the previous line, we save it
                 if line_info != []:
                     file_lines += [line_info]
@@ -328,7 +334,8 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                      multiline_line, fields_names, out_descr,
                                      time_zone, time_ranges, events, host_ids,
                                      vm_numbers, format_template,
-                                     prev_fields, prev_line, show_warnings)
+                                     prev_fields, prev_line, tasks,
+                                     show_warnings)
                 if line_info != []:
                     file_lines += [line_info]
             store = False
@@ -342,7 +349,8 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                      multiline_line, fields_names, out_descr,
                                      time_zone, time_ranges, events, host_ids,
                                      vm_numbers, format_template,
-                                     prev_fields, prev_line, show_warnings)
+                                     prev_fields, prev_line, tasks,
+                                     show_warnings)
                 if line_info != []:
                     file_lines += [line_info]
             count = num
@@ -384,7 +392,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                          out_descr, time_zone, time_ranges,
                                          events, host_ids, vm_numbers,
                                          format_template, prev_fields,
-                                         prev_line, show_warnings)
+                                         prev_line, tasks, show_warnings)
                     if line_info != []:
                         file_lines += [line_info]
                 multiline_flag = True
@@ -405,7 +413,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                                      multiline_line, fields_names, out_descr,
                                      time_zone, time_ranges, events, host_ids,
                                      vm_numbers, format_template, prev_fields,
-                                     prev_line, show_warnings)
+                                     prev_line, tasks, show_warnings)
                 if line_info != []:
                     file_lines += [line_info]
             multiline_flag = True
@@ -429,7 +437,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                              multiline_line, fields_names, out_descr,
                              time_zone, time_ranges, events, host_ids,
                              vm_numbers, format_template, prev_fields,
-                             prev_line, show_warnings)
+                             prev_line, tasks, show_warnings)
         if line_info != []:
             file_lines += [line_info]
     f.close()

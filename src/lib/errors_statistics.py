@@ -67,9 +67,9 @@ def return_nonsimilar_part(str1, str2, keywords):
 def calculate_events_frequency(all_errors, keywords,
                                timeline, fields, dirname):
     template = re.compile(\
-        # r"[^^][^\ \t\,\;\=]{20,}|" +
-        # r"[^^]\"[^\"]{30,}\"|" +
-        # r"[^^]\'[^\']{30,}\'|" +
+    #    r"[^^][^\ \t\,\;\=]{20,}|" +
+        r"[^^]\"[^\"]{20,}\"|" +
+        r"[^^]\'[^\']{20,}\'|" +
         r"[^^]\(+.*\)+|" +
         r"[^^]\[+.*\]+|" +
         r"[^^]\{+.*\}+|" +
@@ -81,8 +81,8 @@ def calculate_events_frequency(all_errors, keywords,
     for err_id in range(len(all_errors)):
         mstext = all_errors[err_id][msid]
         mstext = re.sub(template, '<...>', mstext)
-        for keyword in keywords:
-            mstext = re.sub(keyword, '<...>', mstext)
+        # for keyword in keywords:
+        #     mstext = re.sub(keyword, '<...>', mstext)
         mstext = re.sub(re.compile(
             r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"),
             '<...>', mstext)

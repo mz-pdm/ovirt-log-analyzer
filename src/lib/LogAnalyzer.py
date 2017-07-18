@@ -105,15 +105,16 @@ class LogAnalyzer:
     def find_vm_tasks(self):
         engine_formats = [fmt['regexp'] for fmt in self.formats_templates if\
                          'engine' in fmt['name']]
-        tasks = find_vm_tasks(self.out_descr,
-                              self.directory,
-                              self.found_logs,
-                              engine_formats,
-                              self.time_zones,
-                              self.time_ranges,
-                              self.vms,
-                              self.hosts)
+        tasks, long_tasks = find_vm_tasks(self.out_descr,
+                                          self.directory,
+                                          self.found_logs,
+                                          engine_formats,
+                                          self.time_zones,
+                                          self.time_ranges,
+                                          self.vms,
+                                          self.hosts)
         self.all_tasks = tasks
+        self.long_tasks = long_tasks
 
     def load_data(self, show_warnings, show_progressbar):
         self.all_errors = {}
@@ -147,6 +148,7 @@ class LogAnalyzer:
                          self.hosts,
                          self.time_ranges,
                          self.vms,
+                         self.all_tasks,
                          show_warnings] for i in idxs]
             widget_style = ['All: ', progressbar.Percentage(), ' (',
                             progressbar.SimpleProgress(), ')', ' ',

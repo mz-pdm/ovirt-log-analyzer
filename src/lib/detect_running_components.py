@@ -279,13 +279,13 @@ def find_vm_tasks(output_descriptor,
                                      log_directory.split('/')[-2] +
                                      '.json',
                                      'w'), indent=4, sort_keys=True)
-    commands_threads = select_needed_commands(commands_threads,
-                                                         needed_threads)
+    commands_threads, long_actions = select_needed_commands(commands_threads,
+                                                            needed_threads)
     json.dump(commands_threads, open('filetredtasks_' +
                                      log_directory.split('/')[-2] +
                                      '.json',
                                      'w'), indent=4, sort_keys=True)
-    return commands_threads
+    return commands_threads, long_actions
 
 
 def select_needed_commands(all_threads, needed_threads):
@@ -301,10 +301,10 @@ def select_needed_commands(all_threads, needed_threads):
                         operations_time.keys():
                     operations_time[command['command_start_name']] = []
                 operations_time[command['command_start_name']] += \
-                    [{'duration': command['duration'], 'start_time': \
+                    [{'duration': command['duration'], 'start_time':
                      command['start_time']}]
-    
-    commands_ex_time = [t['duration'] for c in operations_time \
+
+    commands_ex_time = [t['duration'] for c in operations_time
                         for t in operations_time[c]]
     ex_median = np.median(commands_ex_time)
     ex_std = np.std(commands_ex_time)
@@ -319,6 +319,7 @@ def select_needed_commands(all_threads, needed_threads):
                 if command not in long_operations.keys():
                     long_operations[command] = []
                 long_operations[command] += [c_id['start_time']]
+
     for thread in all_threads:
         for command in all_threads[thread]:
             found = False
@@ -343,4 +344,4 @@ def select_needed_commands(all_threads, needed_threads):
             if found:
                 continue
             vm_threads[thread] += [command]
-    return vm_threads
+    return vm_threads, long_operations
