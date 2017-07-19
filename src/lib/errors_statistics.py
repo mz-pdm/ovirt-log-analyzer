@@ -64,50 +64,62 @@ def return_nonsimilar_part(str1, str2, keywords):
     return diff1, diff2
 
 
-def calculate_events_frequency(all_errors, keywords,
-                               timeline, fields, dirname):
+def clusterize_messages(all_errors, fields, dirname):
     template = re.compile(\
     #    r"[^^][^\ \t\,\;\=]{20,}|" +
-        r"[^^]\"[^\"]{20,}\"|" +
-        r"[^^]\'[^\']{20,}\'|" +
-        r"[^^]\(+.*\)+|" +
-        r"[^^]\[+.*\]+|" +
-        r"[^^]\{+.*\}+|" +
-        r"[^^]\<+.*\>+")
+        r"[^^](\"[^\"]{20,}\")|" +
+        r"[^^](\'[^\']{20,}\')|" +
+        r"[^^](\(+.*\)+)|" +
+        r"[^^](\[+.*\]+)|" +
+        r"[^^](\{+.*\}+)|" +
+        r"[^^](\<+.*\>+)")
 # r"[\d]+")
     msid = fields.index("message")
     timeid = fields.index("date_time")
     events = {}
     for err_id in range(len(all_errors)):
         mstext = all_errors[err_id][msid]
-        mstext = re.sub(template, '<...>', mstext)
+        groups = re.findall(template, mstext)
+        for g in groups:
+            for subg in g:
+                if subg == '':
+                    continue
+                mstext = mstext.replace(subg, '')
+        all_errors[err_id] += [mstext]
+
         # for keyword in keywords:
         #     mstext = re.sub(keyword, '<...>', mstext)
-        mstext = re.sub(re.compile(
-            r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"),
-            '<...>', mstext)
-        mstext = re.sub(re.compile(
-            r"(([\ \.\,\:\;\+\-\{\}]*" +
-            r"\<\.\.\.\>[\ \.\,\:\;\+\-\{\}]*)+)"),
-            '<...>', mstext)
+        # mstext = re.sub(re.compile(
+        #     r"((\<\.\.\.\>[\ \.\,\:\;\{\}\(\)\[\]\$]*){2,})"),
+        #     '<...>', mstext)
+        # mstext = re.sub(re.compile(
+        #     r"(([\.\,\:\;\+\-\{\}]*" +
+        #     r"\<\.\.\.\>[\.\,\:\;\+\-\{\}]*)+)"),
+        #     '<...>', mstext)
         if (mstext not in events.keys()):
             events[mstext] = []
-        events[mstext] += [all_errors[err_id][timeid]]
+        events[mstext] += [[all_errors[err_id][msid],
+                            all_errors[err_id][timeid]]]
 
     messages = sorted(events.keys())
     similar = np.zeros((len(messages), len(messages)))
     for err0 in range(len(messages)):
         for err1 in range(err0+1, len(messages)):
-            dist = editdistance.eval(messages[err0].lower(),
-                                     messages[err1].lower())
+            msg1 = messages[err0].lower()
+            msg2 = messages[err1].lower()
+            dist = editdistance.eval(msg1, msg2)
+            msg1 = re.sub('[:.,;]$', '', re.split(' |:', msg1)[0])
+            msg2 = re.sub('[:.,;]$', '', re.split(' |:', msg2)[0])
+            if msg1 == msg2:
+                dist /= 5
+            else:
+                dist *= 10
             similar[err0, err1] = np.round(dist/len(messages[err0]), 1)
             similar[err1, err0] = np.round(dist/len(messages[err1]), 1)
     np.fill_diagonal(similar, 0)
-
-    d = DBSCAN(metric='precomputed', min_samples=2, eps=0.65)
+    d = DBSCAN(metric='precomputed', min_samples=2)
     clust = d.fit_predict(similar)
-    # print(clust)
-    # print(list(clust).count(-1), 'of', len(list(clust)))
+
     f = open("result_"+dirname.split('/')[-2]+".txt", 'w')
     messages = sorted(zip(clust, messages), key=lambda k: k[0])
     cur_mid = messages[0][0]
@@ -117,4 +129,25 @@ def calculate_events_frequency(all_errors, keywords,
             cur_mid = mid[0]
         f.write("%d : %s\n" % (mid[0], mid[1]))
     f.close()
+
+    clusters = {}
+    for clust, msg in messages:
+        if clust not in clusters.keys():
+            clusters[clust] = []
+        clusters[clust] += [[msg] + events[msg]]
+
+    #for c_id in sorted(clusters.keys()):
+    #    print(c_id)
+    #    for msg in clusters[c_id]:
+    #        print("\t", msg)
     # json.dump(events, f, indent=4, sort_keys=True)
+    return all_errors, fields + ['filtered'], clusters
+
+
+def calculate_events_frequency(all_errors, clusters, fields, timeline, 
+                               vms, hosts):
+    for err_id in range(len(all_errors)):
+        for c_id in sorted(clusters.keys(), key=lambda k: int(k)):
+            if all_errors[err_id][-1] in clusters[c_id]:
+                pass
+    return all_errors

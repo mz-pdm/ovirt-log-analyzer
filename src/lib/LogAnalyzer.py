@@ -5,6 +5,7 @@ import progressbar
 from multiprocessing import Manager, Pool
 from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import merge_all_errors_by_time, \
+                                    clusterize_messages, \
                                     calculate_events_frequency
 from lib.represent_statistics import print_only_dt_message
 from lib.detect_running_components import find_vm_tasks, find_all_vm_host
@@ -183,9 +184,16 @@ class LogAnalyzer:
                        [i for s in self.all_vms.values() for i in s] +
                        list(self.all_hosts.keys()) +
                        [i for s in self.all_hosts.values() for i in s])
-        calculate_events_frequency(merged_errors, keywords, timeline,
-                                   self.all_fields, self.directory)
-        return merged_errors
+        merged_events, self.all_fields, clusters = \
+            clusterize_messages(merged_errors, self.all_fields,
+                                       self.directory)
+        important_events = calculate_events_frequency(merged_events,
+                                                      clusters,
+                                                      self.all_fields,
+                                                      timeline,
+                                                      self.all_vms,
+                                                      self.all_hosts)
+        return important_events
 
     def print_errors(self, errors_list, out):
         # print_all_headers(errors_list, self.list_headers,
