@@ -206,7 +206,7 @@ def star(input):
 
 
 def process_files(idx, log, formats_templates, directory, time_zones,
-                  out_descr, events, hosts, time_ranges, vms,
+                  out_descr, events, hosts, time_ranges, vms, tasks,
                   show_warnings, progressbar=None, text_header=None):
     if text_header:
         text_header.update_mapping(type_op="Parsing:")
@@ -221,6 +221,7 @@ def process_files(idx, log, formats_templates, directory, time_zones,
                                                hosts,
                                                time_ranges,
                                                vms,
+                                               tasks,
                                                show_warnings,
                                                progressbar)
     return lines_info, fields_names

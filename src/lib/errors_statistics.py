@@ -54,14 +54,14 @@ def merge_all_errors_by_time(all_errors, fields_names):
 # repeated actions
 # error, down, warn
 # many messages in the same millisecond
-def return_nonsimilar_part(str1, str2, keywords):
+def return_nonsimilar_part(str1, str2):
     str1_word = str1.split(' ')
     str2_word = str2.split(' ')
     set1 = set(str1_word)
     set2 = set(str2_word)
     diff1 = set1 - set2
     diff2 = set2 - set1
-    return diff1, diff2
+    return diff1.union(diff2)
 
 
 def clusterize_messages(all_errors, fields, dirname):
@@ -119,35 +119,43 @@ def clusterize_messages(all_errors, fields, dirname):
     np.fill_diagonal(similar, 0)
     d = DBSCAN(metric='precomputed', min_samples=2)
     clust = d.fit_predict(similar)
-
-    f = open("result_"+dirname.split('/')[-2]+".txt", 'w')
     messages = sorted(zip(clust, messages), key=lambda k: k[0])
-    cur_mid = messages[0][0]
-    for mid in messages:
-        if mid[0] != cur_mid:
-            f.write('\n')
-            cur_mid = mid[0]
-        f.write("%d : %s\n" % (mid[0], mid[1]))
-    f.close()
-
+    # f = open("result_"+dirname.split('/')[-2]+".txt", 'w')
+    # cur_mid = messages[0][0]
+    # for mid in messages:
+    #     if mid[0] != cur_mid:
+    #         f.write('\n')
+    #         cur_mid = mid[0]
+    #     f.write("%d : %s\n" % (mid[0], mid[1]))
+    # f.close()
     clusters = {}
     for clust, msg in messages:
         if clust not in clusters.keys():
             clusters[clust] = []
         clusters[clust] += [[msg] + events[msg]]
-
-    #for c_id in sorted(clusters.keys()):
-    #    print(c_id)
-    #    for msg in clusters[c_id]:
-    #        print("\t", msg)
-    # json.dump(events, f, indent=4, sort_keys=True)
     return all_errors, fields + ['filtered'], clusters
 
 
+# fields - names the following positions in log line (date_time,
+# massage, field1, field2, etc.). It is list.
+# all_errors [[msg, date_time, fields..., filtered], [],...]
+# clusters {'1': [msg_filtered, mgs_orig, time],...}
 def calculate_events_frequency(all_errors, clusters, fields, timeline, 
                                vms, hosts):
+    f_msg_idx = fields.index('filtered')
+    fields += ['cluster_num', 'cluster_len']
     for err_id in range(len(all_errors)):
         for c_id in sorted(clusters.keys(), key=lambda k: int(k)):
-            if all_errors[err_id][-1] in clusters[c_id]:
-                pass
+            if all_errors[err_id][f_msg_idx] in clusters[c_id]:
+                all_errors[err_id] += [c_id]
+                all_errors[err_id] += [len(clisters[c_id])]
+    for c_id in sorted(clusters.keys(), key=lambda k: int(k)):
+        if c_id == -1:
+            continue
+        diff = set()
+        for msg1_id in range(len(clusters[c_id])-1):
+            for msg2_id in range(msg1_id+1, len(clusters[c_id])):
+                diff = diff.union(return_nonsimilar_part(clusters[c_id][msg1_id][0].lower(),
+                                                clusters[c_id][msg2_id][0].lower()))
+        #print(c_id,'>>>',diff)
     return all_errors

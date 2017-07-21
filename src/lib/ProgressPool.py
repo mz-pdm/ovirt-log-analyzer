@@ -38,7 +38,7 @@ class Writer(object):
             self.interface.refresh()
 
 
-def ProgressPool(run_args, processes=2):
+def ProgressPool(run_args, processes=5):
     manager = multiprocessing.Manager()
     the_queue = manager.Queue()
     result = []

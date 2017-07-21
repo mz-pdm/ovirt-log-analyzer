@@ -268,6 +268,13 @@ def find_vm_tasks(output_descriptor,
                             parse_date_time(line,
                                             tz_info,
                                             time_range_info)
+                        if ('start_time' not in commands_threads[
+                                finish.group(1)][com_id].keys()):
+                            commands_threads[finish.group(1)][
+                                             com_id]['start_time'] = \
+                                parse_date_time(line,
+                                                tz_info,
+                                                time_range_info)
                         commands_threads[finish.group(1)][
                                          com_id]['duration'] = \
                             commands_threads[finish.group(1)][
