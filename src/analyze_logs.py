@@ -234,7 +234,7 @@ if __name__ == "__main__":
     logs.find_vm_tasks()
     logs.load_data(args.warn, args.progressbar)
     # now just all relevant lines
-    messages = logs.find_rare_errors()
+    messages = logs.find_important_events()
     logs.print_errors(messages, output_file)
 
     # these options are on the way

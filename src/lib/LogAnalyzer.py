@@ -7,6 +7,7 @@ from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import merge_all_errors_by_time, \
                                     clusterize_messages, \
                                     calculate_events_frequency
+# , organize_important_tasks
 from lib.represent_statistics import print_only_dt_message
 from lib.detect_running_components import find_vm_tasks, find_all_vm_host
 from lib.ProgressPool import ProgressPool
@@ -47,7 +48,7 @@ class LogAnalyzer:
                                          line[1:])
                     exit()
                 self.formats_templates += [{'name': format_name,
-                                       'regexp':line[1:]}]
+                                            'regexp': line[1:]}]
                 format_name = ''
                 format_num += 1
             else:
@@ -104,8 +105,8 @@ class LogAnalyzer:
                     self.hosts += [i]
 
     def find_vm_tasks(self):
-        engine_formats = [fmt['regexp'] for fmt in self.formats_templates if\
-                         'engine' in fmt['name']]
+        engine_formats = [fmt['regexp'] for fmt in self.formats_templates if
+                          'engine' in fmt['name']]
         tasks, long_tasks = find_vm_tasks(self.out_descr,
                                           self.directory,
                                           self.found_logs,
@@ -171,7 +172,7 @@ class LogAnalyzer:
             warn = q.get()
             self.out_descr.write(warn)
 
-    def find_rare_errors(self):
+    def find_important_events(self):
         timeline, merged_errors, self.all_fields = \
             merge_all_errors_by_time(self.all_errors, self.format_fields)
         try:
@@ -186,13 +187,13 @@ class LogAnalyzer:
                        [i for s in self.all_hosts.values() for i in s])
         merged_events, self.all_fields, clusters = \
             clusterize_messages(merged_errors, self.all_fields,
-                                       self.directory)
-        important_events = calculate_events_frequency(merged_events,
-                                                      clusters,
+                                self.directory)
+        important_events = calculate_events_frequency(clusters,
                                                       self.all_fields,
                                                       timeline,
-                                                      self.all_vms,
-                                                      self.all_hosts)
+                                                      keywords)
+        # important_tasks = organize_important_tasks(self.all_tasks,
+        #                                           self.long_tasks)
         return important_events
 
     def print_errors(self, errors_list, out):

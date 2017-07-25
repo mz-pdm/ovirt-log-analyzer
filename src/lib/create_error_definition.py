@@ -220,7 +220,8 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
                               'Line matched: %s\n' %
                               multiline_line)
             return prev_line, line_info, in_traceback_flag, multiline_flag
-        except (DateTimeNotFoundError, DateTimeFormatError) as exception_message:
+        except (DateTimeNotFoundError, DateTimeFormatError) as \
+                exception_message:
             if show_warnings:
                 out_descr.put(str(exception_message))
             line_info = []
