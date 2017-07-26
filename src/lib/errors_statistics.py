@@ -65,8 +65,8 @@ def return_nonsimilar_part(str1, str2):
 def clusterize_messages(all_errors, fields, dirname):
     template = re.compile(\
                           # r"[^^][^\ \t\,\;\=]{20,}|" +
-                          r"[^^](\"[^\"]{20,}\")|" +
-                          r"[^^](\'[^\']{20,}\')|" +
+                          # r"[^^](\"[^\"]{20,}\")|" +
+                          # r"[^^](\'[^\']{20,}\')|" +
                           r"[^^](\(+.*\)+)|" +
                           r"[^^](\[+.*\]+)|" +
                           r"[^^](\{+.*\}+)|" +
@@ -81,7 +81,7 @@ def clusterize_messages(all_errors, fields, dirname):
                 if subg == '':
                     continue
                 mstext = mstext.replace(subg, '')
-        all_errors[err_id] += [mstext]
+        # all_errors[err_id] += [mstext]
 
         # for keyword in keywords:
         #     mstext = re.sub(keyword, '<...>', mstext)
@@ -115,20 +115,20 @@ def clusterize_messages(all_errors, fields, dirname):
     d = DBSCAN(metric='precomputed', min_samples=2)
     clust = d.fit_predict(similar)
     messages = sorted(zip(clust, messages), key=lambda k: int(k[0]))
-    # f = open("result_"+dirname.split('/')[-2]+".txt", 'w')
-    # cur_mid = messages[0][0]
-    # for mid in messages:
-    #     if mid[0] != cur_mid:
-    #         f.write('\n')
-    #         cur_mid = mid[0]
-    #     f.write("%d : %s\n" % (mid[0], mid[1]))
-    # f.close()
+    f = open("result_"+dirname.split('/')[-2]+".txt", 'w')
+    cur_mid = messages[0][0]
+    for mid in messages:
+        if mid[0] != cur_mid:
+            f.write('\n')
+            cur_mid = mid[0]
+        f.write("%d : %s\n" % (mid[0], mid[1]))
+    f.close()
     clusters = {}
     for clust, msg in messages:
         if clust not in clusters.keys():
             clusters[clust] = []
-        clusters[clust] += [[msg] + events[msg]]
-    return all_errors, fields + ['filtered'], clusters
+        clusters[clust] += events[msg]
+    return clusters
 
 
 # fields - names the following positions in log line (date_time,
@@ -137,37 +137,75 @@ def clusterize_messages(all_errors, fields, dirname):
 # clusters {'1': [msg_filtered, mgs_orig, time],...}
 def calculate_events_frequency(clusters, fields, timeline, keywords):
     needed_msgs = []
+    reasons = []
+    msid = fields.index('message')
+    dtid = fields.index('date_time')
     for c_id in sorted(clusters.keys(), key=lambda k: int(k)):
         if c_id == -1:
+            for msg in clusters[c_id]:
+                if len(msg[msid]) > 500:
+                    continue
+                needed_msgs += [msg]
+                reasons += ['Unique']
             continue
         diff = set()
         for msg1_id in range(len(clusters[c_id])-1):
             for msg2_id in range(msg1_id+1, len(clusters[c_id])):
                 diff = diff.union(return_nonsimilar_part(
-                            clusters[c_id][msg1_id][0].lower(),
-                            clusters[c_id][msg2_id][0].lower()))
+                            clusters[c_id][msg1_id][msid].lower(),
+                            clusters[c_id][msg2_id][msid].lower()))
         if sum([k in word for word in diff for k in keywords]) > 1:
             # Show because includes VM or Host or task ID
+            added = False
             for msg in clusters[c_id]:
-                needed_msgs += msg[1:]
-        if any([k in msg[1] for msg in clusters[c_id] for
-                k in ['error', 'down', 'fail']]):
+                if (msg[dtid] not in [m[dtid] for m in needed_msgs] or
+                        msg[msid] not in [m[msid] for m in needed_msgs]):
+                    needed_msgs += [msg]
+                    reasons += ['VM, Host or Task ID']
+                    added = True
+                if added:
+                    continue
+        if any([k in (msg[msid]).lower() for msg in clusters[c_id] for
+                k in ['error', 'down', 'fail', 'traceback', 'except',
+                      'warning']]):
             # Show because includes keyword
+            added = False
             for msg in clusters[c_id]:
-                needed_msgs += msg[1:]
+                if (msg[dtid] not in [m[dtid] for m in needed_msgs] or
+                        msg[msid] not in [m[msid] for m in needed_msgs]):
+                    needed_msgs += [msg]
+                    reasons += ['Keywords']
+                    added = True
+                if added:
+                    continue
         if len(set([len(w) for w in diff])) == 1:
             # Show because cluster differs by one-length words (usually IDs)
+            added = False
             for msg in clusters[c_id]:
-                needed_msgs += msg[1:]
+                if (msg[dtid] not in [m[dtid] for m in needed_msgs] or
+                        msg[msid] not in [m[msid] for m in needed_msgs]):
+                    needed_msgs += [msg]
+                    reasons += ['One-length IDs']
+                    added = True
+                if added:
+                    continue
     for t in range(len(timeline)):
         if (t < 5 or t > len(timeline)-5):
             pass
         if len(timeline[t-5:t])*2 < len(timeline[t:t+5]):
             # Show because an amount of followed messages increased
             for m in range(len(timeline[t])):
-                needed_msgs += [timeline[t][m]]
-    needed_msgs = sorted(needed_msgs, key=lambda k: k[0])
-    return needed_msgs
+                if ((timeline[t][m][dtid] not in [m[dtid]
+                     for m in needed_msgs]) or
+                    (timeline[t][m][msid] not in [m[msid]
+                     for m in needed_msgs])):
+                    needed_msgs += [timeline[t][m]]
+                    reasons += ['Increased messages']
+    sort_idxs = sorted(range(len(needed_msgs)),
+                       key=lambda k: needed_msgs[k][dtid])
+    sorted_messages = [needed_msgs[i] for i in sort_idxs]
+    sorted_reasons = [reasons[i] for i in sort_idxs]
+    return sorted_messages, sorted_reasons
 
 
 def organize_important_tasks(all_tasks, long_tasks, all_errors):

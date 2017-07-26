@@ -289,7 +289,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
     line = ''
     regexp = r"^(\ *)$"
     if 'libvirt' in logname:
-        regexp = regexp + r".*|OBJECT_"
+        regexp = regexp + r".*|OBJECT_|.*release\ domain"
     re_skip = re.compile(regexp)
     for line_num, line in enumerate(f):
         # if line is empty and other cases when we don't need to parse it

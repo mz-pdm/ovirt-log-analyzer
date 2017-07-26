@@ -180,26 +180,27 @@ class LogAnalyzer:
         except:
             pass
         self.timeline = timeline
-        keywords = set(self.events + self.hosts + self.vms +
-                       list(self.all_vms.keys()) +
-                       [i for s in self.all_vms.values() for i in s] +
-                       list(self.all_hosts.keys()) +
-                       [i for s in self.all_hosts.values() for i in s])
-        merged_events, self.all_fields, clusters = \
-            clusterize_messages(merged_errors, self.all_fields,
-                                self.directory)
-        important_events = calculate_events_frequency(clusters,
-                                                      self.all_fields,
-                                                      timeline,
-                                                      keywords)
+        # keywords = set(self.events + self.hosts + self.vms +
+        #                list(self.all_vms.keys()) +
+        #                [i for s in self.all_vms.values() for i in s] +
+        #                list(self.all_hosts.keys()) +
+        #                [i for s in self.all_hosts.values() for i in s])
+        clusters = clusterize_messages(merged_errors, self.all_fields,
+                                       self.directory)
+        important_events, reasons = calculate_events_frequency(clusters,
+                                                               self.all_fields,
+                                                               timeline,
+                                                               self.events +
+                                                               self.hosts +
+                                                               self.vms)
         # important_tasks = organize_important_tasks(self.all_tasks,
         #                                           self.long_tasks)
-        return important_events
+        return important_events, reasons
 
-    def print_errors(self, errors_list, out):
+    def print_errors(self, errors_list, reasons, out):
         # print_all_headers(errors_list, self.list_headers,
         #                   self.format_fields, out)
-        print_only_dt_message(errors_list, out, self.all_fields)
+        print_only_dt_message(errors_list, reasons, out, self.all_fields)
 
 
 def star(input):

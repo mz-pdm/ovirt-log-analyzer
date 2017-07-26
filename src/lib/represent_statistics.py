@@ -32,15 +32,20 @@ def print_all_headers(errors, headers, log_format_headers, out):
         out.write("\n")
 
 
-def print_only_dt_message(errors, out, headers):
-    max_len = max(len(err[1]) for err in errors)
+def print_only_dt_message(errors, reasons, out, headers):
     dt_idx = headers.index("date_time")
     line_idx = headers.index("line_num")
     msg_idx = headers.index("message")
-    for err in errors:
-        out.write("%12s %s | %*s | %s\n" %
+    reason_len = max([len(r) for r in reasons])
+    max_len = max(len(err[line_idx]) for err in errors)
+    out.write("%23s | %*s | %*s | %s\n" % ('Date+Time', max_len, 'Line',
+              reason_len, 'Reason', 'Message'))
+    out.write('-'*(29+max_len+reason_len+50)+'\n')
+    for idx, err in enumerate(errors):
+        out.write("%12s %s | %*s | %*s | %s\n" %
                   (datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%H:%M:%S,%f")[:-3],
                    datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%d-%m-%Y"),
-                   max_len, err[line_idx], err[msg_idx]))
+                   max_len, err[line_idx], reason_len, reasons[idx],
+                   err[msg_idx]))
