@@ -32,11 +32,12 @@ def print_all_headers(errors, headers, log_format_headers, out):
         out.write("\n")
 
 
-def print_only_dt_message(errors, reasons, out, headers):
-    dt_idx = headers.index("date_time")
-    line_idx = headers.index("line_num")
-    msg_idx = headers.index("message")
-    reason_len = max([len(r) for r in reasons])
+def print_only_dt_message(errors, new_fields, out):
+    dt_idx = new_fields.index("date_time")
+    line_idx = new_fields.index("line_num")
+    msg_idx = new_fields.index("message")
+    reason_idx = new_fields.index("reason")
+    reason_len = max([len(r[reason_idx]) for r in errors])
     max_len = max(len(err[line_idx]) for err in errors)
     out.write("%23s | %*s | %*s | %s\n" % ('Date+Time', max_len, 'Line',
               reason_len, 'Reason', 'Message'))
@@ -47,5 +48,5 @@ def print_only_dt_message(errors, reasons, out, headers):
                    "%H:%M:%S,%f")[:-3],
                    datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%d-%m-%Y"),
-                   max_len, err[line_idx], reason_len, reasons[idx],
+                   max_len, err[line_idx], reason_len, err[reason_idx],
                    err[msg_idx]))

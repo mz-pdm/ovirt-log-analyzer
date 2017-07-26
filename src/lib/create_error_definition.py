@@ -146,9 +146,9 @@ class LogLine:
 def check_constraints(line, events, host_ids, vm_numbers, tasks):
     if any([keyword.upper() in line.upper()
             for keyword in events + host_ids + vm_numbers +
-            ["ERROR", "Traceback", "down", "warn"]]):
+            ["ERROR", "WARN", "Traceback", "down", "fail", "except"]]):
         return True
-    if any([thread in line for thread in tasks.keys()]):
+    if any([thread in line for thread in tasks]):
         return True
     else:
         return False

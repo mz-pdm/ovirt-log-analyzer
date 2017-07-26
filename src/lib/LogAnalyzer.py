@@ -7,7 +7,6 @@ from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import merge_all_errors_by_time, \
                                     clusterize_messages, \
                                     calculate_events_frequency
-# , organize_important_tasks
 from lib.represent_statistics import print_only_dt_message
 from lib.detect_running_components import find_vm_tasks, find_all_vm_host
 from lib.ProgressPool import ProgressPool
@@ -115,7 +114,7 @@ class LogAnalyzer:
                                           self.time_ranges,
                                           self.vms,
                                           self.hosts)
-        self.all_tasks = tasks
+        self.vm_tasks = tasks
         self.long_tasks = long_tasks
 
     def load_data(self, show_warnings, show_progressbar):
@@ -136,7 +135,8 @@ class LogAnalyzer:
                                      self.hosts,
                                      self.time_ranges,
                                      self.vms,
-                                     self.all_tasks,
+                                     list(self.vm_tasks.keys()) +
+                                     list(self.long_tasks.keys()),
                                      show_warnings])
                                    for i in idxs], processes=5)
         else:
@@ -150,7 +150,8 @@ class LogAnalyzer:
                          self.hosts,
                          self.time_ranges,
                          self.vms,
-                         self.all_tasks,
+                         list(self.vm_tasks.keys()) +
+                         list(self.long_tasks.keys()),
                          show_warnings] for i in idxs]
             widget_style = ['All: ', progressbar.Percentage(), ' (',
                             progressbar.SimpleProgress(), ')', ' ',
@@ -187,20 +188,23 @@ class LogAnalyzer:
         #                [i for s in self.all_hosts.values() for i in s])
         clusters = clusterize_messages(merged_errors, self.all_fields,
                                        self.directory)
-        important_events, reasons = calculate_events_frequency(clusters,
-                                                               self.all_fields,
-                                                               timeline,
-                                                               self.events +
-                                                               self.hosts +
-                                                               self.vms)
-        # important_tasks = organize_important_tasks(self.all_tasks,
-        #                                           self.long_tasks)
-        return important_events, reasons
+        important_events, new_fields = \
+            calculate_events_frequency(clusters,
+                                       self.all_fields,
+                                       timeline,
+                                       self.events +
+                                       self.hosts +
+                                       self.vms,
+                                       self.vm_tasks,
+                                       self.long_tasks,
+                                       self.all_vms,
+                                       self.all_hosts)
+        return important_events, new_fields
 
-    def print_errors(self, errors_list, reasons, out):
+    def print_errors(self, errors_list, new_fields, out):
         # print_all_headers(errors_list, self.list_headers,
         #                   self.format_fields, out)
-        print_only_dt_message(errors_list, reasons, out, self.all_fields)
+        print_only_dt_message(errors_list, new_fields, out)
 
 
 def star(input):

@@ -72,6 +72,7 @@ def clusterize_messages(all_errors, fields, dirname):
                           r"[^^](\{+.*\}+)|" +
                           r"[^^](\<+.*\>+)")
     msid = fields.index("message")
+    dtid = fields.index('date_time')
     events = {}
     for err_id in range(len(all_errors)):
         mstext = all_errors[err_id][msid]
@@ -96,6 +97,12 @@ def clusterize_messages(all_errors, fields, dirname):
             events[mstext] = []
         events[mstext] += [all_errors[err_id]]
 
+    for m in sorted(events.copy().keys()):
+        if (len(set([mes[msid] for mes in events[m]])) == 1
+                and np.std([mes[dtid] for mes in events[m]]) >
+                len(events[m])/2):
+            # Equal messages
+            events.pop(m)
     messages = sorted(events.keys())
     similar = np.zeros((len(messages), len(messages)))
     for err0 in range(len(messages)):
@@ -108,7 +115,7 @@ def clusterize_messages(all_errors, fields, dirname):
             if msg1 == msg2:
                 dist /= 5
             else:
-                dist *= 10
+                dist *= 5
             similar[err0, err1] = np.round(dist/len(messages[err0]), 1)
             similar[err1, err0] = np.round(dist/len(messages[err1]), 1)
     np.fill_diagonal(similar, 0)
@@ -135,78 +142,101 @@ def clusterize_messages(all_errors, fields, dirname):
 # massage, field1, field2, etc.). It is list.
 # all_errors [[msg, date_time, fields..., filtered], [],...]
 # clusters {'1': [msg_filtered, mgs_orig, time],...}
-def calculate_events_frequency(clusters, fields, timeline, keywords):
-    needed_msgs = []
-    reasons = []
+def calculate_events_frequency(clusters, fields, timeline, keywords,
+                               vm_tasks, long_tasks, all_vms, all_hosts):
+    needed_msgs = set()
     msid = fields.index('message')
     dtid = fields.index('date_time')
     for c_id in sorted(clusters.keys(), key=lambda k: int(k)):
         if c_id == -1:
             for msg in clusters[c_id]:
-                if len(msg[msid]) > 500:
+                if len(msg[msid]) > 1000:
                     continue
-                needed_msgs += [msg]
-                reasons += ['Unique']
+                elif any([msg[msid] == tup[msid] and msg[dtid] == tup[dtid]
+                         for tup in needed_msgs]):
+                    continue
+                else:
+                    needed_msgs.add(tuple(msg + ['Unique']))
             continue
+        for msg in clusters[c_id]:
+            added = False
+            if any([msg[msid] == tup[msid] and msg[dtid] == tup[dtid]
+                    for tup in needed_msgs]):
+                continue
+            for k in keywords:
+                if k in msg[msid]:
+                    needed_msgs.add(tuple(msg + ['VM, Host or Task ID']))
+                    added = True
+                    break
+            if added:
+                continue
+            for com in sorted(long_tasks.keys()):
+                for t in long_tasks[com]:
+                    if ((com in msg[msid]) and
+                            (t - 10 < msg[dtid] < t + 10)):
+                        needed_msgs.add(tuple(msg +
+                                        ['Long operation']))
+                        added = True
+                        break
+            if added:
+                continue
+            for thread in (vm_tasks.keys()):
+                for field in msg:
+                    if thread in str(field):
+                        needed_msgs.add(tuple(msg + ['VM command']))
         diff = set()
         for msg1_id in range(len(clusters[c_id])-1):
             for msg2_id in range(msg1_id+1, len(clusters[c_id])):
                 diff = diff.union(return_nonsimilar_part(
                             clusters[c_id][msg1_id][msid].lower(),
                             clusters[c_id][msg2_id][msid].lower()))
-        if sum([k in word for word in diff for k in keywords]) > 1:
+        if (sum([k in word for word in diff for k in all_vms]) >=
+                len(all_vms)/2):
             # Show because includes VM or Host or task ID
-            added = False
             for msg in clusters[c_id]:
-                if (msg[dtid] not in [m[dtid] for m in needed_msgs] or
-                        msg[msid] not in [m[msid] for m in needed_msgs]):
-                    needed_msgs += [msg]
-                    reasons += ['VM, Host or Task ID']
-                    added = True
-                if added:
+                if any([msg[msid] == tup[msid] and msg[dtid] == tup[dtid]
+                        for tup in needed_msgs]) or len(msg[msid]) > 1000:
                     continue
-        if any([k in (msg[msid]).lower() for msg in clusters[c_id] for
-                k in ['error', 'down', 'fail', 'traceback', 'except',
-                      'warning']]):
-            # Show because includes keyword
-            added = False
-            for msg in clusters[c_id]:
-                if (msg[dtid] not in [m[dtid] for m in needed_msgs] or
-                        msg[msid] not in [m[msid] for m in needed_msgs]):
-                    needed_msgs += [msg]
-                    reasons += ['Keywords']
-                    added = True
-                if added:
-                    continue
-        if len(set([len(w) for w in diff])) == 1:
+                needed_msgs.add(tuple(msg + ['Differ by VM IDs']))
+        elif len(set([len(w) for w in diff])) == 1:
             # Show because cluster differs by one-length words (usually IDs)
-            added = False
+            if (np.std([m[dtid] for m in clusters[c_id]]) >
+                    len(clusters[c_id])/2):
+                for msg in clusters[c_id]:
+                    for tup in needed_msgs:
+                        if tuple(msg) == tup[:-1]:
+                            needed_msgs.remove(tup)
+                            break
+            else:
+                for msg in clusters[c_id]:
+                    if not (any([tuple(msg) == tup[:-1]
+                            for tup in needed_msgs])):
+                        needed_msgs.add(tuple(msg + ['One-length IDs']))
+        else:
+            # Show because includes keyword
             for msg in clusters[c_id]:
-                if (msg[dtid] not in [m[dtid] for m in needed_msgs] or
-                        msg[msid] not in [m[msid] for m in needed_msgs]):
-                    needed_msgs += [msg]
-                    reasons += ['One-length IDs']
-                    added = True
-                if added:
+                if (any([msg[msid] == tup[msid] and msg[dtid] == tup[dtid]
+                        for tup in needed_msgs])):
                     continue
+                else:
+                    for field in msg:
+                        if any([k in str(field).lower() for k in
+                                ['error ', 'fail', 'traceback',
+                                 'except', 'warn']]):
+                            needed_msgs.add(tuple(msg +
+                                                  ['Error or warning']))
     for t in range(len(timeline)):
         if (t < 5 or t > len(timeline)-5):
             pass
         if len(timeline[t-5:t])*2 < len(timeline[t:t+5]):
             # Show because an amount of followed messages increased
             for m in range(len(timeline[t])):
-                if ((timeline[t][m][dtid] not in [m[dtid]
-                     for m in needed_msgs]) or
-                    (timeline[t][m][msid] not in [m[msid]
-                     for m in needed_msgs])):
-                    needed_msgs += [timeline[t][m]]
-                    reasons += ['Increased messages']
+                if not any([tuple(timeline[t][m]) == tup[:-1]
+                            for tup in needed_msgs]):
+                    needed_msgs.add(tuple(timeline[t][m] +
+                                    ['Increased messages']))
+    needed_msgs = list(needed_msgs)
     sort_idxs = sorted(range(len(needed_msgs)),
                        key=lambda k: needed_msgs[k][dtid])
     sorted_messages = [needed_msgs[i] for i in sort_idxs]
-    sorted_reasons = [reasons[i] for i in sort_idxs]
-    return sorted_messages, sorted_reasons
-
-
-def organize_important_tasks(all_tasks, long_tasks, all_errors):
-    pass
+    return sorted_messages, fields + ['reason']
