@@ -186,10 +186,13 @@ class LogAnalyzer:
         #                [i for s in self.all_vms.values() for i in s] +
         #                list(self.all_hosts.keys()) +
         #                [i for s in self.all_hosts.values() for i in s])
-        clusters = clusterize_messages(merged_errors, self.all_fields,
-                                       self.directory)
+        clusters, merged_errors, self.all_fields = clusterize_messages(
+            merged_errors, self.all_fields, list((self.all_vms).keys()) +
+            list((self.all_hosts).keys()),
+            self.directory)
         important_events, new_fields = \
-            calculate_events_frequency(clusters,
+            calculate_events_frequency(merged_errors,
+                                       clusters,
                                        self.all_fields,
                                        timeline,
                                        self.events +
@@ -235,26 +238,3 @@ def process_files(idx, log, formats_templates, directory, time_zones,
     # def dump_to_json(self, path, outfile,
     #                 template='chart_errors_statistics_template.html'):
     #    pass
-
-    # search related errors in 5-sec sliding window
-    # def create_errors_graph(self, path, outfile, step=5):
-    #    sum_errors_time_first = []
-    #    for log in self.found_logs:
-    #        # calculating a number of errors for every moment of time (needed
-    #        # for chart and graph)
-    #        all_times = [str(x) for x in self.all_errors[log]['datetime']]
-    #        sum_errors_time_first += [
-    #            summarize_errors_time_first(self.all_errors[log]['who_send'],
-    #                                        self.all_errors[log]['event'],
-    #                                        self.all_errors[log]['thread'],
-    #                                        self.all_errors[log]['msg_text'],
-    #                                        all_times)]
-    #    # summarizing errors' appearing number like in PrintStatistics
-    #    if len(sum_errors_time_first) == 1 and sum_errors_time_first[0] == {}:
-    #        return
-    #    timeline, errors_dict = merge_all_errors_by_time(
-    #        self.found_logs, sum_errors_time_first)
-    #    # searching for suspicious errors, linking them with following errors
-    #    create_error_graph(self.log_freq, self.sender_freq, self.event_freq,
-    #                       self.message_freq, timeline, errors_dict,
-    #                       os.path.join(path, outfile), step)
