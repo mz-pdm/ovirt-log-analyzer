@@ -186,9 +186,12 @@ class LogAnalyzer:
         #                [i for s in self.all_vms.values() for i in s] +
         #                list(self.all_hosts.keys()) +
         #                [i for s in self.all_hosts.values() for i in s])
+        keyw_vm = [k for sub in self.all_vms for k in sub if 'null' not in k
+                    and 'not_found' not in k]
+        keyw_host = [k for sub in self.all_hosts for k in sub if 'null'
+                      not in k and 'not_found' not in k]
         clusters, merged_errors, self.all_fields = clusterize_messages(
-            merged_errors, self.all_fields, list((self.all_vms).keys()) +
-            list((self.all_hosts).keys()),
+            merged_errors, self.all_fields, keyw_vm + keyw_host,
             self.directory)
         important_events, new_fields = \
             calculate_events_frequency(merged_errors,
