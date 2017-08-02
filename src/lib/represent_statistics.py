@@ -43,6 +43,8 @@ def print_only_dt_message(errors, new_fields, out):
               reason_len, 'Reason', 'Message'))
     out.write('-'*(29+max_len+reason_len+50)+'\n')
     for idx, err in enumerate(errors):
+        #if 'Failed to migrate' in err[msg_idx]:
+        #    print(err[msg_idx])
         out.write("%12s %s | %*s | %*s | %s\n" %
                   (datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%H:%M:%S,%f")[:-3],
