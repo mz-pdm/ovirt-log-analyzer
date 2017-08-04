@@ -128,13 +128,15 @@ def clusterize_messages(all_errors, fields, keywords, dirname):
     #         result += [worker.next()]
     # print(result)
     # exit()
+    regex2 = re.compile(r'^(.{2,}?)([ =+-\:\;\,\'\"].*|$)')
     for err0 in range(len(messages2)):
         print('clusterize_messages: %d from %d...'% (err0, len(messages2)))
         for err1 in range(err0+1, len(messages2)):
             dist = editdistance.eval(messages2[err0], messages2[err1])
-            if messages2[err0].split(' ')[0] == messages2[err1].split(' ')[0]:
-                similar[err0, err1] = dist//len(messages[err0])
-                similar[err1, err0] = dist//len(messages[err1])
+            if ((regex2.search(messages2[err0])).group(1) ==
+                (regex2.search(messages2[err1])).group(1)):
+                similar[err0, err1] = (dist/10)//len(messages[err0])
+                similar[err1, err0] = (dist/10)//len(messages[err1])
             else:
                 similar[err0, err1] = (dist*100)//len(messages[err0])
                 similar[err1, err0] = (dist*100)//len(messages[err1])
@@ -227,7 +229,6 @@ def calculate_events_frequency(all_errors, clusters, fields, err_timeline,
                 if any([k in str(field).lower() for k in
                         ['error ', 'fail', 'traceback',
                          'except', 'warn']]):
-                    print(msg[strid],'ERRORR')
                     needed_msgs.add(msg[strid])
                     if msg[strid] not in reasons.keys():
                         reasons[msg[strid]] = set()
@@ -292,7 +293,7 @@ def calculate_events_frequency(all_errors, clusters, fields, err_timeline,
                 reason = '_'.join(sorted(reasons[msg[strid]]))
             else:
                 reason = 'unknown'
-            f.write("%12s %s | %10s | %10s | %s\n" %
+            f.write("%12s %s | %20s | %10s | %s\n" %
                   (datetime.utcfromtimestamp(msg[dtid]).strftime(
                    "%H:%M:%S,%f")[:-3],
                    datetime.utcfromtimestamp(msg[dtid]).strftime(

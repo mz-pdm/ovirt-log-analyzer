@@ -137,6 +137,11 @@ class LogAnalyzer:
                                      self.vms,
                                      list(self.vm_tasks.keys()) +
                                      list(self.long_tasks.keys()),
+                                     [m['flow_id'] for t in
+                                        self.vm_tasks.keys() for m in
+                                        (self.vm_tasks)[t]
+                                        if ('flow_id' in m.keys()
+                                            and m['flow_id'] != '')],
                                      show_warnings])
                                    for i in idxs], processes=5)
         else:
@@ -152,6 +157,10 @@ class LogAnalyzer:
                          self.vms,
                          list(self.vm_tasks.keys()) +
                          list(self.long_tasks.keys()),
+                         [m['flow_id'] for t in self.vm_tasks.keys()
+                            for m in (self.vm_tasks)[t]
+                            if ('flow_id' in m.keys()
+                                and m['flow_id'] != '')],
                          show_warnings] for i in idxs]
             widget_style = ['All: ', progressbar.Percentage(), ' (',
                             progressbar.SimpleProgress(), ')', ' ',
