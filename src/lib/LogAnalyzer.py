@@ -158,11 +158,11 @@ class LogAnalyzer:
                                      self.vms,
                                      #list(self.vm_tasks.keys()) +
                                      list(self.long_tasks.keys()),
-                                     [m['flow_id'] for t in
-                                        self.vm_tasks.keys() for m in
+                                     [mes['flow_id'] for t in
+                                        self.vm_tasks.keys() for mes in
                                         (self.vm_tasks)[t]
-                                        if ('flow_id' in m.keys()
-                                            and m['flow_id'] != '')],
+                                        if ('flow_id' in mes.keys()
+                                            and mes['flow_id'] != '')],
                                      show_warnings])
                                    for i in idxs], processes=5)
         else:
@@ -178,12 +178,12 @@ class LogAnalyzer:
                          self.vms,
                          #list(self.vm_tasks.keys()) +
                          list(self.long_tasks.keys()),
-                         [m['flow_id'] for t in self.vm_tasks.keys()
-                            for m in (self.vm_tasks)[t]
-                            if ('flow_id' in m.keys()
-                                and m['flow_id'] != '')],
+                         [mes['flow_id'] for t in self.vm_tasks.keys()
+                            for mes in (self.vm_tasks)[t]
+                            if ('flow_id' in mes.keys()
+                                and mes['flow_id'] != '')],
                          show_warnings] for i in idxs]
-            widget_style = ['All: ', progressbar.Percentage(), ' (',
+            widget_style = ['Load: ', progressbar.Percentage(), ' (',
                             progressbar.SimpleProgress(), ')', ' ',
                             progressbar.Bar(), ' ', progressbar.Timer(), ' ',
                             progressbar.AdaptiveETA()]
@@ -216,13 +216,12 @@ class LogAnalyzer:
         #                [i for s in self.all_vms.values() for i in s] +
         #                list(self.all_hosts.keys()) +
         #                [i for s in self.all_hosts.values() for i in s])
-        keyw_vm = [k for sub in self.all_vms for k in sub if 'null' not in k
-                    and 'not_found' not in k]
-        keyw_host = [k for sub in self.all_hosts for k in sub if 'null'
-                      not in k and 'not_found' not in k]
+
         clusters, merged_errors, self.all_fields, needed_messages, \
                 reasons = clusterize_messages(merged_errors, self.all_fields,
-                                              keyw_vm + keyw_host,
+                                              self.events +
+                                              self.vms +
+                                              self.hosts,
                                               self.directory)
         important_events, new_fields = \
             calculate_events_frequency(merged_errors,
@@ -257,7 +256,6 @@ def process_files(idx, log, formats_templates, directory, time_zones,
     if text_header:
         text_header.update_mapping(type_op="Parsing:")
     # gathering all information about errors from a logfile into lists
-    # print('Analysing %s' % os.path.join(directory, log[idx])+'...\n')
     lines_info, fields_names = loop_over_lines(directory,
                                                log[idx],
                                                formats_templates[idx],

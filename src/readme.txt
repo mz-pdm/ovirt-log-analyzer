@@ -5,4 +5,3 @@ pytz            - pip install pytz
 lzma            - pip install pyliblzma
 Multiprocessing - pip install multiprocess
 Progressbar     - pip install progressbar2
-scikit-learn    - pip install scikit-learn

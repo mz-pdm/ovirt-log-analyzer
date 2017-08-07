@@ -95,7 +95,7 @@ if __name__ == "__main__":
         files = sorted(args.filenames)
     else:
         files = os.listdir(args.log_directory)
-        files = [f for f in files if '.log' in f]
+        files = [f for f in files if '.log' in f or '.xz' in f]
     # Output directory
     if args.output_dir is not None:
         if not os.path.isdir(args.output_dir):
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     # Time zones
     tz_info = {}
     if args.default_tzinfo is not None:
-        default_tz = args.default_tzinfo
+        default_tz = args.default_tzinfo[0]
     else:
         default_tz = '+0000'
 
@@ -119,9 +119,9 @@ if __name__ == "__main__":
                   '(-tz). Must be even')
             exit()
         for file_idx in range(0, len(args.tzinfo)-1, 2):
-            if args.tzinfo[file_idx] not in args.files:
-                print('Argparser: Wrong filename "%s" in time zone ' +
-                      '(was not listed in log_filenames)' %
+            if args.tzinfo[file_idx] not in files:
+                print(('Argparser: Wrong filename %s in time zone ' +
+                      '(was not listed in log_filenames)') % 
                       args.tzinfo[file_idx])
                 exit()
             elif re.fullmatch(r"^[\+\-][\d]{2}00$",
@@ -158,8 +158,8 @@ if __name__ == "__main__":
                       args.time_range[tr_idx+1])
                 exit()
             if date_time_2 < date_time_1:
-                print("Argparser: Provided date time range doesn't " +
-                      "overlap: %s %s" % (args.time_range[tr_idx],
+                print(("Argparser: Provided date time range doesn't " +
+                      "overlap: %s %s") % (args.time_range[tr_idx],
                                           args.time_range[tr_idx+1]))
                 exit()
             time_range_info += [[date_time_1, date_time_2]]
