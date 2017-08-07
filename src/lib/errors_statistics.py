@@ -11,7 +11,6 @@ For all logfiles:
 """
 import numpy as np
 import re
-import editdistance
 from sklearn.cluster import DBSCAN
 from datetime import datetime
 import progressbar
@@ -93,8 +92,12 @@ def clusterize_messages(all_errors, fields, keywords, dirname):
                           r"[^^](\<+.*\>+)")
     msid = fields.index("message")
     dtid = fields.index('date_time')
+    strid = fields.index('line_num')
     fields += ['filtered']
     fid = fields.index('filtered')
+    events = {}
+    reasons = {}
+    needed_msgs = set()
     all_errors = [msg for msg in all_errors if len(msg[msid]) > 10]
     for err_id in range(len(all_errors)):
         mstext = all_errors[err_id][msid]
@@ -104,12 +107,41 @@ def clusterize_messages(all_errors, fields, keywords, dirname):
                 if subg == '' or any([k in subg for k in keywords]):
                     continue
                 mstext = mstext.replace(subg, '')
+        if mstext not in events.keys():
+            events[mstext] = {'date_time': [], 'line_num': [],
+                              'keywords': set()}
+        for k in keywords:
+            if k in all_errors[err_id][msid]:
+                events[mstext]['keywords'].add(k)
+        for k in ['error', 'fail', 'failure', 'failed', 'traceback',
+                  'warn', 'warning']:
+            for f in fields:
+                err_res = re.search(r'(^|[ \:\.\,]+)' + k + r'([ \:\.\,]+|$)',
+                                    all_errors[err_id][msid].lower())
+                if err_res is not None:
+                    events[mstext]['keywords'].add(k)
+                    if (k == 'traceback' or f != 'message'):
+                        needed_msgs.add(all_errors[err_id][strid])
+                        if all_errors[err_id][strid] not in reasons.keys():
+                            reasons[all_errors[err_id][strid]] = set()
+                        reasons[all_errors[err_id][strid]].add(
+                            'Error or Traceback')
+        events[mstext]['date_time'] += [all_errors[err_id][dtid]]
+        events[mstext]['line_num'] += [all_errors[err_id][strid]]
         all_errors[err_id] += [mstext]
-    messages = [m[fid] for m in all_errors]
+    for filtered in events.keys():
+        if (len(events[mstext]['keywords']) > 1):
+            # Differ by VMiD
+            for line_num in events[filtered]['line_num']:
+                needed_msgs.add(line_num)
+                if line_num not in reasons.keys():
+                    reasons[line_num] = set()
+                reasons[line_num].add('Differ by VM IDs')
+    messages = [m[fid] for m in all_errors]  # if m[fid] in needed_msgs]
     messages2 = set()
     for mes in messages:
-        lim = min(len(mes),70)
-        messages2.add(mes.lower()[:lim])
+        #lim = min(len(mes),70)
+        messages2.add(mes.lower())  # [:lim])
     messages2 = sorted(list(messages2))
     similar = np.zeros((len(messages2), len(messages2)))
     regex1 = re.compile(r'[:.,;]$')
@@ -132,29 +164,26 @@ def clusterize_messages(all_errors, fields, keywords, dirname):
     for err0 in range(len(messages2)):
         print('clusterize_messages: %d from %d...'% (err0, len(messages2)))
         for err1 in range(err0+1, len(messages2)):
-            dist = editdistance.eval(messages2[err0], messages2[err1])
+            #dist = editdistance.eval(messages2[err0], messages2[err1])
             if ((regex2.search(messages2[err0])).group(1) ==
                 (regex2.search(messages2[err1])).group(1)):
-                similar[err0, err1] = (dist/10)//len(messages[err0])
-                similar[err1, err0] = (dist/10)//len(messages[err1])
+                similar[err0, err1] = 0  # (dist/10)//len(messages[err0])
+                similar[err1, err0] = 0  # (dist/10)//len(messages[err1])
             else:
-                similar[err0, err1] = (dist*100)//len(messages[err0])
-                similar[err1, err0] = (dist*100)//len(messages[err1])
+                similar[err0, err1] = 100  # (dist*100)//len(messages[err0])
+                similar[err1, err0] = 100  # (dist*100)//len(messages[err1])
     np.fill_diagonal(similar, 0)
     similar += similar.T
     d = DBSCAN(metric='precomputed', min_samples=1)
     clust = d.fit_predict(similar)
-    print('clusterize_messages: clusters created')
     f = open("result_"+dirname.split('/')[-2]+".txt", 'w')
     cur_mid = 0
-    print('clusterize_messages: file opened')
     for mid in sorted(zip(clust, messages2), key=lambda k: int(k[0])):
         if mid[0] != cur_mid:
             f.write('\n')
             cur_mid = mid[0]
         f.write("%d : %s\n" % (mid[0], mid[1]))
     f.close()
-    print('clusterize_messages: file writed')
     clusters = {}
     # slow place
     for err_id in range(len(all_errors)):
@@ -166,7 +195,7 @@ def clusterize_messages(all_errors, fields, keywords, dirname):
                     clusters[cluster_no] = []
                 clusters[cluster_no] += [all_errors[err_id]]
     print('clusterize_messages: end')
-    return clusters, all_errors, fields
+    return clusters, all_errors, fields, needed_msgs, reasons
 
 
 # fields - names the following positions in log line (date_time,
@@ -175,9 +204,7 @@ def clusterize_messages(all_errors, fields, keywords, dirname):
 # clusters {'1': [msg_filtered, mgs_orig, time],...}
 def calculate_events_frequency(all_errors, clusters, fields, err_timeline,
                                keywords, vm_tasks, long_tasks, all_vms,
-                               all_hosts):
-    needed_msgs = set()
-    reasons = {}
+                               all_hosts, needed_msgs, reasons):
     msid = fields.index('message')
     dtid = fields.index('date_time')
     strid = fields.index('line_num')
@@ -192,6 +219,7 @@ def calculate_events_frequency(all_errors, clusters, fields, err_timeline,
             for msg in clusters[c_id]:
                 if msg[strid] not in reasons.keys():
                     reasons[msg[strid]] = set()
+                needed_msgs.remove(msg[strid])
                 reasons[msg[strid]].add('Frequent')
             continue
         if (len(clusters[c_id]) == 1):
@@ -226,14 +254,14 @@ def calculate_events_frequency(all_errors, clusters, fields, err_timeline,
             for field in msg:
                 added = False
                 # Show because includes keyword
-                if any([k in str(field).lower() for k in
-                        ['error ', 'fail', 'traceback',
-                         'except', 'warn']]):
-                    needed_msgs.add(msg[strid])
-                    if msg[strid] not in reasons.keys():
-                        reasons[msg[strid]] = set()
-                    reasons[msg[strid]].add('Error or warning')
-                    added = True
+                #if any([k in str(field).lower() for k in
+                #        ['error ', 'fail', 'traceback',
+                #         'except', 'warn']]):
+                #    needed_msgs.add(msg[strid])
+                #    if msg[strid] not in reasons.keys():
+                #        reasons[msg[strid]] = set()
+                #    reasons[msg[strid]].add('Error or warning')
+                #    added = True
                 for thread in (vm_tasks.keys()):
                     for task in vm_tasks[thread]:
                         if task['command_name'] in str(field):
@@ -247,30 +275,23 @@ def calculate_events_frequency(all_errors, clusters, fields, err_timeline,
                     break
         # endloop
         # Analyze the difference between messages in cluster
-        print('calculate_events_frequency: Start diff...')
-        diff = set()
-        for msg1_id in range(len(clusters[c_id])-1):
-            print('calculate_events_frequency: Msg %d from %d...' %
-                  (msg1_id, len(clusters[c_id])))
-            for msg2_id in range(msg1_id+1, len(clusters[c_id])):
-                diff = diff.union(return_nonsimilar_part(
-                            clusters[c_id][msg1_id][msid].lower(),
-                            clusters[c_id][msg2_id][msid].lower()))
-        if (sum([k in word for word in diff for k in all_vms]) >=
-                len(all_vms)/2):
-            # Show because includes VM or Host or task ID
-            for msg in clusters[c_id]:
-                needed_msgs.add(msg[strid])
-                if msg[strid] not in reasons.keys():
-                    reasons[msg[strid]] = set()
-                reasons[msg[strid]].add('Differ by VM IDs')
-        # if len(set([len(w) for w in diff])) == 1:
-        #     # Show because cluster differs by one-length words (usually IDs)
-        #     for msg in clusters[c_id]:
-        #         needed_msgs.add(msg[strid])
-        #         if msg[strid] not in reasons.keys():
-        #             reasons[msg[strid]] = set()
-        #         reasons[msg[strid]].add('One-length IDs')
+        ### print('calculate_events_frequency: Start diff...')
+        ### diff = set()
+        ### for msg1_id in range(len(clusters[c_id])-1):
+        ###     print('calculate_events_frequency: Msg %d from %d...' %
+        ###           (msg1_id, len(clusters[c_id])))
+        ###     for msg2_id in range(msg1_id+1, len(clusters[c_id])):
+        ###         diff = diff.union(return_nonsimilar_part(
+        ###                     clusters[c_id][msg1_id][msid].lower(),
+        ###                     clusters[c_id][msg2_id][msid].lower()))
+        ### if (sum([k in word for word in diff for k in all_vms]) >=
+        ###         len(all_vms)/2):
+        ###     # Show because includes VM or Host or task ID
+        ###     for msg in clusters[c_id]:
+        ###         needed_msgs.add(msg[strid])
+        ###         if msg[strid] not in reasons.keys():
+        ###             reasons[msg[strid]] = set()
+        ###         reasons[msg[strid]].add('Differ by VM IDs')
     # endloop
     for t in range(10, len(err_timeline)-10):
         if len(err_timeline[t-10:t]) < len(err_timeline[t:t+10]):

@@ -216,7 +216,10 @@ if __name__ == "__main__":
                        event_info,
                        host_info,
                        format_file)
+    output_descriptor.write('Searching for running VMs and hosts...\n')
     logs.find_vms_and_hosts()
+    output_descriptor.write('Searching for VM tasks...\n')
+    logs.find_vm_tasks()
     if args.list_vm_host:
         output_descriptor.write('------- List of VMs -------\n')
         for vm in sorted(logs.all_vms.keys()):
@@ -231,10 +234,11 @@ if __name__ == "__main__":
                 output_descriptor.write('ID: %s\n' % logs.all_hosts[host][i])
             output_descriptor.write('\n')
         exit()
-    logs.find_vm_tasks()
+    output_descriptor.write('Loading data...\n')
     logs.load_data(args.warn, args.progressbar)
-    # now just all relevant lines
+    output_descriptor.write('Analyzing the messages...\n')
     messages, new_fields = logs.find_important_events()
+    output_descriptor.write('Printing messages...\n')
     logs.print_errors(messages, new_fields, output_file)
 
     # these options are on the way

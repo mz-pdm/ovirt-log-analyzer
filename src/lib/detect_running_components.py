@@ -54,7 +54,7 @@ def find_all_vm_host(output_descriptor,
                      time_range_info):
     vm_names = {}
     host_names = {}
-    for log in files:
+    for log_idx, log in enumerate(files):
         full_filename = os.path.join(log_directory, log)
         if log[-4:] == '.log':
                 f = open(full_filename)
@@ -68,7 +68,7 @@ def find_all_vm_host(output_descriptor,
             multiline = False
             for line_num, line in enumerate(f):
                 if (time_range_info != [] and
-                    not parse_date_time(line, tz_info[log],
+                    not parse_date_time(line, tz_info[log_idx],
                                         time_range_info)):
                     continue
                 vm_name = re.search(r'\<name\>(.+?)\<\/name\>', line)
@@ -129,7 +129,7 @@ def find_all_vm_host(output_descriptor,
             continue
         for line_num, line in enumerate(f):
             if (time_range_info != [] and
-                not parse_date_time(line, tz_info[log],
+                not parse_date_time(line, tz_info[log_idx],
                                     time_range_info)):
                 continue
             if any([v in line.lower() for v in ['vmid', 'vmname', 'vm_name']]):
@@ -143,28 +143,37 @@ def find_all_vm_host(output_descriptor,
                     res_id = '<id_not_found>'
 
                 if (re.search(r"vmName\ *=\ *(.+?),", line) is not None):
-                    res_name = re.search(r"vmName\ *=\ *(.+?),",
-                                         line).group(1)
+                    res_name = re.sub('[\'\"]', '',
+                                      re.search(r"vmName\ *=\ *(.+?),",
+                                                line).group(1))
                 elif (re.search(r"vm\ *=\ *\'VM\ *\[([^\[\]]*?)\]\'",
                                 line) is not None):
-                    res_name = re.search(r"vm\ *=\ *\'VM\ *\[([^\[\]]*?)\]\'",
-                                         line).group(1)
+                    res_name = re.sub('[\'\"]', '',
+                                      re.search(r"vm\ *=\ *\'VM\ *" +
+                                                r"\[([^\[\]]*?)\]\'",
+                                                line).group(1))
                 elif (re.search(r"\[(.+?)=VM_NAME\]", line) is not None):
-                    res_name = re.search(r"\[([^\[\]]*?)=VM_NAME\]",
-                                         line).group(1)
+                    res_name = re.sub('[\'\"]', '',
+                                      re.search(r"\[([^\[\]]*?)=VM_NAME\]",
+                                                line).group(1))
                 elif (re.search(r"\[(.+?)=VM\]", line) is not None):
-                    res_name = re.search(r"\[([^\[\]]*?)=VM\]",
-                                         line).group(1)
+                    res_name = re.sub('[\'\"]', '',
+                                      re.search(r"\[([^\[\]]*?)=VM\]",
+                                                line).group(1))
                 elif (re.search(r"\'vmName\'\ *[:=]\ *u*\'([^\']*?)\'",
                                 line) is not None):
-                    res_name = re.search(r"\'vmName\'" +
-                                         r"\ *[:=]\ *u*\'([^\']*?)\'",
-                                         line).group(1)
+                    res_name = re.sub('[\'\"]', '',
+                                      re.search(r"\'vmName\'" +
+                                                r"\ *[:=]\ *u*\'([^\']*?)\'",
+                                                line).group(1))
                 else:
                     res_name = '<name_not_found>'
+                if res_name.lower() == 'null':
+                    res_name = '<name_not_found>'
+                if res_id.lower() == 'null':
+                    res_id = '<id_not_found>'
                 if (res_name == '<name_not_found>' and
-                        (res_id == '<id_not_found>' or
-                         res_id.lower() == 'null')):
+                        res_id == '<id_not_found>'):
                     continue
                 if res_name not in vm_names.keys():
                     vm_names[res_name] = []
@@ -199,7 +208,7 @@ def find_all_vm_host(output_descriptor,
                     host_names[res_name] += [res_id]
             other_vm = re.search(r'VM\ *\'(.{30,40}?)\'\ *' +
                                  r'\(([^\(\)]*?)\)', line)
-            if other_vm is not None:
+            if (other_vm is not None and other_vm.group(1).lower() != 'null'):
                 if other_vm.group(2) not in vm_names.keys():
                     vm_names[other_vm.group(2)] = []
                 if other_vm.group(1) not in vm_names[other_vm.group(2)]:
@@ -225,157 +234,235 @@ def find_all_vm_host(output_descriptor,
     return vm_names, host_names
 
 
-def find_vm_tasks(output_descriptor,
-                  log_directory,
-                  files,
-                  engine_formats,
-                  tz_info,
-                  time_range_info,
-                  user_vms, user_hosts):
+def find_vm_tasks_engine(output_descriptor,
+                         log_directory,
+                         log,
+                         file_formats,
+                         tz_info,
+                         time_range_info,
+                         user_vms, user_hosts):
     commands_threads = {}
     needed_threads = set()
-    for log in files:
-        if 'engine' not in log.lower():
-            continue
-        full_filename = os.path.join(log_directory, log)
-        if (log[-4:] == '.log'):
-                f = open(full_filename)
-        elif (log[-3:] == '.xz'):
-            f = lzma.open(full_filename, 'rt')
-        else:
-            output_descriptor.write("Unknown file extension: %s" % log)
-            continue
-        firstline = f.readline()
-        for fmt in engine_formats:
-            prog = re.compile(fmt)
-            fields = prog.search(firstline)
-            if fields is not None:
-                engine_format = prog
+    if (log[-4:] == '.log'):
+            f = open(log)
+    elif (log[-3:] == '.xz'):
+        f = lzma.open(log, 'rt')
+    else:
+        output_descriptor.write("Unknown file extension: %s" % log)
+        return commands_threads, long_actions
+    firstline = f.readline()
+    for fmt in file_formats:
+        prog = re.compile(fmt)
+        fields = prog.search(firstline)
+        if fields is not None:
+            file_format = prog
+            break
+    if fields is None:
+        # Format is not found
+        return commands_threads, long_actions
+    f.seek(0, 0)
+    for line_num, line in enumerate(f):
+        fields = file_format.search(line)
         if fields is None:
-            # Format is not found
+            # Tracebacks will be added anyway
             continue
-        f.seek(0, 0)
-        for line_num, line in enumerate(f):
-            fields = engine_format.search(line)
-            if fields is None:
-                # Tracebacks will be added anyway
-                continue
-            fields = fields.groupdict()
-            if (time_range_info != [] and not
-                    parse_date_time(fields["date_time"], tz_info[log],
-                                    time_range_info)):
-                continue
-            if (any([vm in fields["message"] for vm in user_vms]) or
-                    any([host in fields["message"] for host in user_hosts])):
-                needed_threads.add(fields["thread"])
-
-            com = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +Running command:\ +" +
-                            r"([^\s]+)Command", line)
-            if (com is not None):
-                if (com.group(1) not in commands_threads.keys()):
-                    commands_threads[com.group(1)] = []
-                commands_threads[com.group(1)] += [
-                                 {'command_name': com.group(3),
-                                  'command_start_name': com.group(3)}]
-                continue
-
-            start = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +START,\ +" +
-                              r"([^\s]+)Command.*\ +log id:\ (.+)", line)
-            if (start is not None):
-                if (start.group(1) not in commands_threads.keys()):
-                    commands_threads[start.group(1)] = [
+        fields = fields.groupdict()
+        if (time_range_info != [] and not
+                parse_date_time(fields["date_time"], tz_info,
+                                time_range_info)):
+            continue
+        if (any([vm in fields["message"] for vm in user_vms]) or
+                any([host in fields["message"] for host in user_hosts])):
+            needed_threads.add(fields["thread"])
+        com = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +Running command:\ +" +
+                        r"([^\s]+)Command", line)
+        if (com is not None):
+            if (com.group(1) not in commands_threads.keys()):
+                commands_threads[com.group(1)] = []
+            commands_threads[com.group(1)] += [
+                             {'command_name': com.group(3),
+                              'command_start_name': com.group(3)}]
+            continue
+        start = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +START,\ +" +
+                          r"([^\s]+)Command.*\ +log id:\ (.+)", line)
+        if (start is not None):
+            if (start.group(1) not in commands_threads.keys()):
+                commands_threads[start.group(1)] = [
+                                 {'command_name': start.group(3),
+                                  'command_start_name': start.group(3),
+                                  'start_time':
+                                  parse_date_time(line, tz_info,
+                                                  time_range_info),
+                                  'log_id': start.group(4),
+                                  'flow_id': start.group(2)}]
+            else:
+                com_list = [com['command_name'] for com in
+                            commands_threads[start.group(1)]]
+                try:
+                    com_id = len(com_list) - 1 - \
+                             com_list[::-1].index(start.group(3))
+                    com_name = commands_threads[start.group(1)][com_id][
+                                'command_name']
+                    commands_threads[start.group(1)][com_id] = \
+                             {'command_name': com_name,
+                              'command_start_name': start.group(3),
+                              'start_time':
+                              parse_date_time(line, tz_info,
+                                              time_range_info),
+                              'log_id': start.group(4),
+                              'flow_id': start.group(2)}
+                except:
+                    commands_threads[start.group(1)] += [
                                      {'command_name': start.group(3),
                                       'command_start_name': start.group(3),
                                       'start_time':
                                       parse_date_time(line, tz_info,
-                                                       time_range_info),
+                                                      time_range_info),
                                       'log_id': start.group(4),
                                       'flow_id': start.group(2)}]
-                else:
-                    com_list = [com['command_name'] for com in
-                                commands_threads[start.group(1)]]
-                    try:
-                        com_id = com_list.index(start.group(3))
-                        com_name = commands_threads[start.group(1)][com_id][
-                                    'command_name']
-                        commands_threads[start.group(1)][com_id] = \
-                                 {'command_name': com_name,
-                                  'command_start_name': start.group(3),
-                                  'start_time':
-                                  parse_date_time(line, tz_info,
-                                                   time_range_info),
-                                  'log_id': start.group(4),
-                                  'flow_id': start.group(2)}
-                    except:
-                        commands_threads[start.group(1)] += [
-                                         {'command_name': start.group(3),
-                                          'command_start_name': start.group(3),
-                                          'start_time':
-                                          parse_date_time(line, tz_info,
-                                                           time_range_info),
-                                          'log_id': start.group(4),
-                                          'flow_id': start.group(2)}]
+            continue
+        finish = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +FINISH,\ +" +
+                           r"([^\s]+)Command.*\ +log id:\ (.+)", line)
+        if (finish is not None):
+            if (finish.group(1) not in commands_threads.keys()):
+                commands_threads[finish.group(1)] = [
+                                 {'command_name': finish.group(3),
+                                  'command_start_name': finish.group(3),
+                                  'log_id': finish.group(4),
+                                  'flow_id': finish.group(2)}]
+                # com_id = 0
                 continue
-
-            finish = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +FINISH,\ +" +
-                               r"([^\s]+)Command.*\ +log id:\ (.+)", line)
-            if (finish is not None):
-                if (finish.group(1) not in commands_threads.keys()):
-                    commands_threads[finish.group(1)] = [
-                                     {'command_name': finish.group(3),
-                                      'command_start_name': finish.group(3),
-                                      'log_id': finish.group(4),
-                                      'flow_id': finish.group(2)}]
-                    # com_id = 0
+            else:
+                com_list = [com['command_name'] for com in
+                            commands_threads[finish.group(1)]]
+                try:
+                    com_id = len(com_list) - 1 - \
+                             com_list[::-1].index(finish.group(3))
+                except:
+                    commands_threads[finish.group(1)] += [{
+                                     'command_name': finish.group(3),
+                                     'command_start_name': finish.group(3),
+                                     'log_id': finish.group(4),
+                                     'flow_id': finish.group(2)}]
                     continue
-                else:
-                    com_list = [com['command_name'] for com in
-                                commands_threads[finish.group(1)]]
-                    try:
-                        com_id = com_list.index(finish.group(3))
-                    except:
-                        commands_threads[finish.group(1)] += [{
-                                         'command_name': finish.group(3),
-                                         'command_start_name': finish.group(3),
-                                         'log_id': finish.group(4),
-                                         'flow_id': finish.group(2)}]
-                        # com_id = -1
-                        continue
-                for task_idx, task in \
-                        enumerate(commands_threads[finish.group(1)]):
-                    # print(task)
-                    if (# 'command_start_name' in task.keys() and
-                        #    task['command_start_name'] == finish.group(3) and
-                            'log_id' in task.keys() and
-                            task['log_id'] == finish.group(4)):
+            for task_idx, task in \
+                    enumerate(commands_threads[finish.group(1)]):
+                if (# 'command_start_name' in task.keys() and
+                    #    task['command_start_name'] == finish.group(3) and
+                        'log_id' in task.keys() and
+                        task['log_id'] == finish.group(4)):
+                    commands_threads[finish.group(1)][
+                                     task_idx]['finish_time'] = \
+                        parse_date_time(line,
+                                        tz_info,
+                                        time_range_info)
+                    if ('start_time' in commands_threads[
+                            finish.group(1)][task_idx].keys()):
                         commands_threads[finish.group(1)][
-                                         task_idx]['finish_time'] = \
-                            parse_date_time(line,
-                                            tz_info,
-                                            time_range_info)
-                        # if ('start_time' not in commands_threads[
-                        #         finish.group(1)][com_id].keys()):
-                        #     commands_threads[finish.group(1)][
-                        #                      com_id]['start_time'] = \
-                        #         parse_date_time(line,
-                        #                         tz_info,
-                        #                         time_range_info)
-                        if ('start_time' in commands_threads[
-                                finish.group(1)][task_idx].keys()):
-                            commands_threads[finish.group(1)][
-                                         task_idx]['duration'] = \
-                            commands_threads[finish.group(1)][
-                                         task_idx]['finish_time'] -\
-                            commands_threads[finish.group(1)][
-                                         task_idx]['start_time']
-        f.close()
-    json.dump(commands_threads, open('tasks_' +
+                                     task_idx]['duration'] = \
+                        commands_threads[finish.group(1)][
+                                     task_idx]['finish_time'] -\
+                        commands_threads[finish.group(1)][
+                                     task_idx]['start_time']
+    f.close()
+    json.dump(commands_threads, open('tasks_engine_' +
                                      log_directory.split('/')[-2] +
                                      '.json',
                                      'w'), indent=4, sort_keys=True)
     commands_threads, long_actions = select_needed_commands(commands_threads,
                                                             needed_threads)
-    json.dump(commands_threads, open('filetredtasks_' +
+    json.dump(commands_threads, open('filtered_tasks_engine_' +
+                                     log_directory.split('/')[-2] +
+                                     '.json',
+                                     'w'), indent=4, sort_keys=True)
+    return commands_threads, long_actions
+
+
+def find_vm_tasks_libvirtd(output_descriptor,
+                           log_directory,
+                           log,
+                           file_formats,
+                           tz_info,
+                           time_range_info,
+                           user_vms, user_hosts):
+    commands_threads = {}
+    needed_threads = set()
+    if (log[-4:] == '.log'):
+            f = open(log)
+    elif (log[-3:] == '.xz'):
+        f = lzma.open(log, 'rt')
+    else:
+        output_descriptor.write("Unknown file extension: %s" % log)
+        return commands_threads, long_actions
+    firstline = f.readline()
+    for fmt in file_formats:
+        prog = re.compile(fmt)
+        fields = prog.search(firstline)
+        if fields is not None:
+            file_format = prog
+            break
+    if fields is None:
+        # Format is not found
+        return commands_threads, long_actions
+    f.seek(0, 0)
+    for line_num, line in enumerate(f):
+        fields = file_format.search(line)
+        if fields is None:
+            # Tracebacks will be added anyway
+            continue
+        fields = fields.groupdict()
+        if (time_range_info != [] and not
+                parse_date_time(fields["date_time"], tz_info,
+                                time_range_info)):
+            continue
+        if (any([vm in fields["message"] for vm in user_vms]) or
+                any([host in fields["message"] for host in user_hosts])):
+            needed_threads.add(fields["thread"])
+        start = re.search(r"Thread (.+?) \((.+?)\) is now running job (.+)", line)
+        if (start is not None):
+            if (start.group(1) not in commands_threads.keys()):
+                commands_threads[start.group(1)] = []
+            commands_threads[start.group(1)] += [
+                             {'command_name': start.group(3),
+                              'start_time':
+                              parse_date_time(line, tz_info,
+                                              time_range_info)}]
+            continue
+        finish = re.search(r"Thread (.+?) \((.+?)\) finished job (.+?)" +
+                           r"( .*|$)", line)
+        if (finish is not None):
+            if (finish.group(1) not in commands_threads.keys()):
+                commands_threads[finish.group(1)] = [
+                                 {'command_name': finish.group(3)}]
+                continue
+            else:
+                com_list = [com['command_name'] for com in
+                            commands_threads[finish.group(1)]]
+                try:
+                    com_id = len(com_list) - 1 - \
+                             com_list[::-1].index(finish.group(3))
+                except:
+                    commands_threads[finish.group(1)] += [{
+                                     'command_name': finish.group(3)}]
+                    com_id = -1
+            commands_threads[finish.group(1)][com_id]['finish_time'] = \
+                    parse_date_time(line, tz_info, time_range_info)
+            if ('start_time' in commands_threads[
+                    finish.group(1)][com_id].keys()):
+                commands_threads[finish.group(1)][
+                             com_id]['duration'] = \
+                commands_threads[finish.group(1)][
+                             com_id]['finish_time'] -\
+                commands_threads[finish.group(1)][
+                             com_id]['start_time']
+    f.close()
+    json.dump(commands_threads, open('tasks_libvirtd_' +
+                                     log_directory.split('/')[-2] +
+                                     '.json',
+                                     'w'), indent=4, sort_keys=True)
+    commands_threads, long_actions = select_needed_commands(commands_threads,
+                                                            needed_threads)
+    json.dump(commands_threads, open('filtered_tasks_libvirtd_' +
                                      log_directory.split('/')[-2] +
                                      '.json',
                                      'w'), indent=4, sort_keys=True)
@@ -390,11 +477,11 @@ def select_needed_commands(all_threads, needed_threads):
         if thread in needed_threads:
             vm_threads[thread] = all_threads[thread]
         for command in all_threads[thread]:
-            if ('duration' in command):
-                if command['command_start_name'] not in \
+            if ('duration' in command.keys()):
+                if command['command_name'] not in \
                         operations_time.keys():
-                    operations_time[command['command_start_name']] = []
-                operations_time[command['command_start_name']] += \
+                    operations_time[command['command_name']] = []
+                operations_time[command['command_name']] += \
                     [{'duration': command['duration'], 'start_time':
                      command['start_time']}]
 
@@ -419,10 +506,10 @@ def select_needed_commands(all_threads, needed_threads):
             found = False
             if 'duration' not in command.keys():
                 continue
-            if command['command_start_name'] not in long_operations.keys():
+            if command['command_name'] not in long_operations.keys():
                 continue
             if command['start_time'] not in long_operations[command[
-                                            'command_start_name']]:
+                                            'command_name']]:
                 continue
             if thread not in vm_threads.keys():
                 vm_threads[thread] = [command]
@@ -430,8 +517,8 @@ def select_needed_commands(all_threads, needed_threads):
             for existed_commands in vm_threads[thread]:
                 if 'duration' not in existed_commands.keys():
                     continue
-                if existed_commands['command_start_name'] == \
-                        command['command_start_name'] and \
+                if existed_commands['command_name'] == \
+                        command['command_name'] and \
                         existed_commands['start_time'] == \
                         command['start_time']:
                     found = True

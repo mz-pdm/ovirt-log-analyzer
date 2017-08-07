@@ -5,10 +5,12 @@ import progressbar
 from multiprocessing import Manager, Pool
 from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import merge_all_errors_by_time, \
-                                    clusterize_messages, \
-                                    calculate_events_frequency
+                                  clusterize_messages, \
+                                  calculate_events_frequency
 from lib.represent_statistics import print_only_dt_message
-from lib.detect_running_components import find_vm_tasks, find_all_vm_host
+from lib.detect_running_components import find_vm_tasks_engine, \
+                                          find_vm_tasks_libvirtd, \
+                                          find_all_vm_host
 from lib.ProgressPool import ProgressPool
 from progressbar import ProgressBar
 
@@ -18,7 +20,7 @@ class LogAnalyzer:
     # directory
     # filenames[]
     # time_zones[]
-    # formats_templates{0:'...',}
+    # formats_templates[]
     # ----
     # found_logs['log1',...]
     # log_file_format{"log1":...,}
@@ -106,16 +108,35 @@ class LogAnalyzer:
     def find_vm_tasks(self):
         engine_formats = [fmt['regexp'] for fmt in self.formats_templates if
                           'engine' in fmt['name']]
-        tasks, long_tasks = find_vm_tasks(self.out_descr,
-                                          self.directory,
-                                          self.found_logs,
-                                          engine_formats,
-                                          self.time_zones,
-                                          self.time_ranges,
-                                          self.vms,
-                                          self.hosts)
-        self.vm_tasks = tasks
-        self.long_tasks = long_tasks
+        libvirtd_formats = [fmt['regexp'] for fmt in self.formats_templates if
+                          'libvirt' in fmt['name']]
+        self.vm_tasks = {}
+        self.long_tasks = {}
+        for idx, log in enumerate(self.found_logs):
+            if 'engine' in log.lower():
+                tasks_file, long_tasks_file = \
+                    find_vm_tasks_engine(self.out_descr,
+                                         self.directory,
+                                         os.path.join(self.directory, log),
+                                         engine_formats,
+                                         self.time_zones[idx],
+                                         self.time_ranges,
+                                         self.vms,
+                                         self.hosts)
+                self.vm_tasks.update(tasks_file)
+                self.long_tasks.update(long_tasks_file)
+            elif 'libvirt' in log.lower():
+                tasks_file, long_tasks_file = \
+                    find_vm_tasks_libvirtd(self.out_descr,
+                                           self.directory,
+                                           os.path.join(self.directory, log),
+                                           libvirtd_formats,
+                                           self.time_zones[idx],
+                                           self.time_ranges,
+                                           self.vms,
+                                           self.hosts)
+                self.vm_tasks.update(tasks_file)
+                self.long_tasks.update(long_tasks_file)
 
     def load_data(self, show_warnings, show_progressbar):
         self.all_errors = {}
@@ -135,7 +156,7 @@ class LogAnalyzer:
                                      self.hosts,
                                      self.time_ranges,
                                      self.vms,
-                                     list(self.vm_tasks.keys()) +
+                                     #list(self.vm_tasks.keys()) +
                                      list(self.long_tasks.keys()),
                                      [m['flow_id'] for t in
                                         self.vm_tasks.keys() for m in
@@ -155,7 +176,7 @@ class LogAnalyzer:
                          self.hosts,
                          self.time_ranges,
                          self.vms,
-                         list(self.vm_tasks.keys()) +
+                         #list(self.vm_tasks.keys()) +
                          list(self.long_tasks.keys()),
                          [m['flow_id'] for t in self.vm_tasks.keys()
                             for m in (self.vm_tasks)[t]
@@ -199,9 +220,10 @@ class LogAnalyzer:
                     and 'not_found' not in k]
         keyw_host = [k for sub in self.all_hosts for k in sub if 'null'
                       not in k and 'not_found' not in k]
-        clusters, merged_errors, self.all_fields = clusterize_messages(
-            merged_errors, self.all_fields, keyw_vm + keyw_host,
-            self.directory)
+        clusters, merged_errors, self.all_fields, needed_messages, \
+                reasons = clusterize_messages(merged_errors, self.all_fields,
+                                              keyw_vm + keyw_host,
+                                              self.directory)
         important_events, new_fields = \
             calculate_events_frequency(merged_errors,
                                        clusters,
@@ -213,7 +235,9 @@ class LogAnalyzer:
                                        self.vm_tasks,
                                        self.long_tasks,
                                        self.all_vms,
-                                       self.all_hosts)
+                                       self.all_hosts,
+                                       needed_messages,
+                                       reasons)
         return important_events, new_fields
 
     def print_errors(self, errors_list, new_fields, out):
@@ -228,7 +252,8 @@ def star(input):
 
 def process_files(idx, log, formats_templates, directory, time_zones,
                   out_descr, events, hosts, time_ranges, vms, tasks,
-                  show_warnings, progressbar=None, text_header=None):
+                  flow_ids, show_warnings, progressbar=None,
+                  text_header=None):
     if text_header:
         text_header.update_mapping(type_op="Parsing:")
     # gathering all information about errors from a logfile into lists
@@ -243,6 +268,7 @@ def process_files(idx, log, formats_templates, directory, time_zones,
                                                time_ranges,
                                                vms,
                                                tasks,
+                                               flow_ids,
                                                show_warnings,
                                                progressbar)
     return lines_info, fields_names
