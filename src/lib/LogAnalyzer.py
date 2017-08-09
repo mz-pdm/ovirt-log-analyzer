@@ -62,6 +62,10 @@ class LogAnalyzer:
             if not os.path.isfile(full_filename):
                 self.out_descr.write("File not found: %s\n" % log)
                 continue
+            # save name of actually opened logfile
+            self.found_logs += [log]
+            # save log's time zome
+            self.time_zones += [tz[log]]
             # find format of a log
             if log[-4:] == '.log':
                 f = open(full_filename)
@@ -74,10 +78,6 @@ class LogAnalyzer:
             else:
                 self.out_descr.write("Unknown file extension: %s" % log)
                 continue
-            # save name of actually opened logfile
-            self.found_logs += [log]
-            # save log's time zome
-            self.time_zones += [tz[log]]
             for file_format_num in range(len(self.formats_templates)):
                 prog = re.compile(self.formats_templates[file_format_num][
                                                     'regexp'])
@@ -85,6 +85,9 @@ class LogAnalyzer:
                 if result is not None:
                     self.log_files_format += [prog]
                     break
+        if (self.found_logs == []):
+            out_descr.write('No logfiles found.\n')
+            exit()
 
     def find_vms_and_hosts(self):
         vm_names, host_names = find_all_vm_host(self.out_descr,
@@ -109,7 +112,7 @@ class LogAnalyzer:
         engine_formats = [fmt['regexp'] for fmt in self.formats_templates if
                           'engine' in fmt['name']]
         libvirtd_formats = [fmt['regexp'] for fmt in self.formats_templates if
-                          'libvirt' in fmt['name']]
+                            'libvirt' in fmt['name']]
         self.vm_tasks = {}
         self.long_tasks = {}
         for idx, log in enumerate(self.found_logs):
@@ -156,13 +159,12 @@ class LogAnalyzer:
                                      self.hosts,
                                      self.time_ranges,
                                      self.vms,
-                                     #list(self.vm_tasks.keys()) +
+                                     # list(self.vm_tasks.keys()) +
                                      list(self.long_tasks.keys()),
                                      [mes['flow_id'] for t in
-                                        self.vm_tasks.keys() for mes in
-                                        (self.vm_tasks)[t]
-                                        if ('flow_id' in mes.keys()
-                                            and mes['flow_id'] != '')],
+                                      self.vm_tasks.keys() for mes in
+                                      (self.vm_tasks)[t] if ('flow_id'
+                                      in mes.keys() and mes['flow_id'] != '')],
                                      show_warnings])
                                    for i in idxs], processes=5)
         else:
@@ -176,12 +178,11 @@ class LogAnalyzer:
                          self.hosts,
                          self.time_ranges,
                          self.vms,
-                         #list(self.vm_tasks.keys()) +
+                         # list(self.vm_tasks.keys()) +
                          list(self.long_tasks.keys()),
                          [mes['flow_id'] for t in self.vm_tasks.keys()
-                            for mes in (self.vm_tasks)[t]
-                            if ('flow_id' in mes.keys()
-                                and mes['flow_id'] != '')],
+                          for mes in (self.vm_tasks)[t] if ('flow_id'
+                          in mes.keys() and mes['flow_id'] != '')],
                          show_warnings] for i in idxs]
             widget_style = ['Load: ', progressbar.Percentage(), ' (',
                             progressbar.SimpleProgress(), ')', ' ',
@@ -196,12 +197,13 @@ class LogAnalyzer:
             self.all_errors[log] = result[idx][0]
             # saving logfile format fields names
             self.format_fields[log] = result[idx][1]
-        if self.all_errors == {}:
-            self.out_descr.write('No matches.\n')
-            exit()
         while not q.empty():
             warn = q.get()
             self.out_descr.write(warn)
+        if (self.all_errors == {} or all([self.all_errors[l] == []
+                                          for l in self.all_errors.keys()])):
+            self.out_descr.write('No matches.\n')
+            exit()
 
     def find_important_events(self):
         timeline, merged_errors, self.all_fields = \
@@ -210,19 +212,19 @@ class LogAnalyzer:
             del self.all_errors
         except:
             pass
+        f = open('debug_'+self.directory.split('/')[-2]+'.txt', 'w')
+        for msg in merged_errors:
+            for field in msg:
+                f.write(str(field) + '   ')
+            f.write('\n')
+        f.close()
         self.timeline = timeline
-        # keywords = set(self.events + self.hosts + self.vms +
-        #                list(self.all_vms.keys()) +
-        #                [i for s in self.all_vms.values() for i in s] +
-        #                list(self.all_hosts.keys()) +
-        #                [i for s in self.all_hosts.values() for i in s])
-
         clusters, merged_errors, self.all_fields, needed_messages, \
-                reasons = clusterize_messages(merged_errors, self.all_fields,
-                                              self.events +
-                                              self.vms +
-                                              self.hosts,
-                                              self.directory)
+            reasons = clusterize_messages(merged_errors, self.all_fields,
+                                          self.events +
+                                          self.vms +
+                                          self.hosts,
+                                          self.directory)
         important_events, new_fields = \
             calculate_events_frequency(merged_errors,
                                        clusters,

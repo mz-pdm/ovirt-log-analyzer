@@ -51,10 +51,11 @@ class DateTimeGreaterTimeRanges(LogLineError):
 
 
 class LogLine:
-    msg_template = re.compile(r'(Message[\:\=\ ]+)(.+)')
+    msg_template = re.compile(r'(Message[\:\=\ ]+.+)')
     re_timestamp = re.compile(
         r"[0-9\-]{10}[\sT][0-9]{2}:[0-9]{2}:[0-9]{2}[\.\,0-9]*[\+\-0-9Z]*")
     re_punctuation = re.compile(r'^[\ \t\.\,\:\=]+|[\ \t\.\,\n]+$')
+    dt_formats = ["%Y-%m-%d %H:%M:%S,%f%z", "%Y-%m-%d %H:%M:%S%z"]
 
     def __init__(self, fields_names, line_num, out_descr, time_ranges):
         self.out_descr = out_descr
@@ -85,15 +86,14 @@ class LogLine:
         dt = dt.replace('.', ',')
         time_part = dt.partition(' ')[2]
         # for "2017-05-12 03:23:31,135-04" format
-        if ('+' in time_part and len(time_part.partition('+')[2]) < 4) or \
-           ('-' in time_part and len(time_part.partition('-')[2]) < 4):
+        if (any([sign in time_part
+                 and len(time_part.partition(sign)[2]) == 2
+                 for sign in ['+', '-']])):
             dt += '00'
-        elif not ('+' in time_part or '-' in time_part):
+        elif not any([sign in time_part for sign in ['+', '-']]):
             # if we have time without time zone
             dt += time_zone
-        dt_formats = ["%Y-%m-%d %H:%M:%S,%f%z",
-                      "%Y-%m-%d %H:%M:%S%z"]
-        for dt_format in dt_formats:
+        for dt_format in self.dt_formats:
             try:
                 date_time = datetime.strptime(dt, dt_format)
                 date_time = date_time.astimezone(pytz.utc)
@@ -107,14 +107,13 @@ class LogLine:
                                       "Unknown date_time format: " +
                                       "%s\n" % dt)
         # Check user-defined time range
-        if self.time_ranges != [] and \
-            not any([self.fields['date_time'] >= tr[0] and
-                    self.fields['date_time'] <= tr[1]
-                    for tr in self.time_ranges]):
+        if self.time_ranges != []:
             if all([self.fields['date_time'] > tr[1]
                     for tr in self.time_ranges]):
                 raise DateTimeGreaterTimeRanges()
-            else:
+            if not any([self.fields['date_time'] >= tr[0] and
+                        self.fields['date_time'] <= tr[1]
+                        for tr in self.time_ranges]):
                 raise DateTimeNotInTimeRange()
 
     def parse_fields(self, pattern, line):
@@ -139,14 +138,16 @@ class LogLine:
             raise MessageNotFoundError()
         t = self.msg_template.search(mstext)
         if t is not None:
-            mstext = t.group(2)
+            mstext = t.group(1)
         self.fields["message"] = self.re_punctuation.sub('', mstext)
 
 
 def check_constraints(line, events, host_ids, vm_numbers, tasks, flow_ids):
-    if any([keyword.upper() in line.upper()
-            for keyword in events + host_ids + vm_numbers +
-            ["ERROR", "WARN", "Traceback", "down", "fail", "except"]]):
+    if any([re.search(r'(^|[ \:\.\,]+)' + keyword + r'([ \:\.\,=]+|$)',
+            line.lower()) is not None for keyword in events + host_ids +
+            vm_numbers + ['error', 'fail', 'failure', 'failed', 'traceback',
+                          'warn', 'warning', 'could not', 'exception', 'down',
+                          'crash']]):
         return True
     if any([thread in line for thread in tasks]):
         return True
@@ -181,11 +182,14 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
             # save the previous line
             line_info = []
             for field in fields_names:
+                if field == 'message':
+                    line_info += [mess.fields["message"]]
+                    continue
                 line_info += [prev_fields[field]]
             # line_info += [mess.fields["message"]]
             if show_warnings:
                 out_descr.put('Info: create_line_info: ' +
-                              'Line matched: %s\n' %
+                              'Traceback matched: %s\n' %
                               in_traceback_line)
             return prev_line, line_info, in_traceback_flag, multiline_flag
         # if message is empty
@@ -221,9 +225,13 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
             # line_info += [mess.fields["message"]]
             if show_warnings:
                 out_descr.put('Info: create_line_info: ' +
-                              'Line matched: %s\n' %
+                              'Multiline matched: %s\n' %
                               multiline_line)
             return prev_line, line_info, in_traceback_flag, multiline_flag
+        except DateTimeNotInTimeRange:
+            return prev_line, [], in_traceback_flag, multiline_flag
+        except DateTimeGreaterTimeRanges:
+            return prev_line, [], in_traceback_flag, multiline_flag
         except (DateTimeNotFoundError, DateTimeFormatError) as \
                 exception_message:
             if show_warnings:
@@ -284,13 +292,13 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
     in_traceback_flag = False
     multiline_line = ''
     multiline_flag = False
-    store = True
+    store = False
     if progressbar:
         progressbar.start(max_value=num)
     count = 0
     prev_line = ''
     line = ''
-    regexp = r"^(\ *)$"
+    regexp = r"^([\ \x00\t]*)$"
     if 'libvirt' in logname:
         regexp = regexp + r".*|OBJECT_|.*release\ domain"
     re_skip = re.compile(regexp)
@@ -364,23 +372,25 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
         # if the parser didn't find the date time
         except (DateTimeNotFoundError, DateTimeFormatError) as \
                 exception_message:
-            if prev_fields == {}:
+            if not store:
+                pass
+            elif prev_fields == {}:
                 if show_warnings:
                     out_descr.put(str(line_num+1) + ': ')
                     out_descr.put(str(exception_message))
             elif in_traceback_flag:
                 # Remember a line if we are in a traceback.
                 # The line will be concatenated with a message
-                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', ' ', line)
+                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', line)
                 in_traceback_line += line
             elif multiline_flag:
-                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', ' ', line)
+                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', line)
                 multiline_line += line
             elif 'Traceback' in line or re.match(
                         r'^[\t\ ]*[at,Caused,\.\.\.].+', line) is not None:
                 # We are in a traceback
                 in_traceback_flag = True
-                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', ' ', line)
+                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', line)
                 in_traceback_line = line
             else:
                 # The analyzer didn't find a datetime in a line,
@@ -388,21 +398,11 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
                 # message with a mark "Fake datetime"
                 if show_warnings:
                     out_descr.put(str(exception_message))
-                if store and prev_fields != {}:
-                    prev_line, line_info, in_traceback_flag, multiline_flag = \
-                        create_line_info(in_traceback_flag,
-                                         in_traceback_line, multiline_flag,
-                                         multiline_line, fields_names,
-                                         out_descr, time_zone, time_ranges,
-                                         events, host_ids, vm_numbers,
-                                         format_template, prev_fields,
-                                         prev_line, tasks, flow_ids,
-                                         show_warnings)
-                    if line_info != []:
-                        file_lines += [line_info]
                 multiline_flag = True
-                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', ' ', line)
-                multiline_line = '!Fake datetime! ' + line
+                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', line)
+                multiline_line = re.sub(
+                    r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', prev_line) + \
+                    line
         # if the line was not matched with the regex-format
         except FormatTemplateError:
             if show_warnings:

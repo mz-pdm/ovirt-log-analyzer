@@ -121,7 +121,7 @@ if __name__ == "__main__":
         for file_idx in range(0, len(args.tzinfo)-1, 2):
             if args.tzinfo[file_idx] not in files:
                 print(('Argparser: Wrong filename %s in time zone ' +
-                      '(was not listed in log_filenames)') % 
+                      '(was not listed in log_filenames)') %
                       args.tzinfo[file_idx])
                 exit()
             elif re.fullmatch(r"^[\+\-][\d]{2}00$",
@@ -160,7 +160,7 @@ if __name__ == "__main__":
             if date_time_2 < date_time_1:
                 print(("Argparser: Provided date time range doesn't " +
                       "overlap: %s %s") % (args.time_range[tr_idx],
-                                          args.time_range[tr_idx+1]))
+                                           args.time_range[tr_idx+1]))
                 exit()
             time_range_info += [[date_time_1, date_time_2]]
         time_range_info = sorted(time_range_info, key=lambda k: k[0])

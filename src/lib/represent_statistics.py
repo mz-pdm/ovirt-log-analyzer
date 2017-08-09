@@ -1,19 +1,4 @@
 """Saving received information about log lines
-This module contains methods of saving errors' statistics
-- print_all_headers - Prints all information about a line (all fields that \
-                    parser found from the lines according to the template)
-- print_only_dt_message - Prints only information about a line's \
-                    date_time, line number from a log file and general \
-                    message
-
-- Here will be new functions to detect dangerous and important messages
-
-- [will be used]dump_json - saves dictionary with errors' information \
-    to .js file (time first). Used for creating interactive chart \
-    ("oVirt_logErrors_statistics_by_time.html")
-- [not used]print_statistics - generates str with convenient for perception\
-    output (logname, sender, event first; time or time range for each \
-    error message)
 """
 from datetime import datetime
 
