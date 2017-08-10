@@ -10,7 +10,8 @@ from lib.errors_statistics import merge_all_errors_by_time, \
 from lib.represent_statistics import print_only_dt_message
 from lib.detect_running_components import find_vm_tasks_engine, \
                                           find_vm_tasks_libvirtd, \
-                                          find_all_vm_host
+                                          find_all_vm_host, \
+                                          find_time_range
 from lib.ProgressPool import ProgressPool
 from progressbar import ProgressBar
 
@@ -90,11 +91,12 @@ class LogAnalyzer:
             exit()
 
     def find_vms_and_hosts(self):
-        vm_names, host_names = find_all_vm_host(self.out_descr,
-                                                self.directory,
-                                                self.found_logs,
-                                                self.time_zones,
-                                                self.time_ranges)
+        vm_names, host_names, self.first_lines = find_all_vm_host(
+                                                    self.out_descr,
+                                                    self.directory,
+                                                    self.found_logs,
+                                                    self.time_zones,
+                                                    self.time_ranges)
         self.all_vms = vm_names
         self.all_hosts = host_names
         if self.vms == []:
@@ -108,6 +110,12 @@ class LogAnalyzer:
                 for i in host_names[k]:
                     self.hosts += [i]
 
+    def read_time_ranges(self):
+        self.total_time_ranges = find_time_range(self.out_descr,
+                                                 self.directory,
+                                                 self.found_logs,
+                                                 self.time_zones)
+
     def find_vm_tasks(self):
         engine_formats = [fmt['regexp'] for fmt in self.formats_templates if
                           'engine' in fmt['name']]
@@ -118,7 +126,8 @@ class LogAnalyzer:
         for idx, log in enumerate(self.found_logs):
             if 'engine' in log.lower():
                 tasks_file, long_tasks_file = \
-                    find_vm_tasks_engine(self.out_descr,
+                    find_vm_tasks_engine(self.first_lines[log],
+                                         self.out_descr,
                                          self.directory,
                                          os.path.join(self.directory, log),
                                          engine_formats,
@@ -130,7 +139,8 @@ class LogAnalyzer:
                 self.long_tasks.update(long_tasks_file)
             elif 'libvirt' in log.lower():
                 tasks_file, long_tasks_file = \
-                    find_vm_tasks_libvirtd(self.out_descr,
+                    find_vm_tasks_libvirtd(self.first_lines[log],
+                                           self.out_descr,
                                            self.directory,
                                            os.path.join(self.directory, log),
                                            libvirtd_formats,
@@ -154,6 +164,7 @@ class LogAnalyzer:
                                      self.log_files_format,
                                      self.directory,
                                      self.time_zones,
+                                     self.first_lines,
                                      q,
                                      self.events,
                                      self.hosts,
@@ -166,13 +177,14 @@ class LogAnalyzer:
                                       (self.vm_tasks)[t] if ('flow_id'
                                       in mes.keys() and mes['flow_id'] != '')],
                                      show_warnings])
-                                   for i in idxs], processes=5)
+                                   for i in idxs], processes=1)
         else:
             result = []
             run_args = [[i, self.found_logs,
                          self.log_files_format,
                          self.directory,
                          self.time_zones,
+                         self.first_lines,
                          q,
                          self.events,
                          self.hosts,
@@ -189,7 +201,7 @@ class LogAnalyzer:
                             progressbar.Bar(), ' ', progressbar.Timer(), ' ',
                             progressbar.AdaptiveETA()]
             bar = ProgressBar(widgets=widget_style)
-            with Pool(processes=5) as pool:
+            with Pool(processes=1) as pool:
                 worker = pool.imap(star, run_args)
                 for _ in bar(run_args):
                     result += [worker.next()]
@@ -212,12 +224,12 @@ class LogAnalyzer:
             del self.all_errors
         except:
             pass
-        f = open('debug_'+self.directory.split('/')[-2]+'.txt', 'w')
-        for msg in merged_errors:
-            for field in msg:
-                f.write(str(field) + '   ')
-            f.write('\n')
-        f.close()
+        # f = open('debug_'+self.directory.split('/')[-2]+'.txt', 'w')
+        # for msg in merged_errors:
+        #     for field in msg:
+        #         f.write(str(field) + '   ')
+        #     f.write('\n')
+        # f.close()
         self.timeline = timeline
         clusters, merged_errors, self.all_fields, needed_messages, \
             reasons = clusterize_messages(merged_errors, self.all_fields,
@@ -252,8 +264,8 @@ def star(input):
 
 
 def process_files(idx, log, formats_templates, directory, time_zones,
-                  out_descr, events, hosts, time_ranges, vms, tasks,
-                  flow_ids, show_warnings, progressbar=None,
+                  first_lines, out_descr, events, hosts, time_ranges, vms,
+                  tasks, flow_ids, show_warnings, progressbar=None,
                   text_header=None):
     if text_header:
         text_header.update_mapping(type_op="Parsing:")
@@ -262,6 +274,7 @@ def process_files(idx, log, formats_templates, directory, time_zones,
                                                log[idx],
                                                formats_templates[idx],
                                                time_zones[idx],
+                                               first_lines[log[idx]],
                                                out_descr,
                                                events,
                                                hosts,

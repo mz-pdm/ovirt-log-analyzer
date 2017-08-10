@@ -146,7 +146,7 @@ def check_constraints(line, events, host_ids, vm_numbers, tasks, flow_ids):
     if any([re.search(r'(^|[ \:\.\,]+)' + keyword + r'([ \:\.\,=]+|$)',
             line.lower()) is not None for keyword in events + host_ids +
             vm_numbers + ['error', 'fail', 'failure', 'failed', 'traceback',
-                          'warn', 'warning', 'could not', 'exception', 'down',
+                          'warn', 'warning', 'exception', 'down',
                           'crash']]):
         return True
     if any([thread in line for thread in tasks]):
@@ -269,9 +269,9 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
         return prev_line, line_info, in_traceback_flag, multiline_flag
 
 
-def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
-                    events, host_ids, time_ranges, vm_numbers, tasks, flow_ids,
-                    show_warnings, progressbar=None):
+def loop_over_lines(directory, logname, format_template, time_zone, first_line,
+                    out_descr, events, host_ids, time_ranges, vm_numbers,
+                    tasks, flow_ids, show_warnings, progressbar=None):
     full_filename = os.path.join(directory, logname)
     # format_template = re.compile(format_template)
     fields_names = list(sorted(format_template.groupindex.keys()))
@@ -280,6 +280,9 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
     fields_names = ['date_time', 'line_num', 'message'] + fields_names
     # out = open('result_'+logname+'.txt', 'w')
     file_lines = []
+    if first_line == -1:
+        # file is not in time range
+        return file_lines, fields_names
     if logname[-4:] == '.log':
         f = open(full_filename)
     elif logname[-3:] == '.xz':
@@ -304,7 +307,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, out_descr,
     re_skip = re.compile(regexp)
     for line_num, line in enumerate(f):
         # if line is empty and other cases when we don't need to parse it
-        if re_skip.match(line) is not None:
+        if (line_num < first_line or re_skip.match(line) is not None):
             count += len(line)
             if progressbar:
                 progressbar.update(count)

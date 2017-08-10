@@ -18,6 +18,8 @@ def print_all_headers(errors, headers, log_format_headers, out):
 
 
 def print_only_dt_message(errors, new_fields, out):
+    if errors == []:
+        return
     dt_idx = new_fields.index("date_time")
     line_idx = new_fields.index("line_num")
     msg_idx = new_fields.index("message")

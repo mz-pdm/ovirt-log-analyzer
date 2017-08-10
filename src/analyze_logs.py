@@ -89,7 +89,6 @@ if __name__ == "__main__":
     #                    help="Create html file with chart" +
     #                    "represented errors statistics")
     args = parser.parse_args()
-
     # Logfilenames
     if args.filenames is not None:
         files = sorted(args.filenames)
@@ -103,14 +102,12 @@ if __name__ == "__main__":
         output_directory = args.output_dir
     else:
         output_directory = ''
-
     # Time zones
     tz_info = {}
     if args.default_tzinfo is not None:
         default_tz = args.default_tzinfo[0]
     else:
         default_tz = '+0000'
-
     for filename in files:
         tz_info[filename] = default_tz
     if args.tzinfo is not None:
@@ -130,7 +127,6 @@ if __name__ == "__main__":
                       (args.tzinfo[file_idx+1], args.tzinfo[file_idx]))
                 exit()
             tz_info[args.tzinfo[file_idx]] = args.tzinfo[file_idx+1]
-
     # Time ranges
     time_range_info = []
     if args.time_range is not None:
@@ -164,25 +160,21 @@ if __name__ == "__main__":
                 exit()
             time_range_info += [[date_time_1, date_time_2]]
         time_range_info = sorted(time_range_info, key=lambda k: k[0])
-
     # VMs
     if args.vm is not None:
         vm_info = args.vm
     else:
         vm_info = []
-
     # Hosts
     if args.host is not None:
         host_info = args.host
     else:
         host_info = []
-
-    # VMs
+    # Events
     if args.event is not None:
         event_info = args.event
     else:
         event_info = []
-
     # Output desctiptor
     if args.print is not None:
         if args.print == "stdout":
@@ -194,19 +186,11 @@ if __name__ == "__main__":
             output_descriptor = sys.stderr
     else:
         output_descriptor = sys.stderr
-
-    # Output file
-    if args.out is not None:
-        output_file = open(os.path.join(output_directory, args.out), 'w')
-    else:
-        output_file = sys.stdout
-
     # Format templates
     if args.format_file is not None:
         format_file = args.format_file
     else:
         format_file = os.path.join("format_templates.txt")
-
     logs = LogAnalyzer(output_descriptor,
                        args.log_directory,
                        files,
@@ -218,30 +202,72 @@ if __name__ == "__main__":
                        format_file)
     output_descriptor.write('Searching for running VMs and hosts...\n')
     logs.find_vms_and_hosts()
-    output_descriptor.write('Searching for VM tasks...\n')
-    logs.find_vm_tasks()
+    logs.read_time_ranges()
     if args.list_vm_host:
+        output_descriptor.write('------- List of files\' time ranges (UTC) -------\n')
+        for log in sorted(logs.total_time_ranges.keys()):
+            output_descriptor.write(('%s: %s - %s\n') % (log,
+                                    datetime.utcfromtimestamp(
+                                        logs.total_time_ranges[log][0]
+                                        ).strftime("%Y-%m-%dT%H:%M:%S,%f")[:-3],
+                                    datetime.utcfromtimestamp(
+                                        logs.total_time_ranges[log][1]
+                                        ).strftime("%Y-%m-%dT%H:%M:%S,%f")[:-3]))
+        output_descriptor.write('____________________\n')
+        max_time = max([t for l in logs.total_time_ranges.keys()
+                        for t in logs.total_time_ranges[l]])
+        min_time = min([t for l in logs.total_time_ranges.keys()
+                        for t in logs.total_time_ranges[l]])
+        output_descriptor.write(('Total: %s - %s\n') %
+                                (datetime.utcfromtimestamp(min_time
+                                    ).strftime("%Y-%m-%dT%H:%M:%S,%f")[:-3],
+                                datetime.utcfromtimestamp(max_time
+                                    ).strftime("%Y-%m-%dT%H:%M:%S,%f")[:-3]))
+        output_descriptor.write('\n')
         output_descriptor.write('------- List of VMs -------\n')
         for vm in sorted(logs.all_vms.keys()):
             output_descriptor.write('name: %s\n' % vm)
-            for i in range(len(logs.all_vms[vm])):
-                output_descriptor.write('ID: %s\n' % logs.all_vms[vm][i])
+            for vmid in sorted(list(logs.all_vms[vm])):
+                output_descriptor.write('ID: %s\n' % vmid)
             output_descriptor.write('\n')
         output_descriptor.write('------- List of Hosts -------\n')
         for host in sorted(logs.all_hosts.keys()):
             output_descriptor.write('name: %s\n' % host)
-            for i in range(len(logs.all_hosts[host])):
-                output_descriptor.write('ID: %s\n' % logs.all_hosts[host][i])
+            for hostid in sorted(list(logs.all_hosts[host])):
+                output_descriptor.write('ID: %s\n' % hostid)
             output_descriptor.write('\n')
         exit()
+    output_descriptor.write('Searching for VM tasks...\n')
+    logs.find_vm_tasks()
     output_descriptor.write('Loading data...\n')
     logs.load_data(args.warn, args.progressbar)
     output_descriptor.write('Analyzing the messages...\n')
     messages, new_fields = logs.find_important_events()
     output_descriptor.write('Printing messages...\n')
+    # Output file
+    if args.out is not None:
+        output_file = open(os.path.join(output_directory, args.out), 'w')
+    else:
+        output_file = sys.stdout
     logs.print_errors(messages, new_fields, output_file)
 
-    # these options are on the way
-    # if args.chart_filename is not None:
-    #    output_descriptor.write('Creating a chart...\n')
-    #    logs.dump_to_json(output_directory, args.chart_filename)
+#    output_descriptor = sys.stderr
+#    logs = LogAnalyzer(output_descriptor,
+#                       '../ovirtlogs/logs_debug_1427782/',
+#                       ['libvirt-test.log'],
+#                       {'libvirt-test.log': '+0000'},
+#                       [],
+#                       [],
+#                       [],
+#                       [],
+#                       'format_templates.txt')
+#    output_descriptor.write('Searching for running VMs and hosts...\n')
+#    logs.find_vms_and_hosts()
+#    output_descriptor.write('Searching for VM tasks...\n')
+#    logs.find_vm_tasks()
+#    output_descriptor.write('Loading data...\n')
+#    logs.load_data(False, False)
+#    output_descriptor.write('Analyzing the messages...\n')
+#    messages, new_fields = logs.find_important_events()
+#    output_descriptor.write('Printing messages...\n')
+#    logs.print_errors(messages, new_fields, open('libvirt-test.txt', 'w'))
