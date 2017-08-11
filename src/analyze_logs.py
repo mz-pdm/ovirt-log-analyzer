@@ -7,8 +7,8 @@ from datetime import datetime
 from lib.LogAnalyzer import LogAnalyzer
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='Parse logfiles and summarize errors into standart ' +
-        'output.')
+        description='Parse logfiles and summarize important messages ' +
+                    ' into standard output or file')
     parser.add_argument('-l', '--list_vm_host',
                         action='store_true',
                         help='Print all VMs and hosts in given time range ' +
@@ -21,13 +21,13 @@ if __name__ == "__main__":
                         type=str,
                         nargs='+',
                         help='logfiles filenames' +
-                        '(without expansion)')
+                        '(with expansion)')
     parser.add_argument("--default_tzinfo",
                         type=str,
                         nargs='+',
                         help='Specify time zones for all files ' +
                         '(will be used) if file datetime does not have ' +
-                        'time zome ' +
+                        'time zone ' +
                         '(example: --default_tzinfo -0400). ' +
                         'If not specified - UTC is used')
     parser.add_argument("--tzinfo",
@@ -94,7 +94,8 @@ if __name__ == "__main__":
         files = sorted(args.filenames)
     else:
         files = os.listdir(args.log_directory)
-        files = [f for f in files if '.log' in f or '.xz' in f]
+        files = [f for f in files if f[-4:] == '.log' or
+                 ('.log' in f and f[-3:] == '.xz')]
     # Output directory
     if args.output_dir is not None:
         if not os.path.isdir(args.output_dir):
@@ -200,30 +201,35 @@ if __name__ == "__main__":
                        event_info,
                        host_info,
                        format_file)
+    output_descriptor.write('Reading file\'s time range...\n')
+    logs.read_time_ranges()
     output_descriptor.write('Searching for running VMs and hosts...\n')
     logs.find_vms_and_hosts()
-    logs.read_time_ranges()
     if args.list_vm_host:
-        output_descriptor.write('------- List of files\' time ranges (UTC) -------\n')
+        output_descriptor.write('------- List of files\' time ranges (UTC) ' +
+                                '-------\n')
         for log in sorted(logs.total_time_ranges.keys()):
-            output_descriptor.write(('%s: %s - %s\n') % (log,
+            output_descriptor.write(('%s: %s %s\n') % (log,
                                     datetime.utcfromtimestamp(
-                                        logs.total_time_ranges[log][0]
-                                        ).strftime("%Y-%m-%dT%H:%M:%S,%f")[:-3],
+                                      logs.total_time_ranges[log][0]).strftime(
+                                        "%Y-%m-%dT%H:%M:%S,%f")[:-3],
                                     datetime.utcfromtimestamp(
-                                        logs.total_time_ranges[log][1]
-                                        ).strftime("%Y-%m-%dT%H:%M:%S,%f")[:-3]))
-        output_descriptor.write('____________________\n')
-        max_time = max([t for l in logs.total_time_ranges.keys()
-                        for t in logs.total_time_ranges[l]])
-        min_time = min([t for l in logs.total_time_ranges.keys()
-                        for t in logs.total_time_ranges[l]])
-        output_descriptor.write(('Total: %s - %s\n') %
-                                (datetime.utcfromtimestamp(min_time
-                                    ).strftime("%Y-%m-%dT%H:%M:%S,%f")[:-3],
-                                datetime.utcfromtimestamp(max_time
-                                    ).strftime("%Y-%m-%dT%H:%M:%S,%f")[:-3]))
-        output_descriptor.write('\n')
+                                      logs.total_time_ranges[log][1]).strftime(
+                                        "%Y-%m-%dT%H:%M:%S,%f")[:-3]))
+        if (logs.found_logs != []):
+            output_descriptor.write('____________________\n')
+            max_time = max([t for l in logs.total_time_ranges.keys()
+                            for t in logs.total_time_ranges[l]])
+            min_time = min([t for l in logs.total_time_ranges.keys()
+                            for t in logs.total_time_ranges[l]])
+            output_descriptor.write(('Total: %s %s\n') %
+                                    (datetime.utcfromtimestamp(
+                                        min_time).strftime(
+                                            "%Y-%m-%dT%H:%M:%S,%f")[:-3],
+                                     datetime.utcfromtimestamp(
+                                        max_time).strftime(
+                                            "%Y-%m-%dT%H:%M:%S,%f")[:-3]))
+            output_descriptor.write('\n')
         output_descriptor.write('------- List of VMs -------\n')
         for vm in sorted(logs.all_vms.keys()):
             output_descriptor.write('name: %s\n' % vm)
@@ -250,24 +256,3 @@ if __name__ == "__main__":
     else:
         output_file = sys.stdout
     logs.print_errors(messages, new_fields, output_file)
-
-#    output_descriptor = sys.stderr
-#    logs = LogAnalyzer(output_descriptor,
-#                       '../ovirtlogs/logs_debug_1427782/',
-#                       ['libvirt-test.log'],
-#                       {'libvirt-test.log': '+0000'},
-#                       [],
-#                       [],
-#                       [],
-#                       [],
-#                       'format_templates.txt')
-#    output_descriptor.write('Searching for running VMs and hosts...\n')
-#    logs.find_vms_and_hosts()
-#    output_descriptor.write('Searching for VM tasks...\n')
-#    logs.find_vm_tasks()
-#    output_descriptor.write('Loading data...\n')
-#    logs.load_data(False, False)
-#    output_descriptor.write('Analyzing the messages...\n')
-#    messages, new_fields = logs.find_important_events()
-#    output_descriptor.write('Printing messages...\n')
-#    logs.print_errors(messages, new_fields, open('libvirt-test.txt', 'w'))

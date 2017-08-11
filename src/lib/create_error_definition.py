@@ -57,9 +57,8 @@ class LogLine:
     re_punctuation = re.compile(r'^[\ \t\.\,\:\=]+|[\ \t\.\,\n]+$')
     dt_formats = ["%Y-%m-%d %H:%M:%S,%f%z", "%Y-%m-%d %H:%M:%S%z"]
 
-    def __init__(self, fields_names, line_num, out_descr, time_ranges):
+    def __init__(self, fields_names, line_num, out_descr):
         self.out_descr = out_descr
-        self.time_ranges = time_ranges
         self.raw_line = ''
         self.fields = {}
         for field in fields_names:
@@ -106,15 +105,6 @@ class LogLine:
             raise DateTimeFormatError("Warning: parse_date_time: " +
                                       "Unknown date_time format: " +
                                       "%s\n" % dt)
-        # Check user-defined time range
-        if self.time_ranges != []:
-            if all([self.fields['date_time'] > tr[1]
-                    for tr in self.time_ranges]):
-                raise DateTimeGreaterTimeRanges()
-            if not any([self.fields['date_time'] >= tr[0] and
-                        self.fields['date_time'] <= tr[1]
-                        for tr in self.time_ranges]):
-                raise DateTimeNotInTimeRange()
 
     def parse_fields(self, pattern, line):
         line = line.strip()
@@ -159,7 +149,7 @@ def check_constraints(line, events, host_ids, vm_numbers, tasks, flow_ids):
 
 def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
                      multiline_line, fields_names, out_descr, time_zone,
-                     time_ranges, events, host_ids, vm_numbers,
+                     events, host_ids, vm_numbers,
                      format_template, prev_fields, prev_line, tasks, flow_ids,
                      show_warnings):
     # write a concatenated string that include a Traceback message (try to
@@ -174,8 +164,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
             # try to match with the log file format template
-            mess = LogLine(fields_names, prev_fields['line_num'],
-                           out_descr, time_ranges)
+            mess = LogLine(fields_names, prev_fields['line_num'], out_descr)
             # receive a more clear message
             mess.parse_message(prev_fields["message"] + ' ' +
                                in_traceback_line)
@@ -215,7 +204,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
             mess = LogLine(fields_names,
                            prev_fields['line_num'].split(':')[0] + ':' +
                            str(int(prev_fields['line_num'].split(':')[1]) + 1),
-                           out_descr, time_ranges)
+                           out_descr)
             mess.parse_date_time(time_zone, multiline_line)
             mess.parse_fields(format_template, multiline_line)
             mess.parse_message()
@@ -228,10 +217,6 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
                               'Multiline matched: %s\n' %
                               multiline_line)
             return prev_line, line_info, in_traceback_flag, multiline_flag
-        except DateTimeNotInTimeRange:
-            return prev_line, [], in_traceback_flag, multiline_flag
-        except DateTimeGreaterTimeRanges:
-            return prev_line, [], in_traceback_flag, multiline_flag
         except (DateTimeNotFoundError, DateTimeFormatError) as \
                 exception_message:
             if show_warnings:
@@ -269,7 +254,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
         return prev_line, line_info, in_traceback_flag, multiline_flag
 
 
-def loop_over_lines(directory, logname, format_template, time_zone, first_line,
+def loop_over_lines(directory, logname, format_template, time_zone, positions,
                     out_descr, events, host_ids, time_ranges, vm_numbers,
                     tasks, flow_ids, show_warnings, progressbar=None):
     full_filename = os.path.join(directory, logname)
@@ -280,175 +265,164 @@ def loop_over_lines(directory, logname, format_template, time_zone, first_line,
     fields_names = ['date_time', 'line_num', 'message'] + fields_names
     # out = open('result_'+logname+'.txt', 'w')
     file_lines = []
-    if first_line == -1:
-        # file is not in time range
-        return file_lines, fields_names
+    regexp = r"^([\ \x00\t]*)$"
+    if 'libvirt' in logname:
+        regexp = regexp + r".*|OBJECT_|.*release\ domain"
+    re_skip = re.compile(regexp)
     if logname[-4:] == '.log':
         f = open(full_filename)
     elif logname[-3:] == '.xz':
         f = lzma.open(full_filename, 'rt')
     f.seek(0, os.SEEK_END)
     num = f.tell()
-    f.seek(0, 0)
-    prev_fields = {}
-    in_traceback_line = ''
-    in_traceback_flag = False
-    multiline_line = ''
-    multiline_flag = False
-    store = False
     if progressbar:
         progressbar.start(max_value=num)
-    count = 0
-    prev_line = ''
-    line = ''
-    regexp = r"^([\ \x00\t]*)$"
-    if 'libvirt' in logname:
-        regexp = regexp + r".*|OBJECT_|.*release\ domain"
-    re_skip = re.compile(regexp)
-    for line_num, line in enumerate(f):
-        # if line is empty and other cases when we don't need to parse it
-        if (line_num < first_line or re_skip.match(line) is not None):
+    for tr_idx, pos in enumerate(positions):
+        f.seek(pos, os.SEEK_SET)
+        prev_fields = {}
+        in_traceback_line = ''
+        in_traceback_flag = False
+        multiline_line = ''
+        multiline_flag = False
+        count = pos
+        prev_line = ''
+        for line_num, line in enumerate(f):
+            # if line is empty and other cases when we don't need to parse it
+            if (re_skip.match(line) is not None):
+                count += len(line)
+                if progressbar:
+                    progressbar.update(count)
+                continue
+            line_data = LogLine(fields_names, logname+':'+str(line_num+1),
+                                out_descr)
+            try:
+                line_data.parse_date_time(time_zone, line)
+                if (line_data.fields['date_time'] > time_ranges[tr_idx][1]
+                        and prev_fields != {}):
+                    prev_line, line_info, in_traceback_flag, \
+                        multiline_flag = create_line_info(in_traceback_flag,
+                                                          in_traceback_line,
+                                                          multiline_flag,
+                                                          multiline_line,
+                                                          fields_names,
+                                                          out_descr,
+                                                          time_zone,
+                                                          events, host_ids,
+                                                          vm_numbers,
+                                                          format_template,
+                                                          prev_fields,
+                                                          prev_line, tasks,
+                                                          flow_ids,
+                                                          show_warnings)
+                    # if we normally parsed the previous line, we save it
+                    if line_info != []:
+                        file_lines += [line_info]
+                    count += len(line)
+                    if progressbar:
+                        progressbar.update(count)
+                    break
+                line_data.parse_fields(format_template, line)
+                line_data.parse_message()
+                # succesfully parsed the line => we need to save the previous
+                # line, it might be with a Traceback of other non-standard
+                # cases
+                if prev_fields != {}:
+                    prev_line, line_info, in_traceback_flag, multiline_flag = \
+                        create_line_info(in_traceback_flag,
+                                         in_traceback_line, multiline_flag,
+                                         multiline_line, fields_names,
+                                         out_descr, time_zone, events,
+                                         host_ids, vm_numbers,
+                                         format_template, prev_fields,
+                                         prev_line, tasks, flow_ids,
+                                         show_warnings)
+                    # if we normally parsed the previous line, we save it
+                    if line_info != []:
+                        file_lines += [line_info]
+                # we saved if it was nessesary the previous line, the current
+                # became the previous
+                prev_fields = line_data.fields
+                prev_line = line
+            # if the parser didn't find the date time
+            except (DateTimeNotFoundError, DateTimeFormatError) as \
+                    exception_message:
+                if prev_fields == {}:
+                    if show_warnings:
+                        out_descr.put(str(line_num+1) + ': ')
+                        out_descr.put(str(exception_message))
+                elif in_traceback_flag:
+                    # Remember a line if we are in a traceback.
+                    # The line will be concatenated with a message
+                    line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ',
+                                  line)
+                    in_traceback_line += line
+                elif multiline_flag:
+                    line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ',
+                                  line)
+                    multiline_line += line
+                elif 'Traceback' in line or re.match(
+                            r'^[\t\ ]*[at,Caused,\.\.\.].+', line) is not None:
+                    # We are in a traceback
+                    in_traceback_flag = True
+                    line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ',
+                                  line)
+                    in_traceback_line = line
+                else:
+                    # The analyzer didn't find a datetime in a line,
+                    # the message will receive datetime from previous
+                    # message with a mark "Fake datetime"
+                    if show_warnings:
+                        out_descr.put(str(exception_message))
+                    multiline_flag = True
+                    line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ',
+                                  line)
+                    multiline_line = re.sub(
+                        r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ',
+                        prev_line) + line
+            # if the line was not matched with the regex-format
+            except FormatTemplateError:
+                if show_warnings:
+                    out_descr.put('Warning: parse_fields: ' +
+                                  'Line does not match format "%s": %s\n' %
+                                  (format_template, line))
+                # We are in a line with datetime, but the analyzer didn't
+                # find all fields from a template
+                if prev_fields != {}:
+                    prev_line, line_info, in_traceback_flag, multiline_flag = \
+                        create_line_info(in_traceback_flag,
+                                         in_traceback_line, multiline_flag,
+                                         multiline_line, fields_names,
+                                         out_descr, time_zone, events,
+                                         host_ids, vm_numbers,
+                                         format_template, prev_fields,
+                                         prev_line, tasks, flow_ids,
+                                         show_warnings)
+                    if line_info != []:
+                        file_lines += [line_info]
+                multiline_flag = True
+                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', '', line)
+                multiline_line = line
+            # if the message is empty
+            except MessageNotFoundError:
+                if show_warnings:
+                    out_descr.put(('Warning: parse_message: ' +
+                                   'Line does not have message field: ' +
+                                   '%s\n') % line)
+            # for progressbar
             count += len(line)
             if progressbar:
                 progressbar.update(count)
-            continue
-        line_data = LogLine(fields_names, logname+':'+str(line_num+1),
-                            out_descr, time_ranges)
-        try:
-            line_data.parse_date_time(time_zone, line)
-            line_data.parse_fields(format_template, line)
-            line_data.parse_message()
-            # succesfully parsed the line => we need to save the previous line,
-            # it might be with a Traceback of other non-standard cases
-            # store mean that previos line should te saved for analysis (it
-            # satisfy the used constraints)
-            if store and prev_fields != {}:
-                prev_line, line_info, in_traceback_flag, multiline_flag = \
-                    create_line_info(in_traceback_flag,
-                                     in_traceback_line, multiline_flag,
-                                     multiline_line, fields_names, out_descr,
-                                     time_zone, time_ranges, events, host_ids,
-                                     vm_numbers, format_template,
-                                     prev_fields, prev_line, tasks, flow_ids,
-                                     show_warnings)
-                # if we normally parsed the previous line, we save it
-                if line_info != []:
-                    file_lines += [line_info]
-            # we saved if it was nessesary the previous line, the current
-            # became the previous
-            prev_fields = line_data.fields
-            prev_line = line
-            store = True
-        # if the date time in out of the defined time ranges (store became
-        # False)
-        except DateTimeNotInTimeRange:
-            if store and prev_fields != {}:
-                prev_line, line_info, in_traceback_flag, multiline_flag = \
-                    create_line_info(in_traceback_flag,
-                                     in_traceback_line, multiline_flag,
-                                     multiline_line, fields_names, out_descr,
-                                     time_zone, time_ranges, events, host_ids,
-                                     vm_numbers, format_template,
-                                     prev_fields, prev_line, tasks, flow_ids,
-                                     show_warnings)
-                if line_info != []:
-                    file_lines += [line_info]
-            store = False
-        # if the date time is treater all the user-defined time ranges, we can
-        # stop parsing
-        except DateTimeGreaterTimeRanges:
-            if store and prev_fields != {}:
-                prev_line, line_info, in_traceback_flag, multiline_flag = \
-                    create_line_info(in_traceback_flag,
-                                     in_traceback_line, multiline_flag,
-                                     multiline_line, fields_names, out_descr,
-                                     time_zone, time_ranges, events, host_ids,
-                                     vm_numbers, format_template,
-                                     prev_fields, prev_line, tasks, flow_ids,
-                                     show_warnings)
-                if line_info != []:
-                    file_lines += [line_info]
-            count = num
-            if progressbar:
-                progressbar.update(count)
-            break
-        # if the parser didn't find the date time
-        except (DateTimeNotFoundError, DateTimeFormatError) as \
-                exception_message:
-            if not store:
-                pass
-            elif prev_fields == {}:
-                if show_warnings:
-                    out_descr.put(str(line_num+1) + ': ')
-                    out_descr.put(str(exception_message))
-            elif in_traceback_flag:
-                # Remember a line if we are in a traceback.
-                # The line will be concatenated with a message
-                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', line)
-                in_traceback_line += line
-            elif multiline_flag:
-                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', line)
-                multiline_line += line
-            elif 'Traceback' in line or re.match(
-                        r'^[\t\ ]*[at,Caused,\.\.\.].+', line) is not None:
-                # We are in a traceback
-                in_traceback_flag = True
-                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', line)
-                in_traceback_line = line
-            else:
-                # The analyzer didn't find a datetime in a line,
-                # the message will receive datetime from previous
-                # message with a mark "Fake datetime"
-                if show_warnings:
-                    out_descr.put(str(exception_message))
-                multiline_flag = True
-                line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', line)
-                multiline_line = re.sub(
-                    r'^[\t\ \.\,\=]+|[\t\ \.\,\x00\n]+$', ' ', prev_line) + \
-                    line
-        # if the line was not matched with the regex-format
-        except FormatTemplateError:
-            if show_warnings:
-                out_descr.put('Warning: parse_fields: ' +
-                              'Line does not match format "%s": %s\n' %
-                              (format_template, line))
-            # We are in a line with datetime, but the analyzer didn't
-            # find all fields from a template
-            if store and prev_fields != {}:
-                prev_line, line_info, in_traceback_flag, multiline_flag = \
-                    create_line_info(in_traceback_flag,
-                                     in_traceback_line, multiline_flag,
-                                     multiline_line, fields_names, out_descr,
-                                     time_zone, time_ranges, events, host_ids,
-                                     vm_numbers, format_template, prev_fields,
-                                     prev_line, tasks, flow_ids,
-                                     show_warnings)
-                if line_info != []:
-                    file_lines += [line_info]
-            multiline_flag = True
-            line = re.sub(r'^[\t\ \.\,\=]+|[\t\ \.\,\n]+$', '', line)
-            multiline_line = line
-        # if the message is empty
-        except MessageNotFoundError:
-            if show_warnings:
-                out_descr.put('Warning: parse_message: ' +
-                              'Line does not have message field: %s\n' % line)
-        # for progressbar
-        count += len(line)
-        if progressbar:
-            progressbar.update(count)
-
-    # adding the last line
-    if store and prev_fields != {}:
-        prev_line, line_info, in_traceback_flag, multiline_flag = \
-            create_line_info(in_traceback_flag,
-                             in_traceback_line, multiline_flag,
-                             multiline_line, fields_names, out_descr,
-                             time_zone, time_ranges, events, host_ids,
-                             vm_numbers, format_template, prev_fields,
-                             prev_line, tasks, flow_ids, show_warnings)
-        if line_info != []:
-            file_lines += [line_info]
+        # adding the last line
+        if prev_fields != {}:
+            prev_line, line_info, in_traceback_flag, multiline_flag = \
+                create_line_info(in_traceback_flag,
+                                 in_traceback_line, multiline_flag,
+                                 multiline_line, fields_names, out_descr,
+                                 time_zone, events, host_ids,
+                                 vm_numbers, format_template, prev_fields,
+                                 prev_line, tasks, flow_ids, show_warnings)
+            if line_info != []:
+                file_lines += [line_info]
     f.close()
     if progressbar:
         progressbar.finish()
