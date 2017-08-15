@@ -2,7 +2,7 @@
 """
 import numpy as np
 import re
-# from datetime import datetime
+from datetime import datetime
 
 
 def merge_all_errors_by_time(all_errors, fields_names):
@@ -55,7 +55,7 @@ def return_nonsimilar_part(str1, str2):
 
 
 def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
-                        user_hosts, dirname, err_timeline, vm_tasks,
+                        user_hosts, subtasks, dirname, err_timeline, vm_tasks,
                         long_tasks, all_vms, all_hosts):
     keywords = user_vms  # user_events + user_vms + user_hosts
     template = re.compile(\
@@ -101,6 +101,14 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                 if all_errors[err_id][strid] not in reasons.keys():
                     reasons[all_errors[err_id][strid]] = set()
                 reasons[all_errors[err_id][strid]].add('VM, Host or Task ID')
+        # print(subtasks)
+        for t in subtasks:
+            if t in all_errors[err_id][msid]:
+                # Check if user-defined words are in the message
+                needed_msgs.add(all_errors[err_id][strid])
+                if all_errors[err_id][strid] not in reasons.keys():
+                    reasons[all_errors[err_id][strid]] = set()
+                reasons[all_errors[err_id][strid]].add('Subtask')
         for k in ['error', 'fail', 'failure', 'failed', 'traceback',
                   'warn', 'warning', 'could not', 'exception', 'down',
                   'crash']:
@@ -130,12 +138,12 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                                                         shorten]['keywords'])
     events = new_events
     del new_events
-    # f = open("clusters_"+dirname.split('/')[-2]+".txt", 'w')
-    # for c_id, clust in enumerate(sorted(events.keys())):
-    #     for mes in events[clust]['data']:
-    #         f.write("%d : %s\n" % (c_id, mes[msid]))
-    #     f.write('\n')
-    # f.close()
+    f = open("clusters_"+dirname.split('/')[-2]+".txt", 'w')
+    for c_id, clust in enumerate(sorted(events.keys())):
+        for mes in events[clust]['data']:
+            f.write("%d : %s\n" % (c_id, mes[msid]))
+        f.write('\n')
+    f.close()
     out_descr.write('\n')
     mean_len = np.mean([len(events[g]['line_num']) for g in events.keys()])
     std_len = np.std([len(events[g]['line_num']) for g in events.keys()])
@@ -154,8 +162,8 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                 if line_num not in reasons.keys():
                     reasons[line_num] = set()
                 reasons[line_num].add('Many messages')
-                if (list(reasons[line_num]) == ['Many messages']
-                        and line_num in needed_msgs):
+                if (line_num in needed_msgs
+                        and 'Error or warning' not in list(reasons[line_num])):
                     needed_msgs.remove(line_num)
         elif (len(events[filtered]['line_num']) == 1):
             needed_msgs.add(events[filtered]['data'][0][strid])
@@ -167,27 +175,13 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                 if line_num not in reasons.keys():
                     reasons[line_num] = set()
                 reasons[line_num].add('Rare')
-        # ----------------------------------------------
-        # if ((len(events[filtered]) > 2*mean_clust_len) and not
-        #         any([k in events[filtered][0][fid] for k in keywords])):
-        #     for msg in events[filtered]:
-        #         if msg[strid] not in reasons.keys():
-        #             reasons[msg[strid]] = set()
-        #         if (msg[strid] in needed_msgs):
-        #                 # and (len(reasons[msg[strid]]) == 0
-        #                 # or ('Many messages' in reasons[msg[strid]]))):
-        #                     # and 'Error or warning' not in
-        #                     # reasons[msg[strid]]))):
-        #             needed_msgs.remove(msg[strid])
-        #         reasons[msg[strid]].add('Frequent')
-        #     continue
         for msg in events[filtered]['data']:
             # Check if long tasks are related to the message
             for com in sorted(long_tasks.keys()):
                 added = False
                 for t in long_tasks[com]:
                     if ((com in msg[msid]) and
-                            (t - 10 < msg[dtid] < t + 10)):
+                            (msg[dtid] == t)):
                         needed_msgs.add(msg[strid])
                         if msg[strid] not in reasons.keys():
                             reasons[msg[strid]] = set()
@@ -199,18 +193,15 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
             # Check if message is related to the VM commands
             for field in msg:
                 added = False
-                # Show because includes keyword
-                # if any([k in str(field).lower() for k in
-                #        ['error ', 'fail', 'traceback',
-                #         'except', 'warn']]):
-                #    needed_msgs.add(msg[strid])
-                #    if msg[strid] not in reasons.keys():
-                #        reasons[msg[strid]] = set()
-                #    reasons[msg[strid]].add('Error or warning')
-                #    added = True
                 for thread in (vm_tasks.keys()):
                     if any([task['command_name'] in str(field)
                             for task in vm_tasks[thread]]):
+                        if (msg[strid] in reasons.keys()
+                                and 'Many messages' in reasons[msg[strid]]
+                                and 'Error or warning'
+                                not in reasons[msg[strid]]):
+                            reasons[msg[strid]].add('Task')
+                            break
                         needed_msgs.add(msg[strid])
                         if msg[strid] not in reasons.keys():
                             reasons[msg[strid]] = set()
@@ -232,25 +223,25 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
     new_fields = ['date_time', 'line_num', 'reason', 'message']
     if reasons == {}:
         return msg_showed, new_fields
-    # f = open('diff.txt', 'w')
-    # max_len = max([len('_'.join(reasons[r])) for r in reasons.keys()])
+    f = open('diff.txt', 'w')
+    max_len = max([len('_'.join(reasons[r])) for r in reasons.keys()])
     for msg in all_errors:
         if msg[strid] in needed_msgs:
             msg_showed += [[msg[dtid], msg[strid],
                             '_'.join(sorted(reasons[msg[strid]])),
                             msg[msid]]]
-    #     else:
-    #         if msg[strid] in reasons.keys():
-    #             reason = '_'.join(sorted(reasons[msg[strid]]))
-    #         else:
-    #             reason = 'unknown'
-    #         f.write("%12s %s | %20s | %*s | %s\n" %
-    #                 (datetime.utcfromtimestamp(msg[dtid]).strftime(
-    #                                                     "%H:%M:%S,%f")[:-3],
-    #                  datetime.utcfromtimestamp(msg[dtid]).strftime(
-    #                                                     "%d-%m-%Y"),
-    #                  msg[strid], max_len, reason, msg[msid]))
-    # f.close()
+        else:
+            if msg[strid] in reasons.keys():
+                reason = '_'.join(sorted(reasons[msg[strid]]))
+            else:
+                reason = 'unknown'
+            f.write("%12s %s | %20s | %*s | %s\n" %
+                    (datetime.utcfromtimestamp(msg[dtid]).strftime(
+                                                        "%H:%M:%S,%f")[:-3],
+                     datetime.utcfromtimestamp(msg[dtid]).strftime(
+                                                        "%d-%m-%Y"),
+                     msg[strid], max_len, reason, msg[msid]))
+    f.close()
     strid = new_fields.index('message')
     msg_showed = sorted(msg_showed, key=lambda k: k[0])
     prev_message = msg_showed[0][strid]
@@ -259,131 +250,3 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
             msg_showed.remove(msg)
         prev_message = msg[strid]
     return msg_showed, new_fields
-
-
-# fields - names the following positions in log line (date_time,
-# massage, field1, field2, etc.). It is list.
-# all_errors [[msg, date_time, fields..., filtered], [],...]
-# clusters {'1': [msg_filtered, mgs_orig, time],...}
-# @profile
-# def calculate_events_frequency(out_descr, all_errors, clusters, fields,
-#                                err_timeline, keywords, vm_tasks, long_tasks,
-#                                all_vms, all_hosts, needed_msgs, reasons):
-#     msid = fields.index('message')
-#     dtid = fields.index('date_time')
-#     strid = fields.index('line_num')
-#     fid = fields.index('filtered')
-#     max_clust = max(clusters.keys())
-#     mean_clust_len = np.mean([len(clusters[c])
-#                               for c in set(clusters.keys())])
-#     for c_id in sorted(clusters.keys(), key=lambda k: int(k)):
-#         out_descr.write(("calculate_events_frequency: Cluster %s from %s") %
-#                          (c_id, max_clust), end='\r')
-#         if ((len(clusters[c_id]) > 2*mean_clust_len) and not
-#                 any([k in clusters[c_id][0][fid] for k in keywords])):
-#             for msg in clusters[c_id]:
-#                 if msg[strid] not in reasons.keys():
-#                     reasons[msg[strid]] = set()
-#                 if (msg[strid] in needed_msgs):
-#                         # and (len(reasons[msg[strid]]) == 0
-#                         # or ('Many messages' in reasons[msg[strid]]))):
-#                             # and 'Error or warning' not in
-#                             # reasons[msg[strid]]))):
-#                     needed_msgs.remove(msg[strid])
-#                 reasons[msg[strid]].add('Frequent')
-#             continue
-#         elif (len(clusters[c_id]) == 1):
-#             needed_msgs.add(clusters[c_id][0][strid])
-#             if clusters[c_id][0][strid] not in reasons.keys():
-#                 reasons[clusters[c_id][0][strid]] = set()
-#             reasons[clusters[c_id][0][strid]].add('Unique')
-#         elif (len(clusters[c_id]) < mean_clust_len/2):
-#             for msg in clusters[c_id]:
-#                 needed_msgs.add(msg[strid])
-#                 if msg[strid] not in reasons.keys():
-#                     reasons[msg[strid]] = set()
-#                 reasons[msg[strid]].add('Rare')
-#         for msg in clusters[c_id]:
-#             # Check if long tasks are related to the message
-#             for com in sorted(long_tasks.keys()):
-#                 added = False
-#                 for t in long_tasks[com]:
-#                     if ((com in msg[msid]) and
-#                             (t - 10 < msg[dtid] < t + 10)):
-#                         needed_msgs.add(msg[strid])
-#                         if msg[strid] not in reasons.keys():
-#                             reasons[msg[strid]] = set()
-#                         reasons[msg[strid]].add('Long operation')
-#                         added = True
-#                         break
-#                 if added:
-#                     break
-#             # Check if message is related to the VM commands
-#             for field in msg:
-#                 added = False
-#                 # Show because includes keyword
-#                 # if any([k in str(field).lower() for k in
-#                 #        ['error ', 'fail', 'traceback',
-#                 #         'except', 'warn']]):
-#                 #    needed_msgs.add(msg[strid])
-#                 #    if msg[strid] not in reasons.keys():
-#                 #        reasons[msg[strid]] = set()
-#                 #    reasons[msg[strid]].add('Error or warning')
-#                 #    added = True
-#                 for thread in (vm_tasks.keys()):
-#                     if any([task['command_name'] in str(field)
-#                             for task in vm_tasks[thread]]):
-#                         needed_msgs.add(msg[strid])
-#                         if msg[strid] not in reasons.keys():
-#                             reasons[msg[strid]] = set()
-#                         reasons[msg[strid]].add('Task')
-#                         added = True
-#                         break
-#                 if added:
-#                     break
-#             # TODO - filter
-#             # if (msg[strid] in reasons.keys() and 'Many messages' in
-#             #         reasons[msg[strid]] and ):
-#             #     pass
-#         # endloop
-#     # endloop
-#     print()
-#     for t in range(10, len(err_timeline)-10):
-#         if len(err_timeline[t-10:t]) < len(err_timeline[t:t+10]):
-#             # Show because an amount of followed messages increased
-#             for msg in err_timeline[t]:
-#                 needed_msgs.add(msg[strid])
-#                 if msg[strid] not in reasons.keys():
-#                     reasons[msg[strid]] = set()
-#                 reasons[msg[strid]].add('Increased errors')
-#     # END ALGO
-#     msg_showed = []
-#     new_fields = ['date_time', 'line_num', 'reason', 'message']
-#     if reasons == {}:
-#         return msg_showed, new_fields
-#     f = open('diff.txt', 'w')
-#     max_len = max([len('_'.join(reasons[r])) for r in reasons.keys()])
-#     for msg in all_errors:
-#         if msg[strid] in needed_msgs:
-#             msg_showed += [[msg[dtid], msg[strid],
-#                             '_'.join(sorted(reasons[msg[strid]])),
-#                             msg[msid]]]
-#         else:
-#             if msg[strid] in reasons.keys():
-#                 reason = '_'.join(sorted(reasons[msg[strid]]))
-#             else:
-#                 reason = 'unknown'
-#             f.write("%12s %s | %20s | %*s | %s\n" %
-#                     (datetime.utcfromtimestamp(msg[dtid]).strftime(
-#                                                         "%H:%M:%S,%f")[:-3],
-#                      datetime.utcfromtimestamp(msg[dtid]).strftime(
-#                                                         "%d-%m-%Y"),
-#                      msg[strid], max_len, reason, msg[msid]))
-#     f.close()
-#     msg_showed = sorted(msg_showed, key=lambda k: k[0])
-#     prev_message = msg_showed[0][3]
-#     for msg in (msg_showed[1:]).copy():
-#         if msg[3] == prev_message:
-#             msg_showed.remove(msg)
-#         prev_message = msg[3]
-#     return msg_showed, new_fields

@@ -29,13 +29,14 @@ class LogAnalyzer:
     # format_fields{'log1':...}
     def __init__(self, out_descr, directory, filenames, tz,
                  time_ranges, user_vms, user_events, user_hosts,
-                 templates_filename):
+                 templates_filename, additive_link):
         self.out_descr = out_descr
         self.directory = directory
         self.time_ranges = time_ranges
         self.user_vms = user_vms
         self.user_events = user_events
         self.user_hosts = user_hosts
+        self.additive_link = additive_link
         # parse formats file
         formats = open(templates_filename, 'r').read().split('\n')
         self.formats_templates = []
@@ -109,20 +110,26 @@ class LogAnalyzer:
             self.time_ranges = [[min_time, max_time]]
 
     def find_vms_and_hosts(self):
-        self.all_vms, self.all_hosts, self.positions = \
+        self.all_vms, self.all_hosts, self.not_running_vms, \
+        self.not_found_vmnames, self.not_found_hostnames, self.positions = \
             find_all_vm_host(self.positions, self.out_descr,
                              self.directory, self.found_logs,
                              self.time_zones, self.time_ranges)
         if self.user_vms == []:
             for k in self.all_vms.keys():
                 self.user_vms += [k]
-                for i in self.all_vms[k]:
+                for i in self.all_vms[k]['id']:
                     self.user_vms += [i]
+        self.user_vms += self.not_running_vms
+        self.user_vms += self.not_found_vmnames
         if self.user_hosts == []:
             for k in self.all_hosts.keys():
                 self.user_hosts += [k]
-                for i in self.all_hosts[k]:
+                for i in self.all_hosts[k]['id']:
                     self.user_hosts += [i]
+        self.user_hosts += self.not_found_hostnames
+        self.user_vms = list(set(self.user_vms))
+        self.user_hosts = list(set(self.user_hosts))
 
     def find_vm_tasks(self):
         engine_formats = [fmt['regexp'] for fmt in self.formats_templates if
@@ -131,9 +138,10 @@ class LogAnalyzer:
                             'libvirt' in fmt['name']]
         self.vm_tasks = {}
         self.long_tasks = {}
+        self.subtasks = []
         for idx, log in enumerate(self.found_logs):
             if 'engine' in log.lower():
-                tasks_file, long_tasks_file = \
+                tasks_file, long_tasks_file, subtasks = \
                     find_vm_tasks_engine(self.positions[log],
                                          self.out_descr,
                                          self.directory,
@@ -142,9 +150,11 @@ class LogAnalyzer:
                                          self.time_zones[idx],
                                          self.time_ranges,
                                          self.user_vms,
-                                         self.user_hosts)
+                                         self.user_hosts,
+                                         self.additive_link)
                 self.vm_tasks.update(tasks_file)
                 self.long_tasks.update(long_tasks_file)
+                self.subtasks += subtasks
             elif 'libvirt' in log.lower():
                 tasks_file, long_tasks_file = \
                     find_vm_tasks_libvirtd(self.positions[log],
@@ -155,7 +165,8 @@ class LogAnalyzer:
                                            self.time_zones[idx],
                                            self.time_ranges,
                                            self.user_vms,
-                                           self.user_hosts)
+                                           self.user_hosts,
+                                           self.additive_link)
                 self.vm_tasks.update(tasks_file)
                 self.long_tasks.update(long_tasks_file)
 
@@ -174,12 +185,14 @@ class LogAnalyzer:
                                      self.time_zones,
                                      self.positions,
                                      q,
+                                     self.additive_link,
                                      self.user_events,
                                      self.user_hosts,
                                      self.time_ranges,
                                      self.user_vms,
-                                     # list(self.vm_tasks.keys()) +
-                                     list(self.long_tasks.keys()),
+                                     list(self.vm_tasks.keys()) +
+                                     list(self.long_tasks.keys()) +
+                                     self.subtasks,
                                      [mes['flow_id'] for t in
                                       self.vm_tasks.keys() for mes in
                                       (self.vm_tasks)[t] if ('flow_id'
@@ -194,12 +207,14 @@ class LogAnalyzer:
                          self.time_zones,
                          self.positions,
                          q,
+                         self.additive_link,
                          self.user_events,
                          self.user_hosts,
                          self.time_ranges,
                          self.user_vms,
-                         # list(self.vm_tasks.keys()) +
-                         list(self.long_tasks.keys()),
+                         list(self.vm_tasks.keys()) +
+                         list(self.long_tasks.keys()) +
+                         self.subtasks,
                          [mes['flow_id'] for t in self.vm_tasks.keys()
                           for mes in (self.vm_tasks)[t] if ('flow_id'
                           in mes.keys() and mes['flow_id'] != '')],
@@ -241,7 +256,7 @@ class LogAnalyzer:
         important_events, new_fields = \
             clusterize_messages(self.out_descr, merged_errors,
                                 self.all_fields, self.user_events,
-                                self.user_vms, self.user_hosts,
+                                self.user_vms, self.user_hosts, self.subtasks,
                                 self.directory, self.timeline, self.vm_tasks,
                                 self.long_tasks, self.all_vms,
                                 self.all_hosts)
