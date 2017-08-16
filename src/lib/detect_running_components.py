@@ -494,7 +494,7 @@ def find_vm_tasks_engine(positions,
     commands_threads = {}
     long_actions = []
     needed_threads = set()
-    subtasks = []
+    tasks = []
     subtasks_ids = []
     if (log[-4:] == '.log'):
             f = open(log)
@@ -547,7 +547,7 @@ def find_vm_tasks_engine(positions,
                 commands_threads[com.group(1)] += [
                                  {'command_name': com.group(3),
                                   'command_start_name': com.group(3),
-                                  'subtasks': []}]
+                                  'tasks': []}]
                 continue
             start = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +" +
                               r"[Ss][Tt][Aa][Rr][Tt],\ +" +
@@ -557,7 +557,7 @@ def find_vm_tasks_engine(positions,
                     commands_threads[start.group(1)] = [
                                      {'command_name': start.group(3),
                                       'command_start_name': start.group(3),
-                                      'subtasks': [],
+                                      'tasks': [],
                                       'start_time': dt,
                                       'log_id': start.group(4),
                                       'flow_id': start.group(2)}]
@@ -572,7 +572,7 @@ def find_vm_tasks_engine(positions,
                         commands_threads[start.group(1)][com_id] = \
                             {'command_name': com_name,
                              'command_start_name': start.group(3),
-                             'subtasks': [],
+                             'tasks': [],
                              'start_time': dt,
                              'log_id': start.group(4),
                              'flow_id': start.group(2)}
@@ -580,7 +580,7 @@ def find_vm_tasks_engine(positions,
                         commands_threads[start.group(1)] += [
                                          {'command_name': start.group(3),
                                           'command_start_name': start.group(3),
-                                          'subtasks': [],
+                                          'tasks': [],
                                           'start_time': dt,
                                           'log_id': start.group(4),
                                           'flow_id': start.group(2)}]
@@ -593,7 +593,7 @@ def find_vm_tasks_engine(positions,
                     commands_threads[finish.group(1)] = [
                                      {'command_name': finish.group(3),
                                       'command_start_name': finish.group(3),
-                                      'subtasks': [],
+                                      'tasks': [],
                                       'log_id': finish.group(4),
                                       'flow_id': finish.group(2)}]
                     # com_id = 0
@@ -608,7 +608,7 @@ def find_vm_tasks_engine(positions,
                         commands_threads[finish.group(1)] += [{
                                          'command_name': finish.group(3),
                                          'command_start_name': finish.group(3),
-                                         'subtasks': [],
+                                         'tasks': [],
                                          'log_id': finish.group(4),
                                          'flow_id': finish.group(2)}]
                         continue
@@ -627,47 +627,78 @@ def find_vm_tasks_engine(positions,
                                 commands_threads[finish.group(1)][
                                                  task_idx]['start_time']
                             break
-            subtask_start = re.search(r"\((.+?)\)\ +\[.*?\].+?" +
-                                r"[Aa]dding [Tt]ask\ +\'(.+?)\'\ +" +
-                                r"\(*[Pp]arent [Cc]ommand\ +\'(.+?)\'.*\)",
+            subtask_init = re.search(r"\((.+?)\)\ +\[.*?\].+?" +
+                                r"[Aa]ttaching [Tt]ask\ +\'(.+?)\'\ +" +
+                                r"[Tt]o [Cc]ommand\ +\'(.+?)\'",
                                 line)
+            if subtask_init is not None:
+                tasks += [{'subtask_id': subtask_init.group(2),
+                           'parent_thread': subtask_init.group(1),
+                           'parent_task_id': subtask_init.group(3)}]
+                subtasks_ids += [subtask_init.group(2), subtask_init.group(3)]
+            # start
+            subtask_start = re.search(r"[Aa]dding [Tt]ask\ +\'(.+?)\'\ +" +
+                                      r"\(*[Pp]arent [Cc]ommand\ +\'(.+?)\'" +
+                                      r".*\)",
+                                      line)
             if subtask_start is not None:
-                if (subtask_start.group(1) not in commands_threads.keys()):
-                    continue
-                for task_idx, command in \
-                        enumerate(commands_threads[subtask_start.group(1)]):
-                    if (command['command_name'] in subtask_start.group(3)):
-                        commands_threads[subtask_start.group(1)][
-                                task_idx]['subtasks'] += [
-                                {'id': subtask_start.group(2),
-                                 'start_time': dt}]
-                        subtasks += [{'id': subtask_start.group(2),
-                                      'parent_thread': subtask_start.group(1),
-                                      'task_idx': task_idx}]
-                        subtasks_ids += [subtask_start.group(2)]
+                for task_idx, task in enumerate(tasks):
+                    if task['subtask_id'] == subtask_start.group(1):
+                        tasks[task_idx]['parent_task_name'] = \
+                                                    subtask_start.group(2)
+                        tasks[task_idx]['start_time'] = dt
                         break
+            # wait
+            subtask_wait = re.search(r"[Cc]ommand\ +\'(.+?)\'\ +\([IDid]+\:" +
+                                     r"\ +" +
+                                     r"\'(.+?)\'\)\ +[Ww]aiting [Oo]n\ +" +
+                                     r"[Cc]hild.+[IDid]\:\ +" +
+                                     r"\'(.+?)\'\ +[Tt]ype\:\ *\'(.+?)\'",
+                                     line)
+            if subtask_wait is not None:
+                for task_idx, task in enumerate(tasks):
+                    if (task['parent_task_id'] == subtask_wait.group(3)
+                            and 'parent_task_name' in task.keys()
+                            and task['parent_task_name'] == 
+                            subtask_wait.group(4)):
+                        tasks[task_idx]['parent_command_name'] = \
+                                                    subtask_wait.group(1)
+                        tasks[task_idx]['parent_command_id'] = \
+                                                    subtask_wait.group(2)
+                        subtasks_ids += [subtask_wait.group(2)]
+                        break
+            # end
             subtask_end = re.search(r"[Rr]emoved [Tt]ask\ +\'(.+?)\'\ +" +
                                     r"[Ff]rom [Dd]ata[Bb]ase", line)
-            if subtask_end is None:
-                continue
-            for subtask_idx, subtask in enumerate(subtasks.copy()):
-                if subtask['id'] == subtask_end.group(1):
-                    for subt_idx, existed_subt in enumerate(commands_threads[
-                            subtask['parent_thread']][
-                            subtask['task_idx']]['subtasks']):
-                        if (existed_subt['id'] == subtask_end.group(1)):
-                            commands_threads[subtask['parent_thread']][
-                                subtask['task_idx']]['subtasks'][
-                                    subt_idx]['end_time'] = dt
-                            commands_threads[subtask['parent_thread']][
-                                subtask['task_idx']]['subtasks'][
-                                    subt_idx]['duration'] = dt - \
-                                        commands_threads[subtask[
-                                        'parent_thread']][
-                                        subtask['task_idx']]['subtasks'][
-                                        subt_idx]['start_time']
-                    subtasks.remove(subtask)
+            if subtask_end is not None:
+                for task_idx, task in enumerate(tasks):
+                    if (task['subtask_id'] == subtask_end.group(1)):
+                        tasks[task_idx]['finish_time'] = dt
+                        tasks[task_idx]['duration'] = \
+                            tasks[task_idx]['finish_time'] - \
+                            tasks[task_idx]['start_time']
+                        break
     f.close()
+    for task in tasks.copy():
+        for thread in sorted(commands_threads.keys()):
+            if thread == task['parent_thread']:
+                for idx, command in enumerate(commands_threads[thread]):
+                    if ('parent_command_name' in task.keys()
+                            and command['command_start_name'] == \
+                            task['parent_command_name']):
+                        commands_threads[thread][idx]['tasks'] += [task]
+                    #print(command['command_start_name'], \
+                    #        task['parent_task_name'])
+                    if ('parent_task_name' in task.keys()
+                            and command['command_start_name'] == \
+                            task['parent_task_name']):
+                        commands_threads[thread][idx]['tasks'] += [task]        
+                tasks.remove(task)
+                break
+    json.dump(tasks, open('subtasks_engine_' +
+                          log_directory.split('/')[-2] +
+                          '.json',
+                          'w'), indent=4, sort_keys=True)
     json.dump(commands_threads, open('tasks_engine_' +
                                      log_directory.split('/')[-2] +
                                      '.json',

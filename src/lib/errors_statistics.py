@@ -37,23 +37,6 @@ def merge_all_errors_by_time(all_errors, fields_names):
     return timeline, all_messages, list_headers
 
 
-# many events in short time
-# errors, warnings
-# check 5-sec window
-# tracebacks
-# repeated actions
-# error, down, warn
-# many messages in the same millisecond
-def return_nonsimilar_part(str1, str2):
-    str1_word = str1.split(' ')
-    str2_word = str2.split(' ')
-    set1 = set(str1_word)
-    set2 = set(str2_word)
-    diff1 = set1 - set2
-    diff2 = set2 - set1
-    return diff1.union(diff2)
-
-
 def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                         user_hosts, subtasks, dirname, err_timeline, vm_tasks,
                         long_tasks, all_vms, all_hosts):
@@ -125,17 +108,15 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
     new_events = {}
     for shorten in sorted(events.keys()):
         word_key = shorten.split(' ')[0]
+        if len(shorten.split(' ')) > 1:
+            word_key += ' '+shorten.split(' ')[1]
         if word_key not in new_events.keys():
             new_events[word_key] = {'date_time': [], 'line_num': [],
                                     'data': [], 'keywords': set()}
-        new_events[shorten.split(' ')[0]]['date_time'] += events[
-                                                        shorten]['date_time']
-        new_events[shorten.split(' ')[0]]['line_num'] += events[
-                                                        shorten]['line_num']
-        new_events[shorten.split(' ')[0]]['data'] += events[
-                                                        shorten]['data']
-        new_events[shorten.split(' ')[0]]['keywords'].union(events[
-                                                        shorten]['keywords'])
+        new_events[word_key]['date_time'] += events[shorten]['date_time']
+        new_events[word_key]['line_num'] += events[shorten]['line_num']
+        new_events[word_key]['data'] += events[shorten]['data']
+        new_events[word_key]['keywords'].union(events[shorten]['keywords'])
     events = new_events
     del new_events
     f = open("clusters_"+dirname.split('/')[-2]+".txt", 'w')
@@ -157,7 +138,7 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                 if line_num not in reasons.keys():
                     reasons[line_num] = set()
                 reasons[line_num].add('Differ by VM IDs')
-        if len(events[filtered]['line_num']) >= mean_len + 3*std_len:
+        if len(events[filtered]['line_num']) > mean_len + 3*std_len:
             for line_num in events[filtered]['line_num']:
                 if line_num not in reasons.keys():
                     reasons[line_num] = set()
@@ -170,7 +151,7 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
             if events[filtered]['data'][0][strid] not in reasons.keys():
                 reasons[events[filtered]['data'][0][strid]] = set()
             reasons[events[filtered]['data'][0][strid]].add('Unique')
-        elif (len(events[filtered]['line_num']) <= mean_len - 3*std_len):
+        elif (len(events[filtered]['line_num']) < mean_len - 3*std_len):
             for line_num in events[filtered]['line_num']:
                 if line_num not in reasons.keys():
                     reasons[line_num] = set()
