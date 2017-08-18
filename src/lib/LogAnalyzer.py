@@ -29,9 +29,10 @@ class LogAnalyzer:
     # format_fields{'log1':...}
     def __init__(self, out_descr, directory, filenames, tz,
                  time_ranges, user_vms, user_events, user_hosts,
-                 templates_filename, additive_link):
+                 templates_filename, additive_link, output_dir):
         self.out_descr = out_descr
         self.directory = directory
+        self.output_dir = output_dir
         self.time_ranges = time_ranges
         self.user_vms = user_vms
         self.user_events = user_events
@@ -138,35 +139,38 @@ class LogAnalyzer:
                             'libvirt' in fmt['name']]
         self.vm_tasks = {}
         self.long_tasks = {}
-        self.subtasks = []
+        self.subtasks = {}
+        self.stuctured_commands = {}
         for idx, log in enumerate(self.found_logs):
             if 'engine' in log.lower():
-                tasks_file, long_tasks_file, subtasks = \
-                    find_vm_tasks_engine(self.positions[log],
-                                         self.out_descr,
-                                         self.directory,
-                                         os.path.join(self.directory, log),
-                                         engine_formats,
-                                         self.time_zones[idx],
-                                         self.time_ranges,
-                                         self.user_vms,
-                                         self.user_hosts,
-                                         self.additive_link)
+                tasks_file, long_tasks_file, self.stuctured_commands[log], \
+                    subtasks = find_vm_tasks_engine(self.positions[log],
+                                                    self.out_descr,
+                                                    self.directory,
+                                                    log,
+                                                    engine_formats,
+                                                    self.time_zones[idx],
+                                                    self.time_ranges,
+                                                    self.user_vms,
+                                                    self.user_hosts,
+                                                    self.additive_link,
+                                                    self.output_dir)
                 self.vm_tasks.update(tasks_file)
                 self.long_tasks.update(long_tasks_file)
-                self.subtasks += subtasks
+                self.subtasks.update(subtasks)
             elif 'libvirt' in log.lower():
                 tasks_file, long_tasks_file = \
                     find_vm_tasks_libvirtd(self.positions[log],
                                            self.out_descr,
                                            self.directory,
-                                           os.path.join(self.directory, log),
+                                           log,
                                            libvirtd_formats,
                                            self.time_zones[idx],
                                            self.time_ranges,
                                            self.user_vms,
                                            self.user_hosts,
-                                           self.additive_link)
+                                           self.additive_link,
+                                           self.output_dir)
                 self.vm_tasks.update(tasks_file)
                 self.long_tasks.update(long_tasks_file)
 
@@ -192,7 +196,7 @@ class LogAnalyzer:
                                      self.user_vms,
                                      list(self.vm_tasks.keys()) +
                                      list(self.long_tasks.keys()) +
-                                     self.subtasks,
+                                     list(self.subtasks.keys()),
                                      [mes['flow_id'] for t in
                                       self.vm_tasks.keys() for mes in
                                       (self.vm_tasks)[t] if ('flow_id'
@@ -214,7 +218,7 @@ class LogAnalyzer:
                          self.user_vms,
                          list(self.vm_tasks.keys()) +
                          list(self.long_tasks.keys()) +
-                         self.subtasks,
+                         list(self.subtasks.keys()),
                          [mes['flow_id'] for t in self.vm_tasks.keys()
                           for mes in (self.vm_tasks)[t] if ('flow_id'
                           in mes.keys() and mes['flow_id'] != '')],
@@ -240,26 +244,28 @@ class LogAnalyzer:
             self.out_descr.write('No matches.\n')
             exit()
 
-    def find_important_events(self):
-        self.timeline, merged_errors, self.all_fields = \
+    def merge_all_messages(self):
+        self.timeline, self.merged_errors, self.all_fields = \
             merge_all_errors_by_time(self.all_errors, self.format_fields)
         try:
             del self.all_errors
         except:
             pass
+
+    def find_important_events(self):
         # f = open('debug_'+self.directory.split('/')[-2]+'.txt', 'w')
-        # for msg in merged_errors:
+        # for msg in self.merged_errors:
         #     for field in msg:
         #         f.write(str(field) + '   ')
         #     f.write('\n')
         # f.close()
         important_events, new_fields = \
-            clusterize_messages(self.out_descr, merged_errors,
+            clusterize_messages(self.out_descr, self.merged_errors,
                                 self.all_fields, self.user_events,
                                 self.user_vms, self.user_hosts, self.subtasks,
                                 self.directory, self.timeline, self.vm_tasks,
                                 self.long_tasks, self.all_vms,
-                                self.all_hosts)
+                                self.all_hosts, self.output_dir)
         return important_events, new_fields
 
     def print_errors(self, errors_list, new_fields, out):

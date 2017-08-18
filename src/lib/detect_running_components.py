@@ -5,6 +5,7 @@ import json
 import pytz
 import numpy as np
 from datetime import datetime
+import progressbar
 
 
 re_timestamp = re.compile(
@@ -183,6 +184,8 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
 def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
                      time_range_info):
     cur = {}
+    f.seek(0, os.SEEK_END)
+    file_len = f.tell()
     multiline = False
     f.seek(pos, os.SEEK_SET)
     dt = 0
@@ -192,7 +195,11 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
     f.seek(real_firstpos, os.SEEK_SET)
+    bar = progressbar.ProgressBar(redirect_stdout=True, max_value=file_len)
+    i = real_firstpos
     for line_num, line in enumerate(f):
+        i += len(line)
+        bar.update(i)
         dt = parse_date_time(line, tz_info)
         if dt == 0:
             continue
@@ -249,6 +256,8 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
 def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts,
                      time_range_info):
     cur = {}
+    f.seek(0, os.SEEK_END)
+    file_len = f.tell()
     this_host = ''
     multiline = False
     f.seek(pos, os.SEEK_SET)
@@ -259,7 +268,11 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts,
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
     f.seek(real_firstpos, os.SEEK_SET)
+    bar = progressbar.ProgressBar(redirect_stdout=True, max_value=file_len)
+    i = real_firstpos
     for line_num, line in enumerate(f):
+        i += len(line)
+        bar.update(i)
         dt = parse_date_time(line, tz_info)
         if dt == 0:
             continue
@@ -300,6 +313,8 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts,
     return vms, hosts, real_firstpos
 
 def engine_vm_host(f, pos, tz_info, vms, hosts, time_range_info):
+    f.seek(0, os.SEEK_END)
+    file_len = f.tell()
     f.seek(pos, os.SEEK_SET)
     dt = 0
     while dt < time_range_info[0]:
@@ -308,7 +323,11 @@ def engine_vm_host(f, pos, tz_info, vms, hosts, time_range_info):
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
     f.seek(real_firstpos, os.SEEK_SET)
+    bar = progressbar.ProgressBar(redirect_stdout=True, max_value=file_len)
+    i = real_firstpos
     for line_num, line in enumerate(f):
+        i += len(line)
+        bar.update(i)
         dt = parse_date_time(line, tz_info)
         if dt == 0:
             continue
@@ -416,17 +435,20 @@ def find_all_vm_host(positions,
                     vdsm_vm_host(f, log, 0,  # log_position,
                                      tz_info[log_idx], vms, hosts,
                                      time_range_info[tr_idx])
+                output_descriptor.write('\n')
             elif 'libvirt' in log.lower():
                 vms, hosts, firstline_pos = \
                     libvirtd_vm_host(f, log, 0,  # log_position,
                                      tz_info[log_idx], vms, hosts,
                                      time_range_info[tr_idx])
+                output_descriptor.write('\n')
             else:
                 vms, hosts, firstline_pos = \
                     engine_vm_host(f, 0,  # log_position,
                                    tz_info[log_idx],
                                    vms, hosts,
                                    time_range_info[tr_idx])
+                output_descriptor.write('\n')
             first_lines[log] += [firstline_pos]
         f.close()
     # print('------VMS------')
@@ -453,7 +475,8 @@ def find_all_vm_host(positions,
             for v in not_found_vmnames.copy():
                 if v in list(vms[k]['id']):
                     not_found_vmnames.remove(v)
-        # print(k,':id:',[j for j in vms[k]['id']],'\n',k,':found on hosts:',[j for j in vms[k]['hostids']])
+        # print(k,':id:',[j for j in vms[k]['id']],'\n',k,':found on hosts:',
+        #       [j for j in vms[k]['hostids']])
         # print('---')
     # print('Not running VMs:', not_running_vms)
     # print('Not found VM names:', not_found_vmnames)
@@ -483,23 +506,19 @@ def find_all_vm_host(positions,
             not_found_hostnames, first_lines
 
 
-def find_vm_tasks_engine(positions,
-                         output_descriptor,
-                         log_directory,
-                         log,
-                         file_formats,
-                         tz_info,
-                         time_range_info,
-                         user_vms, user_hosts, additive):
+def find_vm_tasks_engine(positions, output_descriptor, log_directory,
+                         log, file_formats, tz_info, time_range_info,
+                         user_vms, user_hosts, additive, output_directory):
     commands_threads = {}
     long_actions = []
-    needed_threads = set()
-    tasks = []
-    subtasks_ids = []
+    vm_in_threads = set()
+    tasks = {}
+    commands = {}
+    fullname = os.path.join(log_directory, log)
     if (log[-4:] == '.log'):
-            f = open(log)
+            f = open(fullname)
     elif (log[-3:] == '.xz'):
-        f = lzma.open(log, 'rt')
+        f = lzma.open(fullname, 'rt')
     else:
         output_descriptor.write("Unknown file extension: %s" % log)
         return commands_threads, long_actions
@@ -516,6 +535,7 @@ def find_vm_tasks_engine(positions,
     for tr_idx, pos in enumerate(positions):
         f.seek(pos, os.SEEK_SET)
         for line_num, line in enumerate(f):
+            line_name = log + ':' + str(line_num + 1)
             fields = file_format.search(line)
             if fields is None:
                 # Tracebacks will be added anyway
@@ -537,7 +557,7 @@ def find_vm_tasks_engine(positions,
                              and any([host in fields["message"]
                                      for host in user_hosts]))
             if (condition):
-                needed_threads.add(fields["thread"])
+                vm_in_threads.add(fields["thread"])
             com = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +" +
                             r"[Rr]unning [Cc]ommand:\ +" +
                             r"([^\s]+)[Cc]ommand", line)
@@ -547,7 +567,9 @@ def find_vm_tasks_engine(positions,
                 commands_threads[com.group(1)] += [
                                  {'command_name': com.group(3),
                                   'command_start_name': com.group(3),
-                                  'tasks': []}]
+                                  'init_time': dt,
+                                  'first_line_num': line_name,
+                                  'flow_id': com.group(2)}]
                 continue
             start = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +" +
                               r"[Ss][Tt][Aa][Rr][Tt],\ +" +
@@ -557,177 +579,341 @@ def find_vm_tasks_engine(positions,
                     commands_threads[start.group(1)] = [
                                      {'command_name': start.group(3),
                                       'command_start_name': start.group(3),
-                                      'tasks': [],
                                       'start_time': dt,
                                       'log_id': start.group(4),
-                                      'flow_id': start.group(2)}]
+                                      'flow_id': start.group(2),
+                                      'first_line_num': line_name}]
                 else:
-                    com_list = [com['command_name'] for com in
+                    flow_list = [com['flow_id'] for com in
                                 commands_threads[start.group(1)]]
                     try:
-                        com_id = len(com_list) - 1 - \
-                                 com_list[::-1].index(start.group(3))
+                        com_id = len(flow_list) - 1 - \
+                                 flow_list[::-1].index(start.group(2))
                         com_name = commands_threads[start.group(1)][com_id][
                                     'command_name']
-                        commands_threads[start.group(1)][com_id] = \
-                            {'command_name': com_name,
-                             'command_start_name': start.group(3),
-                             'tasks': [],
-                             'start_time': dt,
-                             'log_id': start.group(4),
-                             'flow_id': start.group(2)}
+                        commands_threads[start.group(1)][
+                            com_id]['command_start_name'] = start.group(3)
+                        commands_threads[start.group(1)][
+                            com_id]['start_time'] = dt
+                        commands_threads[start.group(1)][
+                            com_id]['log_id'] = dt
                     except:
                         commands_threads[start.group(1)] += [
-                                         {'command_name': start.group(3),
-                                          'command_start_name': start.group(3),
-                                          'tasks': [],
-                                          'start_time': dt,
-                                          'log_id': start.group(4),
-                                          'flow_id': start.group(2)}]
+                                        {'command_name': start.group(3),
+                                         'command_start_name': start.group(3),
+                                         'start_time': dt,
+                                         'log_id': start.group(4),
+                                         'flow_id': start.group(2),
+                                         'first_line_num': line_name}]
                 continue
             finish = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +" +
                                r"[Ff][Ii][Nn][Ii][Ss][Hh],\ +" +
                                r"([^\s]+)Command.*\ +log id:\ (.+)", line)
             if (finish is not None):
                 if (finish.group(1) not in commands_threads.keys()):
-                    commands_threads[finish.group(1)] = [
-                                     {'command_name': finish.group(3),
-                                      'command_start_name': finish.group(3),
-                                      'tasks': [],
-                                      'log_id': finish.group(4),
-                                      'flow_id': finish.group(2)}]
-                    # com_id = 0
                     continue
-                else:
-                    com_list = [com['command_name'] for com in
-                                commands_threads[finish.group(1)]]
-                    try:
-                        com_id = len(com_list) - 1 - \
-                                 com_list[::-1].index(finish.group(3))
-                    except:
-                        commands_threads[finish.group(1)] += [{
-                                         'command_name': finish.group(3),
-                                         'command_start_name': finish.group(3),
-                                         'tasks': [],
-                                         'log_id': finish.group(4),
-                                         'flow_id': finish.group(2)}]
-                        continue
                 for task_idx, command in \
                         enumerate(commands_threads[finish.group(1)]):
                     if ('log_id' in command.keys() and
                             command['log_id'] == finish.group(4)):
                         commands_threads[finish.group(1)][
                                                 task_idx]['finish_time'] = dt
+                        commands_threads[finish.group(1)][
+                                                task_idx][
+                                                'finish_line_num'] = line_name
                         if ('start_time' in commands_threads[
                                 finish.group(1)][task_idx].keys()):
                             commands_threads[finish.group(1)][
-                                             task_idx]['duration'] = \
-                                commands_threads[finish.group(1)][
-                                                 task_idx]['finish_time'] - \
+                                             task_idx]['duration'] = dt - \
                                 commands_threads[finish.group(1)][
                                                  task_idx]['start_time']
                             break
-            subtask_init = re.search(r"\((.+?)\)\ +\[.*?\].+?" +
+                continue
+            # ending = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +" +
+            #                    r"[Ee]nding\ +[Cc]ommand\ *" +
+            #                    r"\'.+\.(.+)Command\'\ *successfully", line)
+            # if (ending is not None):
+            #     output_descriptor.write('Not None \n')
+            #     if (ending.group(1) not in commands_threads.keys()):
+            #         output_descriptor.write('Not in commands_threads.keys()\n')
+            #         continue
+            #     else:
+            #         com_list = [com['command_name'] for com in
+            #                     commands_threads[ending.group(1)]
+            #                     if 'init_time' in com.keys()]
+            #         try:
+            #             com_id = len(com_list) - 1 - \
+            #                      com_list[::-1].index(ending.group(3))
+            #         except:
+            #             output_descriptor.write('Not found com_id\n')
+            #             # commands_threads[ending.group(1)] += [{
+            #             #                  'command_name': ending.group(3),
+            #             #                  'command_start_name': ending.group(3),
+            #             #                  'log_id': ending.group(4),
+            #             #                  'flow_id': ending.group(2)}]
+            #             continue
+            #     #for task_idx, command in \
+            #     #        enumerate(commands_threads[ending.group(1)]):
+            #     #    if ('log_id' in command.keys() and
+            #     #            command['log_id'] == ending.group(4)):
+            #         commands_threads[ending.group(1)][
+            #                                 com_id]['end_time'] = dt
+            #         if ('init_time' in commands_threads[
+            #                 ending.group(1)][com_id].keys()):
+            #             commands_threads[ending.group(1)][
+            #                              com_id]['duration'] = dt - \
+            #                 commands_threads[ending.group(1)][
+            #                                  com_id]['init_time']
+            #         else:
+            #             output_descriptor.write('Not found init_time\n')
+            #     continue
+            # difficulties
+            multiasync = re.search(r"\((.+?)\)\ +\[(.*?)\].+" +
+                                   r"[Aa]dding\ +CommandMultiAsyncTasks\ +" +
+                                   r"[Oo]bject\ +[Ff]or\ +[Cc]ommand\ +" +
+                                   r"\'(.+?)\'", line)
+            if multiasync is not None:
+                commands[multiasync.group(3)] = {'name': commands_threads[
+                              multiasync.group(1)][-1]['command_name'],
+                              'thread': multiasync.group(1),
+                              'flow_id': multiasync.group(2),
+                              'first_line_num': line_name}
+                continue
+            subtask_init = re.search(r"\((.+?)\)\ +\[(.*?)\].+" +
                                 r"[Aa]ttaching [Tt]ask\ +\'(.+?)\'\ +" +
                                 r"[Tt]o [Cc]ommand\ +\'(.+?)\'",
                                 line)
             if subtask_init is not None:
-                tasks += [{'subtask_id': subtask_init.group(2),
-                           'parent_thread': subtask_init.group(1),
-                           'parent_task_id': subtask_init.group(3)}]
-                subtasks_ids += [subtask_init.group(2), subtask_init.group(3)]
+                if (subtask_init.group(4) not in commands.keys()):
+                    commands[subtask_init.group(4)] = {
+                                            'thread': subtask_init.group(1),
+                                            'flow_id': subtask_init.group(2),
+                                            'first_line_num': line_name}
+                tasks[subtask_init.group(3)] = {
+                                            'thread': subtask_init.group(1),
+                                            'parent_id': subtask_init.group(4),
+                                            'flow_id': subtask_init.group(2),
+                                            'first_line_num': line_name}
+                continue
             # start
-            subtask_start = re.search(r"[Aa]dding [Tt]ask\ +\'(.+?)\'\ +" +
+            subtask_start = re.search(r"\((.+?)\)\ +\[(.*?)\].+" +
+                                      r"[Aa]dding [Tt]ask\ +\'(.+?)\'\ +" +
                                       r"\(*[Pp]arent [Cc]ommand\ +\'(.+?)\'" +
                                       r".*\)",
                                       line)
             if subtask_start is not None:
-                for task_idx, task in enumerate(tasks):
-                    if task['subtask_id'] == subtask_start.group(1):
-                        tasks[task_idx]['parent_task_name'] = \
-                                                    subtask_start.group(2)
-                        tasks[task_idx]['start_time'] = dt
-                        break
+                if (subtask_start.group(3) not in tasks.keys()):
+                    tasks[subtask_start.group(3)] = {
+                                        'parent_name': subtask_start.group(4),
+                                        'thread': subtask_start.group(1),
+                                        'start_time': dt,
+                                        'flow_id': subtask_start.group(2),
+                                        'first_line_num': line_name}
+                    continue
+                tasks[subtask_start.group(3)]['parent_name'] = \
+                                                        subtask_start.group(4)
+                tasks[subtask_start.group(3)]['start_time'] = dt
+                continue
             # wait
-            subtask_wait = re.search(r"[Cc]ommand\ +\'(.+?)\'\ +\([IDid]+\:" +
+            subtask_wait = re.search(r"\((.+?)\)\ +\[(.*?)\].+" +
+                                     r"[Cc]ommand\ +\'(.+?)\'\ +\([IDid]+\:" +
                                      r"\ +" +
                                      r"\'(.+?)\'\)\ +[Ww]aiting [Oo]n\ +" +
                                      r"[Cc]hild.+[IDid]\:\ +" +
                                      r"\'(.+?)\'\ +[Tt]ype\:\ *\'(.+?)\'",
                                      line)
             if subtask_wait is not None:
-                for task_idx, task in enumerate(tasks):
-                    if (task['parent_task_id'] == subtask_wait.group(3)
-                            and 'parent_task_name' in task.keys()
-                            and task['parent_task_name'] == 
-                            subtask_wait.group(4)):
-                        tasks[task_idx]['parent_command_name'] = \
-                                                    subtask_wait.group(1)
-                        tasks[task_idx]['parent_command_id'] = \
-                                                    subtask_wait.group(2)
-                        subtasks_ids += [subtask_wait.group(2)]
-                        break
+                if (subtask_wait.group(4) not in commands.keys()):
+                    commands[subtask_wait.group(4)] = {
+                                            'thread': subtask_wait.group(1),
+                                            'flow_id': subtask_wait.group(2),
+                                            'first_line_num': line_name}
+                commands[subtask_wait.group(4)]['name'] = subtask_wait.group(3)
+                if (subtask_wait.group(5) in commands.keys()
+                        and commands[subtask_wait.group(5)]['name'] != 
+                        subtask_wait.group(6)):
+                    commands[subtask_wait.group(5)] = {
+                                            'name': subtask_wait.group(6),
+                                            'thread': 'n/a',
+                                            'flow_id': 'n/a',
+                                            'first_line_num': 'n/a'}
+                if 'childs' not in commands[subtask_wait.group(4)].keys():
+                    commands[subtask_wait.group(4)]['childs'] = [
+                                    {'child_id': subtask_wait.group(5),
+                                     'child_name': subtask_wait.group(6)}]
+                    continue
+                if (subtask_wait.group(5) not in 
+                        [child['child_id'] for child in 
+                        commands[subtask_wait.group(4)]['childs']]):
+                    commands[subtask_wait.group(4)]['childs'] += [
+                                        {'child_id': subtask_wait.group(5),
+                                         'child_name': subtask_wait.group(6)}]
+                continue
             # end
-            subtask_end = re.search(r"[Rr]emoved [Tt]ask\ +\'(.+?)\'\ +" +
+            subtask_end = re.search(r"\((.+?)\)\ +\[(.*?)\].+" +
+                                    r"[Rr]emoved [Tt]ask\ +\'(.+?)\'\ +" +
                                     r"[Ff]rom [Dd]ata[Bb]ase", line)
             if subtask_end is not None:
-                for task_idx, task in enumerate(tasks):
-                    if (task['subtask_id'] == subtask_end.group(1)):
-                        tasks[task_idx]['finish_time'] = dt
-                        tasks[task_idx]['duration'] = \
-                            tasks[task_idx]['finish_time'] - \
-                            tasks[task_idx]['start_time']
-                        break
+                if (subtask_end.group(3) not in tasks.keys()):
+                    continue
+                tasks[subtask_end.group(3)]['end_time'] = dt
+                tasks[subtask_end.group(3)]['finish_line_num'] = line_name
+                if ('start_time' in tasks[subtask_end.group(3)].keys()):
+                    tasks[subtask_end.group(3)]['duration'] = dt - \
+                                    tasks[subtask_end.group(3)]['start_time']    
+                continue
     f.close()
-    for task in tasks.copy():
-        for thread in sorted(commands_threads.keys()):
-            if thread == task['parent_thread']:
-                for idx, command in enumerate(commands_threads[thread]):
-                    if ('parent_command_name' in task.keys()
-                            and command['command_start_name'] == \
-                            task['parent_command_name']):
-                        commands_threads[thread][idx]['tasks'] += [task]
-                    #print(command['command_start_name'], \
-                    #        task['parent_task_name'])
-                    if ('parent_task_name' in task.keys()
-                            and command['command_start_name'] == \
-                            task['parent_task_name']):
-                        commands_threads[thread][idx]['tasks'] += [task]        
-                tasks.remove(task)
-                break
-    json.dump(tasks, open('subtasks_engine_' +
-                          log_directory.split('/')[-2] +
-                          '.json',
-                          'w'), indent=4, sort_keys=True)
-    json.dump(commands_threads, open('tasks_engine_' +
+    command_lvl = {}
+    for com in sorted(commands.keys()):
+        for task_id in sorted(tasks.keys()):
+            if 'parent_id' not in tasks[task_id].keys():
+                tasks.pop(task_id)
+                continue
+            if (tasks[task_id]['parent_id'] == com):
+                if 'tasks' not in commands[com].keys():
+                    commands[com]['ztasks'] = []
+                commands[com]['ztasks'] += [tasks[task_id]]
+                commands[com]['ztasks'][-1]['id'] = task_id
+                command_lvl[task_id] = 0
+                tasks.pop(task_id)
+    json.dump(commands_threads, open(os.path.join(output_directory,
                                      log_directory.split('/')[-2] +
-                                     '.json',
+                                     '_engine_commands_by_threads.json'),
                                      'w'), indent=4, sort_keys=True)
+    new_commands, command_lvl = link_commands(log_directory.split('/')[-2],
+                                              output_descriptor,
+                                              commands, command_lvl,
+                                              output_directory)
     if commands_threads != {}:
         commands_threads, long_actions = select_needed_commands(
-                                            commands_threads, needed_threads)
-    json.dump(commands_threads, open('filtered_tasks_engine_' +
-                                     log_directory.split('/')[-2] +
-                                     '.json',
-                                     'w'), indent=4, sort_keys=True)
-    return commands_threads, long_actions, subtasks_ids
+                                            commands_threads, vm_in_threads)
+    return commands_threads, long_actions, new_commands, command_lvl
 
 
-def find_vm_tasks_libvirtd(positions,
-                           output_descriptor,
-                           log_directory,
-                           log,
-                           file_formats,
-                           tz_info,
-                           time_range_info,
-                           user_vms, user_hosts, additive):
+def link_commands(log_dir, output_descriptor, commands, command_lvl,
+                  output_directory):
+    without_parents = []
+    new_commands = {}
+    for command_id in sorted(commands.keys()):
+        if 'childs' not in commands[command_id].keys():
+            new_commands[command_id] = commands[command_id]
+            new_commands[command_id]['lvl'] = 1
+            command_lvl[command_id] = 1
+        else:
+            for child in commands[command_id]['childs']:
+                if child['child_id'] not in commands.keys():
+                    commands[command_id]['childs'].remove(child)
+            if len(commands[command_id]['childs']) == 0:
+                commands[command_id].pop('childs', None)
+                new_commands[command_id] = commands[command_id]
+                new_commands[command_id]['lvl'] = 1
+                command_lvl[command_id] = 1
+    leafs = True
+    while leafs:
+        leafs = False
+        for idx, command_id in enumerate(sorted(commands.keys())):
+            if 'childs' not in commands[command_id].keys():
+                leafs = True
+                parent = find_parent(output_descriptor, commands, command_id)
+                if parent is None:
+                    without_parents += [commands[command_id]]
+                    without_parents[-1]['id'] = command_id
+                    commands.pop(command_id)
+                    new_commands.pop(command_id)
+                else:
+                    commands.pop(command_id)
+                    new_commands[parent] = {
+                                        'name': commands[parent]['name'],
+                                        'thread': commands[parent]['thread'],
+                                        'flow_id': commands[parent]['flow_id'],
+                                        'first_line_num': commands[parent][
+                                                          'first_line_num'],
+                                        'id': parent,
+                                        'lvl': 2,
+                                        'zchildren': []}
+                    command_lvl[parent] = 2
+                    for child in commands[parent]['childs']:
+                        if (child['child_id'] in new_commands.keys()
+                                or child['child_id'] in commands.keys()
+                                and 'childs' not in
+                                commands[child['child_id']].keys()):
+                            new_commands[parent]['zchildren'] += \
+                                            [new_commands[child['child_id']]]
+                            new_commands[parent]['zchildren'][-1]['id'] = \
+                                            child['child_id']
+                            if child['child_id'] in commands.keys():
+                                commands.pop(child['child_id'])
+                            if child['child_id'] in new_commands.keys():
+                               new_commands.pop(child['child_id'])
+                break
+    heads = []
+    while (len(commands)>0):
+        for idx, command_id in enumerate(sorted(new_commands.keys())):
+            if command_id in heads:
+                continue
+            parent = find_parent(output_descriptor, commands, command_id)
+            if parent is None:
+                if command_id in commands.keys():
+                    commands.pop(command_id)
+                heads += [command_id]
+                break
+            else:
+                new_commands[parent] = {'name': commands[parent]['name'],
+                                        'thread': commands[parent]['thread'],
+                                        'flow_id': commands[parent]['flow_id'],
+                                        'first_line_num': commands[parent][
+                                                            'first_line_num'],
+                                        'id': parent,
+                                        'zchildren': []}
+                for child in commands[parent]['childs']:
+                    if (child['child_id'] in new_commands.keys()
+                            or child['child_id'] in commands.keys()
+                            and 'childs' not in
+                            commands[child['child_id']].keys()):
+                        new_commands[parent]['zchildren'] += \
+                                            [new_commands[child['child_id']]]
+                        new_commands[parent]['zchildren'][-1]['id'] = \
+                                            child['child_id']
+                        new_commands[parent]['lvl'] = \
+                                            new_commands[child['child_id']][
+                                            'lvl'] + 1
+                        command_lvl[parent] = new_commands[child['child_id']][
+                                            'lvl'] + 1
+                        if child['child_id'] in commands.keys():
+                            commands.pop(child['child_id'])
+                        if child['child_id'] in new_commands.keys():
+                            new_commands.pop(child['child_id'])
+            break
+    for com in without_parents:
+        new_commands[com['id']] = com
+    json.dump(new_commands, open(os.path.join(output_directory,
+              log_dir + '_commands.json'), 'w'), indent=4,
+              sort_keys=True)
+    return new_commands, command_lvl
+
+
+def find_parent(output_descriptor, commands, command_id):
+    parent = None
+    for com in sorted(commands.keys()):
+        if ('childs' in commands[com].keys()
+                and command_id in [c['child_id']
+                for c in commands[com]['childs']]):
+            parent = com
+            break
+    return parent
+
+def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
+                           log, file_formats, tz_info, time_range_info,
+                           user_vms, user_hosts, additive, output_directory):
     commands_threads = {}
     long_actions = []
-    needed_threads = set()
+    vm_in_threads = set()
+    qemu_monitor = {}
+    fullname = os.path.join(log_directory, log)
     if (log[-4:] == '.log'):
-            f = open(log)
+            f = open(fullname)
     elif (log[-3:] == '.xz'):
-        f = lzma.open(log, 'rt')
+        f = lzma.open(fullname, 'rt')
     else:
         output_descriptor.write("Unknown file extension: %s" % log)
         return commands_threads, long_actions
@@ -765,7 +951,7 @@ def find_vm_tasks_libvirtd(positions,
                              and any([host in fields["message"] \
                                       for host in user_hosts]))
             if (condition):
-                needed_threads.add(fields["thread"])
+                vm_in_threads.add(fields["thread"])
             start = re.search(r"Thread (.+?) \((.+?)\) is now running " +
                               r"job (.+)", line)
             if (start is not None):
@@ -792,8 +978,8 @@ def find_vm_tasks_libvirtd(positions,
                                  com_list[::-1].index(finish.group(3))
                     except:
                         commands_threads[finish.group(1)] += [{
-                                         'command_name': finish.group(3),
-                                         'command_start_name': finish.group(3)}]
+                                        'command_name': finish.group(3),
+                                        'command_start_name': finish.group(3)}]
                         com_id = -1
                 commands_threads[finish.group(1)][com_id]['finish_time'] = dt
                 if ('start_time' in commands_threads[
@@ -803,18 +989,56 @@ def find_vm_tasks_libvirtd(positions,
                                          com_id]['finish_time'] -\
                         commands_threads[finish.group(1)][
                                          com_id]['start_time']
+                continue
+            #qemu monitor
+            send_monitor = re.search(r"mon\ *=\ *(.+?)\ +buf\ *\=\ *" +
+                                     r"\{\"execute.+\"id\"\:\ *\"(.+?)\"\}",
+                                     line)
+            if send_monitor is not None:
+                if (send_monitor.group(1) not in qemu_monitor.keys()):
+                    qemu_monitor[send_monitor.group(1)] = []
+                qemu_monitor[send_monitor.group(1)] += [
+                                            {'send_time': dt, 
+                                             'id': send_monitor.group(2)}]
+
+            return_monitor = re.search(r"mon\ *=\ *(.+?)\ +buf\ *\=\ *" +
+                                       r"\{\"return.+\"id\"\:\ *\"(.+?)\"\}",
+                                       line)
+            if return_monitor is not None:
+                if (return_monitor.group(1) not in qemu_monitor.keys()):
+                    continue
+                for mes_idx, mes in enumerate(qemu_monitor[
+                        return_monitor.group(1)]):
+                    if (mes['id'] == return_monitor.group(2)):
+                        duration = dt - qemu_monitor[return_monitor.group(1)][
+                                                     mes_idx]['send_time']
+                        if (duration < 1):
+                            qemu_monitor[return_monitor.group(1)].remove(mes)
+                            break
+                        qemu_monitor[return_monitor.group(1)][
+                            mes_idx]['return_time'] = dt
+                        qemu_monitor[return_monitor.group(1)][
+                            mes_idx]['duration'] = duration
+                        break
+
     f.close()
-    json.dump(commands_threads, open('tasks_libvirtd_' +
-                                     log_directory.split('/')[-2] +
-                                     '.json',
-                                     'w'), indent=4, sort_keys=True)
+    json.dump(qemu_monitor, open(os.path.join(output_directory,
+                                 log_directory.split('/')[-2] +
+                                 '_qemu_libvirt.json'),
+                                 'w'), indent=4, sort_keys=True)
+    # json.dump(commands_threads, open(os.path.join(output_directory,
+    #                                  'tasks_libvirtd_' +
+    #                                  log_directory.split('/')[-2] +
+    #                                  '.json'),
+    #                                  'w'), indent=4, sort_keys=True)
     if commands_threads != {}:
         commands_threads, long_actions = select_needed_commands(
-                                            commands_threads, needed_threads)
-    json.dump(commands_threads, open('filtered_tasks_libvirtd_' +
-                                     log_directory.split('/')[-2] +
-                                     '.json',
-                                     'w'), indent=4, sort_keys=True)
+                                            commands_threads, vm_in_threads)
+    # json.dump(commands_threads, open(os.path.join(output_directory,
+    #                                  'filtered_tasks_libvirtd_' +
+    #                                  log_directory.split('/')[-2] +
+    #                                  '.json'),
+    #                                  'w'), indent=4, sort_keys=True)
     return commands_threads, long_actions
 
 

@@ -208,7 +208,8 @@ if __name__ == "__main__":
                        event_info,
                        host_info,
                        format_file,
-                       args.additive)
+                       args.additive,
+                       output_directory)
     output_descriptor.write('Reading file\'s time range...\n')
     logs.read_time_ranges()
     output_descriptor.write('Searching for running VMs and hosts...\n')
@@ -286,6 +287,7 @@ if __name__ == "__main__":
     output_descriptor.write('Loading data...\n')
     logs.load_data(args.warn, args.progressbar)
     output_descriptor.write('Analyzing the messages...\n')
+    logs.merge_all_messages()
     messages, new_fields = logs.find_important_events()
     output_descriptor.write('Printing messages...\n')
     # Output file

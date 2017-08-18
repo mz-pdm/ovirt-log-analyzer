@@ -1,5 +1,6 @@
 """ Linking errors from logfiles to each other
 """
+import os
 import numpy as np
 import re
 from datetime import datetime
@@ -39,7 +40,7 @@ def merge_all_errors_by_time(all_errors, fields_names):
 
 def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                         user_hosts, subtasks, dirname, err_timeline, vm_tasks,
-                        long_tasks, all_vms, all_hosts):
+                        long_tasks, all_vms, all_hosts, output_directory):
     keywords = user_vms  # user_events + user_vms + user_hosts
     template = re.compile(\
                           # r"[^^][^\ \t\,\;\=]{20,}|" +
@@ -84,14 +85,15 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                 if all_errors[err_id][strid] not in reasons.keys():
                     reasons[all_errors[err_id][strid]] = set()
                 reasons[all_errors[err_id][strid]].add('VM, Host or Task ID')
-        # print(subtasks)
-        for t in subtasks:
+        for t in subtasks.keys():
             if t in all_errors[err_id][msid]:
                 # Check if user-defined words are in the message
                 needed_msgs.add(all_errors[err_id][strid])
                 if all_errors[err_id][strid] not in reasons.keys():
                     reasons[all_errors[err_id][strid]] = set()
-                reasons[all_errors[err_id][strid]].add('Subtask')
+                reasons[all_errors[err_id][strid]].add('Task/' +
+                                                            str(subtasks[t]))
+                break
         for k in ['error', 'fail', 'failure', 'failed', 'traceback',
                   'warn', 'warning', 'could not', 'exception', 'down',
                   'crash']:
@@ -119,7 +121,8 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
         new_events[word_key]['keywords'].union(events[shorten]['keywords'])
     events = new_events
     del new_events
-    f = open("clusters_"+dirname.split('/')[-2]+".txt", 'w')
+    f = open(os.path.join(output_directory,
+             dirname.split('/')[-2]+"_clusters.txt"), 'w')
     for c_id, clust in enumerate(sorted(events.keys())):
         for mes in events[clust]['data']:
             f.write("%d : %s\n" % (c_id, mes[msid]))
@@ -204,7 +207,8 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
     new_fields = ['date_time', 'line_num', 'reason', 'message']
     if reasons == {}:
         return msg_showed, new_fields
-    f = open('diff.txt', 'w')
+    f = open(os.path.join(output_directory,
+             dirname.split('/')[-2]+'_diff.txt'), 'w')
     max_len = max([len('_'.join(reasons[r])) for r in reasons.keys()])
     for msg in all_errors:
         if msg[strid] in needed_msgs:
