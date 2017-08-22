@@ -72,7 +72,7 @@
                  (line-overlay (make-overlay beg end))
                  (tag-overlay (make-overlay (match-beginning 1) (match-end 1)))
                  (tag-list (split-string (match-string 2) "_")))
-            (overlay-put line-overlay 'help-echo tag-list)
+            (overlay-put line-overlay 'help-echo (mapconcat #'identity tag-list "; "))
             (overlay-put tag-overlay 'invisible t)
             (dolist (tag tag-list)
               (cond
