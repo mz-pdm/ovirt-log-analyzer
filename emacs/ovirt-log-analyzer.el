@@ -77,7 +77,7 @@
             (dolist (tag tag-list)
               (cond
                ((string-match "^Task/\\([0-9]\\)$" tag)
-                (overlay-put tag-overlay 'after-string (make-string (string-to-number (match-string 1 tag))  ? )))
+                (overlay-put tag-overlay 'after-string (make-string (- 4 (string-to-number (match-string 1 tag)))  ? )))
                ((member tag '("Error or warning" "Long operation" "Task" "Unique"))
                 ;; handled by font lock
                 )
