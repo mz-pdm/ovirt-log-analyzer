@@ -21,7 +21,7 @@ if __name__ == "__main__":
                         type=str,
                         nargs='+',
                         help='logfiles filenames' +
-                        '(with expansion)')
+                        '(with expansion); use . to find common log files')
     parser.add_argument("--default_tzinfo",
                         type=str,
                         nargs='+',
@@ -105,7 +105,18 @@ if __name__ == "__main__":
     #                    "represented errors statistics")
     args = parser.parse_args()
     # Logfilenames
-    if args.filenames is not None:
+    if args.filenames == ['.']:
+        files = []
+        for dirpath, dirnames, filenames in os.walk(args.log_directory):
+            for f in filenames:
+                base, ext = os.path.splitext(f)
+                if (ext in ('.log', '.xz',) and
+                    (dirpath == 'qemu' or
+                     base.startswith('engine') or
+                     'libvirt' in base or
+                     'vdsm' in base)):
+                    files.append(os.path.join(dirpath, f))
+    elif args.filenames is not None:
         files = sorted(args.filenames)
     else:
         files = os.listdir(args.log_directory)
