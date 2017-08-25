@@ -127,8 +127,8 @@
     (define-key map [backtab] 'ovirt-log-analyzer-previous-poi)
     (define-key map "a" 'ovirt-log-analyzer-toggle-filter)
     (define-key map "f" 'ovirt-log-analyzer-filter)
-    (define-key map "n" 'next-logical-line)
-    (define-key map "p" 'previous-logical-line)
+    (define-key map [(meta n)] 'next-logical-line)
+    (define-key map [(meta p)] 'previous-logical-line)
     (define-key map "t" 'toggle-truncate-lines)
     map))
 
