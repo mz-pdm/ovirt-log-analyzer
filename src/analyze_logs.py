@@ -88,8 +88,17 @@ if __name__ == "__main__":
                              'process')
     parser.add_argument('--additive',
                         action='store_true',
-                        help='Show full-screen progress bar for parsing ' +
-                             'process')
+                        help='Search for messages that contain user-defined' +
+                             'VMs OR hosts')
+    parser.add_argument('--criterias',
+                        type=str,
+                        nargs='+',
+                        help='Criterias of adding a message to the output.' +
+                             ' Available: "VM id", "Subtasks", ' +
+                             '"Error or warning", "Differ by VM ID", ' +
+                             '"Exclude frequent messages", "Coverage", ' +
+                             '"Increased errors", "Long operations". ' +
+                             'Default is all')
     # parser.add_argument("-chart", "--chart_filename",
     #                    type=str,
     #                    help="Create html file with chart" +
@@ -198,11 +207,16 @@ if __name__ == "__main__":
         format_file = args.format_file
     else:
         format_file = os.path.join("format_templates.txt")
+    if args.criterias is not None:
+        criterias = args.criterias
+    else:
+        criterias = ['All']
     # Start algo
     logs = LogAnalyzer(output_descriptor,
                        args.log_directory,
                        files,
                        tz_info,
+                       criterias,
                        time_range_info,
                        vm_info,
                        event_info,

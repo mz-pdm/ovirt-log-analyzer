@@ -20,20 +20,24 @@ def print_all_headers(errors, headers, log_format_headers, out):
 def print_only_dt_message(errors, new_fields, out):
     if errors == []:
         return
+
     dt_idx = new_fields.index("date_time")
     line_idx = new_fields.index("line_num")
     msg_idx = new_fields.index("message")
     reason_idx = new_fields.index("reason")
+    details_idx = new_fields.index("details")
+
     reason_len = max([len(r[reason_idx]) for r in errors])
-    max_len = max(len(err[line_idx]) for err in errors)
-    out.write("%23s | %*s | %*s | %s\n" % ('Date+Time', max_len, 'Line',
-              reason_len, 'Reason', 'Message'))
-    out.write('-'*(29+max_len+reason_len+50)+'\n')
+    linenum_len = max(len(err[line_idx]) for err in errors)
+    details_len = max([len(r[details_idx]) for r in errors])
+    out.write("%23s | %*s | %*s | %*s | %s\n" % ('Date+Time', linenum_len, 'Line',
+              reason_len, 'Reason', details_len, 'Details', 'Message'))
+    out.write('-'*(29+linenum_len+reason_len+details_len+50)+'\n')
     for idx, err in enumerate(errors):
-        out.write("%12s %s | %*s | %*s | %s\n" %
+        out.write("%12s %s | %*s | %*s | %*s | %s\n" %
                   (datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%H:%M:%S,%f")[:-3],
                    datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%d-%m-%Y"),
-                   max_len, err[line_idx], reason_len, err[reason_idx],
-                   err[msg_idx]))
+                   linenum_len, err[line_idx], reason_len, err[reason_idx],
+                   details_len, err[details_idx], err[msg_idx]))
