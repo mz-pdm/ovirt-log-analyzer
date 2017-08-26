@@ -43,8 +43,7 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                         long_tasks, output_directory, detail_reasons,
                         needed_msgs, criterias, vm_timeline):
     reasons = {}
-    template = re.compile(\
-                          r"[^^](\"[^\"]{20,}\")|" +
+    template = re.compile(r"[^^](\"[^\"]{20,}\")|" +
                           r"[^^](\'[^\']{20,}\')|" +
                           r"[^^](\(+.*\)+)|" +
                           r"[^^](\[+.*\]+)|" +
@@ -91,7 +90,8 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                     needed_msgs.add(all_errors[err_id][strid])
                     if all_errors[err_id][strid] not in detail_reasons.keys():
                         detail_reasons[all_errors[err_id][strid]] = set()
-                    detail_reasons[all_errors[err_id][strid]].add('Event=' + event)
+                    detail_reasons[all_errors[err_id][strid]].add('Event=' +
+                                                                  event)
         if 'VM id' in criterias:
             for vm_name in user_vms:
                 if (vm_name in vm_timeline.keys()
@@ -99,7 +99,8 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                     needed_msgs.add(all_errors[err_id][strid])
                     if all_errors[err_id][strid] not in detail_reasons.keys():
                         detail_reasons[all_errors[err_id][strid]] = set()
-                    detail_reasons[all_errors[err_id][strid]].add('VM=' + vm_name )
+                    detail_reasons[all_errors[err_id][strid]].add('VM=' +
+                                                                  vm_name)
         if 'Host id' in criterias:
             for host_name in user_hosts:
                 if (host_name in all_errors[err_id][msid]
@@ -108,7 +109,8 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                     needed_msgs.add(all_errors[err_id][strid])
                     if all_errors[err_id][strid] not in detail_reasons.keys():
                         detail_reasons[all_errors[err_id][strid]] = set()
-                    detail_reasons[all_errors[err_id][strid]].add('Host=' + host_name)
+                    detail_reasons[all_errors[err_id][strid]].add('Host=' +
+                                                                  host_name)
         if 'Subtasks' in criterias:
             for t in subtasks.keys():
                 if t in all_errors[err_id][msid]:
@@ -117,15 +119,17 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                     if all_errors[err_id][strid] not in reasons.keys():
                         reasons[all_errors[err_id][strid]] = set()
                     reasons[all_errors[err_id][strid]].add('Task/' +
-                                                                str(subtasks[t]))
+                                                           str(subtasks[t]))
                     break
         if 'Error or warning' in criterias:
             for k in ['error', 'fail', 'failure', 'failed', 'traceback',
                       'warn', 'warning', 'could not', 'exception', 'down',
                       'crash']:
                 for field_id, f in enumerate(fields):
-                    err_res = re.search(r'(^|[ \:\.\,]+)' + k + r'([ \:\.\,=]+|$)',
-                                        str(all_errors[err_id][field_id]).lower())
+                    err_res = re.search(r'(^|[ \:\.\,]+)' + k +
+                                        r'([ \:\.\,=]+|$)',
+                                        str(all_errors[err_id][
+                                            field_id]).lower())
                     if err_res is not None:
                         # if (k == 'traceback' or f != 'message'):
                         needed_msgs.add(all_errors[err_id][strid])
@@ -175,7 +179,6 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                         reasons[line_num] = set()
                     reasons[line_num].add('Many messages')
                     if (line_num in needed_msgs):
-                    #        and list(reasons[line_num]) == 1):
                         needed_msgs.remove(line_num)
             elif (len(events[filtered]['line_num']) == 1):
                 needed_msgs.add(events[filtered]['data'][0][strid])

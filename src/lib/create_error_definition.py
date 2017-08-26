@@ -147,12 +147,12 @@ def check_constraints(line, events, host_ids, vm_numbers, additive, dt,
     if any(['flow_id='+flow in line for flow in flow_ids]):
         return True
     if additive:
-        condition = (any([vm in line for vm in vm_numbers]) \
+        condition = (any([vm in line for vm in vm_numbers])
                      or any([host in line for host in host_ids]))
     else:
         condition = check_vm_on_host(dt, line, host_ids, vm_numbers, additive,
                                      vm_timeline)
-    return  condition
+    return condition
 
 
 def check_vm_on_host(dt, line, host_ids, vm_numbers, additive, vm_timeline):
@@ -167,6 +167,7 @@ def check_vm_on_host(dt, line, host_ids, vm_numbers, additive, vm_timeline):
                 return True
     return False
 
+
 def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
                      multiline_line, fields_names, out_descr, time_zone,
                      additive, subtasks, events, host_ids, vm_numbers,
@@ -180,8 +181,8 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
         prev_line = prev_line + in_traceback_line
         # check if the line satisfy user conditions
         if not check_constraints(prev_line, events, host_ids, vm_numbers,
-                                 additive, prev_fields['date_time'], task_lines,
-                                 prev_fields['line_num'],
+                                 additive, prev_fields['date_time'],
+                                 task_lines, prev_fields['line_num'],
                                  flow_ids, subtasks, vm_timeline):
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
@@ -268,8 +269,8 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
     else:
         # check if the line satisfy user conditions
         if not check_constraints(prev_line, events, host_ids, vm_numbers,
-                                 additive, prev_fields['date_time'], task_lines,
-                                 prev_fields['line_num'],
+                                 additive, prev_fields['date_time'],
+                                 task_lines, prev_fields['line_num'],
                                  flow_ids, subtasks, vm_timeline):
             return prev_line, [], in_traceback_flag, multiline_flag
         line_info = []
@@ -359,12 +360,12 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                         create_line_info(in_traceback_flag,
                                          in_traceback_line, multiline_flag,
                                          multiline_line, fields_names,
-                                         out_descr, time_zone, additive, 
+                                         out_descr, time_zone, additive,
                                          subtasks, events, host_ids,
                                          vm_numbers, vm_timeline,
                                          format_template,
                                          prev_fields, prev_line, task_lines,
-                                         flow_ids,show_warnings)
+                                         flow_ids, show_warnings)
                     # if we normally parsed the previous line, we save it
                     if line_info != []:
                         file_lines += [line_info]

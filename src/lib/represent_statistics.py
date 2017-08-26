@@ -30,8 +30,9 @@ def print_only_dt_message(errors, new_fields, out):
     reason_len = max([len(r[reason_idx]) for r in errors])
     linenum_len = max(len(err[line_idx]) for err in errors)
     details_len = max([len(r[details_idx]) for r in errors])
-    out.write("%23s | %*s | %*s | %*s | %s\n" % ('Date+Time', linenum_len, 'Line',
-              reason_len, 'Reason', details_len, 'Details', 'Message'))
+    out.write("%23s | %*s | %*s | %*s | %s\n" % ('Date+Time',
+              linenum_len, 'Line', reason_len, 'Reason', details_len,
+              'Details', 'Message'))
     out.write('-'*(29+linenum_len+reason_len+details_len+50)+'\n')
     for idx, err in enumerate(errors):
         out.write("%12s %s | %*s | %*s | %*s | %s\n" %

@@ -178,7 +178,6 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
                     or (prev_time > needed_time) \
                     and (cur_time <= needed_time) \
                     or (cur_time == prev_time)
-                #if condition and prev_time-cur_time > 
             needed_linenum[log] += [min(prev_pos, cur_pos)]
     return needed_linenum
 
@@ -200,8 +199,8 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
             dt = parse_date_time(f.readline(), tz_info)
     f.seek(real_firstpos, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
-                              progressbar.SimpleProgress(), ')', ' ',
-                              progressbar.Bar(), ' ', progressbar.Timer()]
+                    progressbar.SimpleProgress(), ')', ' ',
+                    progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len)
     i = real_firstpos
     bar.update(i)
@@ -262,8 +261,7 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
     return vms, hosts, real_firstpos
 
 
-def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts,
-                     time_range_info):
+def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
     cur = {}
     f.seek(0, os.SEEK_END)
     file_len = f.tell()
@@ -278,8 +276,8 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts,
             dt = parse_date_time(f.readline(), tz_info)
     f.seek(real_firstpos, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
-                              progressbar.SimpleProgress(), ')', ' ',
-                              progressbar.Bar(), ' ', progressbar.Timer()]
+                    progressbar.SimpleProgress(), ')', ' ',
+                    progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len,
                       redirect_stdout=True)
     i = real_firstpos
@@ -297,7 +295,7 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts,
         if vdsm_host is not None:
             this_host = vdsm_host.group(2)
             if (this_host not in hosts.keys()):
-                hosts[this_host] = {'id': set(), 'vmids': set()}        
+                hosts[this_host] = {'id': set(), 'vmids': set()}
         vm_name = re.search(r'\<name\>(.+?)\<\/name\>', line)
         if (not multiline and vm_name is not None):
             multiline = True
@@ -327,6 +325,7 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts,
     bar.finish()
     return vms, hosts, real_firstpos
 
+
 def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
     f.seek(0, os.SEEK_END)
     file_len = f.tell()
@@ -339,8 +338,8 @@ def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
             dt = parse_date_time(f.readline(), tz_info)
     f.seek(real_firstpos, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
-                              progressbar.SimpleProgress(), ')', ' ',
-                              progressbar.Bar(), ' ', progressbar.Timer()]
+                    progressbar.SimpleProgress(), ')', ' ',
+                    progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len)
     i = real_firstpos
     bar.update(i)
@@ -368,33 +367,33 @@ def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
                 vm_id = ''
             if (re.search(r"vmName\ *=\ *(.+?),", line) is not None):
                 vm_name = re.sub('[\'\"]', '',
-                                  re.search(r"vmName\ *=\ *(.+?),",
-                                            line).group(1))
+                                 re.search(r"vmName\ *=\ *(.+?),",
+                                           line).group(1))
             elif (re.search(r"vm\ *=\ *\'VM\ *\[([^\[\]]*?)\]\'",
                             line) is not None):
                 vm_name = re.sub('[\'\"]', '',
-                                  re.search(r"vm\ *=\ *\'VM\ *" +
-                                            r"\[([^\[\]]*?)\]\'",
-                                            line).group(1))
+                                 re.search(r"vm\ *=\ *\'VM\ *" +
+                                           r"\[([^\[\]]*?)\]\'",
+                                           line).group(1))
             elif (re.search(r"\[(.+?)=VM_NAME\]", line) is not None):
                 vm_name = re.sub('[\'\"]', '',
-                                  re.search(r"\[([^\[\]]*?)=VM_NAME\]",
-                                            line).group(1))
+                                 re.search(r"\[([^\[\]]*?)=VM_NAME\]",
+                                           line).group(1))
             elif (re.search(r"\[(.+?)=VM\]", line) is not None):
                 vm_name = re.sub('[\'\"]', '',
-                                  re.search(r"\[([^\[\]]*?)=VM\]",
-                                            line).group(1))
+                                 re.search(r"\[([^\[\]]*?)=VM\]",
+                                           line).group(1))
             elif (re.search(r"\'vmName\'\ *[:=]\ *u*\'([^\']*?)\'",
                             line) is not None):
                 vm_name = re.sub('[\'\"]', '',
-                                  re.search(r"\'vmName\'" +
-                                            r"\ *[:=]\ *u*\'([^\']*?)\'",
-                                            line).group(1))
+                                 re.search(r"\'vmName\'" +
+                                           r"\ *[:=]\ *u*\'([^\']*?)\'",
+                                           line).group(1))
             else:
                 vm_name = ''
         if (vm_name == '' and vm_id == ''):
             other_vm = re.search(r'VM\ *\'(.{30,40}?)\'\ *' +
-                             r'\(([^\(\)]*?)\)', line)
+                                 r'\(([^\(\)]*?)\)', line)
             if (other_vm is not None):
                 vm_name = other_vm.group(2)
                 vm_id = other_vm.group(1)
@@ -439,9 +438,6 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
         all_vms[vm] = {}
         for host in vms[vm]['hostids']:
             all_vms[vm][host] = []
-    f.seek(0, os.SEEK_END)
-    file_len = f.tell()
-    f.seek(0, os.SEEK_SET)
     for line_num, line in enumerate(f):
         dt = parse_date_time(line, tz_info)
         if dt == 0:
@@ -469,7 +465,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
                                     r'\ +\(VM\:\ +([^\ ]+),\ +[Ss]ource\:' +
                                     r'\ +([^\ ]+)\,\ +[Dd]estination\:\ +' +
                                     r'([^\ ]+?)[\ +\,]+',
-                             line)
+                                    line)
         if migration_start is not None:
             this_host = ''
             if migration_start.group(1) not in all_vms.keys():
@@ -492,10 +488,10 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
                     this_host] += [(dt, 'migrating_to')]
         # migration completed
         migration_end = re.search(r'[Mm]essage\:\ +[Mm]igration\ +completed' +
-                                    r'\ +\(VM\:\ +([^\ ]+),\ +[Ss]ource\:' +
-                                    r'\ +([^\ ]+)\,\ +[Dd]estination\:\ +' +
-                                    r'([^\ ]+?)[\ +\,]+',
-                             line)
+                                  r'\ +\(VM\:\ +([^\ ]+),\ +[Ss]ource\:' +
+                                  r'\ +([^\ ]+)\,\ +[Dd]estination\:\ +' +
+                                  r'([^\ ]+?)[\ +\,]+',
+                                  line)
         if migration_end is not None:
             this_host = ''
             if migration_end.group(1) not in all_vms.keys():
@@ -534,7 +530,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
             all_vms[vm_suspend.group(1)][this_host] += [(dt, 'suspend')]
         # down
         vm_down = re.search(r'[Mm]essage\:\ +VM\ +([^\ ]+)\ +is [Dd]own',
-                                    line)
+                            line)
         if vm_down is not None:
             if vm_down.group(1) not in all_vms.keys():
                 all_vms[vm_down.group(1)] = {}
@@ -543,9 +539,9 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
     if all_vms != {}:
         all_vms = create_time_ranges_for_vms(all_vms)
     json.dump(all_vms, open(os.path.join(output_directory,
-                                     filename +
-                                     '_VMs_timeline.json'),
-                                     'w'), indent=4, sort_keys=True)
+                            filename +
+                            '_VMs_timeline.json'),
+                            'w'), indent=4, sort_keys=True)
     return all_vms
 
 
@@ -582,10 +578,11 @@ def create_time_ranges_for_vms(vms):
                     cur_range = {}
             if ('start' in cur_range.keys()
                     and 'end' not in cur_range.keys()):
-                host_time += [[cur_range['start'], cur_range['start']*2]]  # fix
+                host_time += [[cur_range['start'], cur_range['start']*2]]
             if host_time != []:
                 vm_time_range[vm_name][host_name] = host_time
     return vm_time_range
+
 
 def find_all_vm_host(positions,
                      output_descriptor,
@@ -613,8 +610,8 @@ def find_all_vm_host(positions,
             if 'vdsm' in log.lower():
                 vms, hosts, firstline_pos = \
                     vdsm_vm_host(f, log, 0,  # log_position,
-                                     tz_info[log_idx], vms, hosts,
-                                     time_range_info[tr_idx])
+                                 tz_info[log_idx], vms, hosts,
+                                 time_range_info[tr_idx])
             elif 'libvirt' in log.lower():
                 vms, hosts, firstline_pos = \
                     libvirtd_vm_host(f, log, 0,  # log_position,
@@ -673,7 +670,7 @@ def find_all_vm_host(positions,
             hosts[k]['vmids'].remove('')
     vms_timeline = {}
     for log_idx, log in enumerate(files):
-        if not 'engine' in log:
+        if 'engine' not in log:
             continue
         full_filename = os.path.join(log_directory, log)
         if log[-4:] == '.log':
@@ -691,7 +688,7 @@ def find_all_vm_host(positions,
                                                   hosts)
             vms_timeline.update(cur_timeline)
     return vms, hosts, not_running_vms, not_found_vmnames, \
-            not_found_hostnames, first_lines, vms_timeline
+        not_found_hostnames, first_lines, vms_timeline
 
 
 def find_vm_tasks_engine(positions, output_descriptor, log_directory,
@@ -723,8 +720,8 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
     f.seek(0, os.SEEK_END)
     file_len = f.tell()
     widget_style = [log + ':', progressbar.Percentage(), ' (',
-                              progressbar.SimpleProgress(), ')', ' ',
-                              progressbar.Bar(), ' ', progressbar.Timer()]
+                    progressbar.SimpleProgress(), ')', ' ',
+                    progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len)
     for tr_idx, pos in enumerate(positions):
         f.seek(pos, os.SEEK_SET)
@@ -774,7 +771,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                                       'start_line_num': line_num + 1}]
                 else:
                     flow_list = [com['flow_id'] for com in
-                                commands_threads[start.group(1)]]
+                                 commands_threads[start.group(1)]]
                     try:
                         com_id = len(flow_list) - 1 - \
                                  flow_list[::-1].index(start.group(1))
@@ -807,11 +804,10 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                         enumerate(commands_threads[finish.group(1)]):
                     if ('log_id' in command.keys() and
                             command['log_id'] == finish.group(4)):
-                        commands_threads[finish.group(1)][
-                                                task_idx]['finish_time'] = dt
-                        commands_threads[finish.group(1)][
-                                                task_idx][
-                                                'finish_line_num'] = line_num + 1
+                        commands_threads[finish.group(1)][task_idx][
+                            'finish_time'] = dt
+                        commands_threads[finish.group(1)][task_idx][
+                            'finish_line_num'] = line_num + 1
                         if ('start_time' in commands_threads[
                                 finish.group(1)][task_idx].keys()):
                             commands_threads[finish.group(1)][
@@ -854,9 +850,9 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                     commands_threads[thr_list[com_id][0]][
                             thr_list[com_id][1]]['end_line_num'] = line_num + 1
                     commands_threads[thr_list[com_id][0]][
-                                thr_list[com_id][1]]['duration_full'] = dt - \
-                    commands_threads[thr_list[com_id][0]][
-                                thr_list[com_id][1]]['init_time']
+                        thr_list[com_id][1]]['duration_full'] = dt - \
+                        commands_threads[thr_list[com_id][0]][thr_list[
+                            com_id][1]]['init_time']
                 continue
             multiasync = re.search(r"\((.+?)\)\ +\[(.*?)\].+" +
                                    r"[Aa]dding\ +CommandMultiAsyncTasks\ +" +
@@ -871,9 +867,9 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                               'first_line_num': line_num + 1}
                 continue
             subtask_init = re.search(r"\((.+?)\)\ +\[(.*?)\].+" +
-                                r"[Aa]ttaching [Tt]ask\ +\'(.+?)\'\ +" +
-                                r"[Tt]o [Cc]ommand\ +\'(.+?)\'",
-                                line)
+                                     r"[Aa]ttaching [Tt]ask\ +\'(.+?)\'\ +" +
+                                     r"[Tt]o [Cc]ommand\ +\'(.+?)\'",
+                                     line)
             if subtask_init is not None:
                 if (subtask_init.group(4) not in commands.keys()):
                     commands[subtask_init.group(4)] = {
@@ -905,7 +901,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                                         'first_line_num': line_num + 1}
                     continue
                 tasks[subtask_start.group(3)]['parent_name'] = \
-                                                        subtask_start.group(4)
+                    subtask_start.group(4)
                 tasks[subtask_start.group(3)]['start_time'] = dt
                 continue
             # wait
@@ -925,7 +921,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                                             'first_line_num': line_num + 1}
                 commands[subtask_wait.group(4)]['name'] = subtask_wait.group(3)
                 if (subtask_wait.group(5) in commands.keys()
-                        and commands[subtask_wait.group(5)]['name'] != 
+                        and commands[subtask_wait.group(5)]['name'] !=
                         subtask_wait.group(6)):
                     commands[subtask_wait.group(5)] = {
                                             'name': subtask_wait.group(6),
@@ -938,9 +934,9 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                                     {'child_id': subtask_wait.group(5),
                                      'child_name': subtask_wait.group(6)}]
                     continue
-                if (subtask_wait.group(5) not in 
-                        [child['child_id'] for child in 
-                        commands[subtask_wait.group(4)]['childs']]):
+                if (subtask_wait.group(5) not in
+                        [child['child_id'] for child in
+                         commands[subtask_wait.group(4)]['childs']]):
                     commands[subtask_wait.group(4)]['childs'] += [
                                         {'child_id': subtask_wait.group(5),
                                          'child_name': subtask_wait.group(6)}]
@@ -956,7 +952,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                 tasks[subtask_end.group(3)]['end_line_num'] = line_num + 1
                 if ('start_time' in tasks[subtask_end.group(3)].keys()):
                     tasks[subtask_end.group(3)]['duration'] = dt - \
-                                    tasks[subtask_end.group(3)]['start_time']    
+                        tasks[subtask_end.group(3)]['start_time']
                 continue
     f.close()
     bar.finish()
@@ -987,7 +983,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                                                             needed_linenum,
                                                             reasons)
     return commands_threads, long_actions, new_commands, command_lvl, \
-           needed_linenum, reasons
+        needed_linenum, reasons
 
 
 def link_commands(log_dir, output_descriptor, commands, command_lvl,
@@ -1039,16 +1035,16 @@ def link_commands(log_dir, output_descriptor, commands, command_lvl,
                                 and 'childs' not in
                                 commands[child['child_id']].keys()):
                             new_commands[parent]['zchildren'] += \
-                                            [new_commands[child['child_id']]]
+                                [new_commands[child['child_id']]]
                             new_commands[parent]['zchildren'][-1]['id'] = \
-                                            child['child_id']
+                                child['child_id']
                             if child['child_id'] in commands.keys():
                                 commands.pop(child['child_id'])
                             if child['child_id'] in new_commands.keys():
-                               new_commands.pop(child['child_id'])
+                                new_commands.pop(child['child_id'])
                 break
     heads = []
-    while (len(commands)>0):
+    while(len(commands) > 0):
         for idx, command_id in enumerate(sorted(new_commands.keys())):
             if command_id in heads:
                 continue
@@ -1073,14 +1069,13 @@ def link_commands(log_dir, output_descriptor, commands, command_lvl,
                             and 'childs' not in
                             commands[child['child_id']].keys()):
                         new_commands[parent]['zchildren'] += \
-                                            [new_commands[child['child_id']]]
+                            [new_commands[child['child_id']]]
                         new_commands[parent]['zchildren'][-1]['id'] = \
-                                            child['child_id']
+                            child['child_id']
                         new_commands[parent]['lvl'] = \
-                                            new_commands[child['child_id']][
-                                            'lvl'] + 1
+                            new_commands[child['child_id']]['lvl'] + 1
                         command_lvl[parent] = new_commands[child['child_id']][
-                                            'lvl'] + 1
+                                                           'lvl'] + 1
                         if child['child_id'] in commands.keys():
                             commands.pop(child['child_id'])
                         if child['child_id'] in new_commands.keys():
@@ -1097,12 +1092,12 @@ def link_commands(log_dir, output_descriptor, commands, command_lvl,
 def find_parent(output_descriptor, commands, command_id):
     parent = None
     for com in sorted(commands.keys()):
-        if ('childs' in commands[com].keys()
-                and command_id in [c['child_id']
-                for c in commands[com]['childs']]):
+        if ('childs' in commands[com].keys() and command_id in
+                [c['child_id'] for c in commands[com]['childs']]):
             parent = com
             break
     return parent
+
 
 def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
                            log, file_formats, tz_info, time_range_info,
@@ -1132,8 +1127,8 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
     f.seek(0, os.SEEK_END)
     file_len = f.tell()
     widget_style = [log + ':', progressbar.Percentage(), ' (',
-                              progressbar.SimpleProgress(), ')', ' ',
-                              progressbar.Bar(), ' ', progressbar.Timer()]
+                    progressbar.SimpleProgress(), ')', ' ',
+                    progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len)
     for tr_idx, pos in enumerate(positions):
         f.seek(pos, os.SEEK_SET)
@@ -1188,7 +1183,7 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
                         commands_threads[finish.group(1)][
                                          com_id]['start_time']
                 continue
-            #qemu monitor
+            # qemu monitor
             send_monitor = re.search(r"mon\ *=\ *(.+?)\ +buf\ *\=\ *" +
                                      r"\{\"execute.+\"id\"\:\ *\"(.+?)\"\}",
                                      line)
@@ -1196,7 +1191,7 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
                 if (send_monitor.group(1) not in qemu_monitor.keys()):
                     qemu_monitor[send_monitor.group(1)] = []
                 qemu_monitor[send_monitor.group(1)] += [
-                                            {'send_time': dt, 
+                                            {'send_time': dt,
                                              'id': send_monitor.group(2),
                                              'start_line_num':
                                              str(line_num + 1),
@@ -1296,69 +1291,51 @@ def find_long_operations(all_threads, needed_linenum, reasons):
                     long_operations[command] = []
                 long_operations[command] += [c_id['start_time']]
                 needed_linenum.add(c_id['log'] + ':' +
-                                                str(c_id['start_line_num']))
+                                   str(c_id['start_line_num']))
                 needed_linenum.add(c_id['log'] + ':' +
-                                                str(c_id['finish_line_num']))
+                                   str(c_id['finish_line_num']))
                 if (c_id['log'] + ':' + str(c_id['start_line_num'])
                         not in reasons.keys()):
-                    reasons[c_id['log'] + ':' + str(c_id['start_line_num'])] = set()
-                reasons[c_id['log'] + ':' + str(c_id['start_line_num'])].add('Task (duration=' +
-                                          str(np.round(c_id['duration'], 2)) + ')')
+                    reasons[c_id['log'] + ':' +
+                            str(c_id['start_line_num'])] = set()
+                reasons[c_id['log'] + ':' + str(c_id['start_line_num'])].add(
+                    'Task (duration=' + str(np.round(c_id['duration'], 2)) +
+                    ')')
                 if (c_id['log'] + ':' + str(c_id['finish_line_num'])
                         not in reasons.keys()):
-                    reasons[c_id['log'] + ':' + str(c_id['finish_line_num'])] = set()
-                reasons[c_id['log'] + ':' + str(c_id['finish_line_num'])].add('Task (duration=' +
-                                          str(np.round(c_id['duration'], 2)) + ')')
+                    reasons[c_id['log'] + ':' +
+                            str(c_id['finish_line_num'])] = set()
+                reasons[c_id['log'] + ':' + str(c_id['finish_line_num'])].add(
+                    'Task (duration=' + str(np.round(c_id['duration'], 2)) +
+                    ')')
     for command in sorted(full_operations_time.keys()):
-        com_time = [c_id['duration_full'] for c_id in full_operations_time[command]]
+        com_time = [c_id['duration_full']
+                    for c_id in full_operations_time[command]]
         med_com_time = np.median(com_time)
         std_com_time = np.std(com_time)
         for c_id in full_operations_time[command]:
             if ((c_id['duration_full'] > med_com_time + 3*std_com_time
-                    and c_id['duration_full'] > 1) or c_id['duration_full'] > 5):
+                    and c_id['duration_full'] > 1)
+                    or c_id['duration_full'] > 5):
                 if command not in long_operations.keys():
                     long_operations[command] = []
                 long_operations[command] += [c_id['init_time']]
-                needed_linenum.add(c_id['log'] + ':' + str(c_id['init_line_num']))
-                needed_linenum.add(c_id['log'] + ':' + str(c_id['end_line_num']))
-                if c_id['log'] + ':' + str(c_id['init_line_num']) not in reasons.keys():
-                    reasons[c_id['log'] + ':' + str(c_id['init_line_num'])] = set()
-                reasons[c_id['log'] + ':' + str(c_id['init_line_num'])].add('Task (duration=' +
-                                     str(np.round(c_id['duration_full'], 2)) + ')')
-                if c_id['log'] + ':' + str(c_id['end_line_num']) not in reasons.keys():
-                    reasons[c_id['log'] + ':' + str(c_id['end_line_num'])] = set()
-                reasons[c_id['log'] + ':' + str(c_id['end_line_num'])].add('Task (duration=' +
-                                     str(np.round(c_id['duration_full'], 2)) + ')')
+                needed_linenum.add(c_id['log'] + ':' +
+                                   str(c_id['init_line_num']))
+                needed_linenum.add(c_id['log'] + ':' +
+                                   str(c_id['end_line_num']))
+                if (c_id['log'] + ':' + str(c_id['init_line_num'])
+                        not in reasons.keys()):
+                    reasons[c_id['log'] + ':' +
+                            str(c_id['init_line_num'])] = set()
+                reasons[c_id['log'] + ':' + str(c_id['init_line_num'])].add(
+                    'Task (duration=' + str(np.round(c_id[
+                        'duration_full'], 2)) + ')')
+                if (c_id['log'] + ':' + str(c_id['end_line_num'])
+                        not in reasons.keys()):
+                    reasons[c_id['log'] + ':' +
+                            str(c_id['end_line_num'])] = set()
+                reasons[c_id['log'] + ':' + str(c_id['end_line_num'])].add(
+                            'Task (duration=' + str(np.round(c_id[
+                                'duration_full'], 2)) + ')')
     return long_operations, needed_linenum, reasons
-
-
-# def return_numbers_of_needed_lines(long_operations, all_threads, log):
-#     needed_linenum = set()
-#     reasons = {}
-#     for thread in all_threads:
-#         for command in all_threads[thread]:
-#             if ('start_line_num' in command.keys()
-#                     and 'finish_line_num' in command.keys()):
-#                 for linenum in range(command['start_line_num'],
-#                                      command['finish_line_num']):
-#                     needed_linenum.add(log + ':' + str(linenum))
-#                     if log + ':' + str(linenum) not in reasons.keys():
-#                         reasons[log + ':' + str(linenum)] = set()
-#                     reasons[log + ':' + str(linenum)].add('Task')
-#                     if (command['command_start_name'] in long_operations.keys()
-#                             and command['start_time'] in
-#                             long_operations[command['command_start_name']]):
-#                         reasons[log + ':' + str(linenum)].add('Long operation')
-#             elif ('init_line_num' in command.keys()
-#                     and 'end_line_num' in command.keys()):
-#                 for linenum in range(command['init_line_num'],
-#                                      command['end_line_num']):
-#                     needed_linenum.add(log + ':' + str(linenum))
-#                     if log + ':' + str(linenum) not in reasons.keys():
-#                         reasons[log + ':' + str(linenum)] = set()
-#                     reasons[log + ':' + str(linenum)].add('Task')
-#                     if (command['command_name'] in long_operations.keys()
-#                             and command['init_time'] in
-#                             long_operations[command['command_name']]):
-#                         reasons[log + ':' + str(linenum)].add('Long operation')
-#     return needed_linenum, reasons

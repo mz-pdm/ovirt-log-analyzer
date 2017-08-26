@@ -120,14 +120,14 @@ class LogAnalyzer:
 
     def find_vms_and_hosts(self):
         self.all_vms, self.all_hosts, self.not_running_vms, \
-        self.not_found_vmnames, self.not_found_hostnames, \
-        self.positions, vm_timeline =  find_all_vm_host(self.positions,
-                                                        self.out_descr,
-                                                        self.output_dir,
-                                                        self.directory,
-                                                        self.found_logs,
-                                                        self.time_zones,
-                                                        self.time_ranges)
+            self.not_found_vmnames, self.not_found_hostnames, \
+            self.positions, vm_timeline = find_all_vm_host(self.positions,
+                                                           self.out_descr,
+                                                           self.output_dir,
+                                                           self.directory,
+                                                           self.found_logs,
+                                                           self.time_zones,
+                                                           self.time_ranges)
         if self.user_vms == []:
             for k in self.all_vms.keys():
                 self.user_vms += [k]
@@ -190,18 +190,18 @@ class LogAnalyzer:
         for idx, log in enumerate(self.found_logs):
             if 'engine' in log.lower():
                 tasks_file, long_tasks_file, self.stuctured_commands[log], \
-                    subtasks, cur_needed_lines, cur_reasons = \
-                               find_vm_tasks_engine(self.positions[log],
-                                                    self.out_descr,
-                                                    self.directory,
-                                                    log,
-                                                    engine_formats,
-                                                    self.time_zones[idx],
-                                                    self.time_ranges,
-                                                    self.output_dir,
-                                                    self.needed_lines,
-                                                    self.reasons,
-                                                    self.criterias)
+                    subtasks, cur_needed_lines, \
+                    cur_reasons = find_vm_tasks_engine(self.positions[log],
+                                                       self.out_descr,
+                                                       self.directory,
+                                                       log,
+                                                       engine_formats,
+                                                       self.time_zones[idx],
+                                                       self.time_ranges,
+                                                       self.output_dir,
+                                                       self.needed_lines,
+                                                       self.reasons,
+                                                       self.criterias)
                 self.vm_tasks[log] = tasks_file
                 self.long_tasks[log] = long_tasks_file
                 self.subtasks.update(subtasks)
@@ -209,18 +209,17 @@ class LogAnalyzer:
                 self.reasons.update(cur_reasons)
             elif 'libvirt' in log.lower():
                 tasks_file, long_tasks_file, cur_needed_lines, \
-                cur_reasons = \
-                    find_vm_tasks_libvirtd(self.positions[log],
-                                           self.out_descr,
-                                           self.directory,
-                                           log,
-                                           libvirtd_formats,
-                                           self.time_zones[idx],
-                                           self.time_ranges,
-                                           self.output_dir,
-                                           self.needed_lines,
-                                           self.reasons,
-                                           self.criterias)
+                    cur_reasons = find_vm_tasks_libvirtd(self.positions[log],
+                                                         self.out_descr,
+                                                         self.directory,
+                                                         log,
+                                                         libvirtd_formats,
+                                                         self.time_zones[idx],
+                                                         self.time_ranges,
+                                                         self.output_dir,
+                                                         self.needed_lines,
+                                                         self.reasons,
+                                                         self.criterias)
                 self.vm_tasks[log] = tasks_file
                 self.long_tasks[log] = long_tasks_file
                 self.needed_lines = self.needed_lines.union(cur_needed_lines)
