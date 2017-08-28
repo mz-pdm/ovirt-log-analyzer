@@ -39,7 +39,7 @@ class LogAnalyzer:
         self.user_hosts = user_hosts
         self.additive_link = additive_link
         if len(criterias) == 1 and criterias[0] == 'All':
-            self.criterias = ['VM id', 'Host id', 'Event', 'Subtasks',
+            self.criterias = ['Subtasks',
                               'Error or warning',
                               'Differ by VM ID', 'Exclude frequent messages',
                               'Coverage', 'Increased errors',
@@ -119,6 +119,7 @@ class LogAnalyzer:
             self.time_ranges = [[min_time, max_time]]
 
     def find_vms_and_hosts(self):
+        # if os.isdir(os.path.join(self.directory, 'log_analyzer_cache'))
         self.all_vms, self.all_hosts, self.not_running_vms, \
             self.not_found_vmnames, self.not_found_hostnames, \
             self.positions, vm_timeline = find_all_vm_host(self.positions,
@@ -310,7 +311,7 @@ class LogAnalyzer:
         important_events, new_fields = \
             clusterize_messages(self.out_descr, self.merged_errors,
                                 self.all_fields, self.user_events,
-                                self.user_vms, self.user_hosts, self.subtasks,
+                                self.all_vms, self.all_hosts, self.subtasks,
                                 self.directory, self.timeline, self.vm_tasks,
                                 self.long_tasks, self.output_dir,
                                 self.reasons, self.needed_lines,

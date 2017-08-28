@@ -38,8 +38,9 @@ def merge_all_errors_by_time(all_errors, fields_names):
     return timeline, all_messages, list_headers
 
 
-def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
-                        user_hosts, subtasks, dirname, err_timeline, vm_tasks,
+def clusterize_messages(out_descr, all_errors, fields, user_events,
+                        all_vms, all_hosts, subtasks, dirname,
+                        err_timeline, vm_tasks,
                         long_tasks, output_directory, detail_reasons,
                         needed_msgs, criterias, vm_timeline):
     reasons = {}
@@ -55,6 +56,10 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
     fields += ['filtered']
     events = {}
     all_errors = [msg for msg in all_errors if len(msg[msid]) > 10]
+    vms_list = list(all_vms.keys()) + [i for k in all_vms.keys()
+                                       for i in all_vms[k]['id']]
+    hosts_list = list(all_hosts.keys()) + [i for k in all_hosts.keys()
+                                           for i in all_hosts[k]['id']]
     for err_id in range(len(all_errors)):
         if err_id % 100 == 0:
             out_descr.write(('clusterize_messages: Preprocessing %s ' +
@@ -64,7 +69,8 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
         for g in groups:
             for subg in g:
                 if subg == '' or any([k in subg
-                                      for k in user_vms + user_hosts]):
+                                      for k in
+                                      vms_list + hosts_list]):
                     continue
                 mstext = mstext.replace(subg, '')
         mstext = mstext[:min(80, len(mstext))]
@@ -75,42 +81,41 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
         events[mstext]['line_num'] += [all_errors[err_id][strid]]
         events[mstext]['data'] += [all_errors[err_id]]
         all_errors[err_id] += [mstext]
-        if 'Differ by VM ID' in criterias:
-            for k in user_vms:
-                if k in all_errors[err_id][msid]:
-                    events[mstext]['keywords'].add(k)
-                    # Check if user-defined words are in the message
-                    needed_msgs.add(all_errors[err_id][strid])
-                    if all_errors[err_id][strid] not in reasons.keys():
-                        reasons[all_errors[err_id][strid]] = set()
-                    reasons[all_errors[err_id][strid]].add('Keywords')
-        if 'Event' in criterias:
-            for event in user_events:
-                if event in all_errors[err_id][msid]:
-                    needed_msgs.add(all_errors[err_id][strid])
-                    if all_errors[err_id][strid] not in detail_reasons.keys():
-                        detail_reasons[all_errors[err_id][strid]] = set()
-                    detail_reasons[all_errors[err_id][strid]].add('Event=' +
-                                                                  event)
-        if 'VM id' in criterias:
-            for vm_name in user_vms:
-                if (vm_name in vm_timeline.keys()
-                        and vm_name in all_errors[err_id][msid]):
-                    needed_msgs.add(all_errors[err_id][strid])
-                    if all_errors[err_id][strid] not in detail_reasons.keys():
-                        detail_reasons[all_errors[err_id][strid]] = set()
-                    detail_reasons[all_errors[err_id][strid]].add('VM=' +
-                                                                  vm_name)
-        if 'Host id' in criterias:
-            for host_name in user_hosts:
-                if (host_name in all_errors[err_id][msid]
-                        and host_name in [h for v in vm_timeline.keys()
-                                          for h in vm_timeline[v].keys()]):
-                    needed_msgs.add(all_errors[err_id][strid])
-                    if all_errors[err_id][strid] not in detail_reasons.keys():
-                        detail_reasons[all_errors[err_id][strid]] = set()
-                    detail_reasons[all_errors[err_id][strid]].add('Host=' +
-                                                                  host_name)
+        for event in user_events:
+            if event in all_errors[err_id][msid]:
+                needed_msgs.add(all_errors[err_id][strid])
+                if all_errors[err_id][strid] not in detail_reasons.keys():
+                    detail_reasons[all_errors[err_id][strid]] = set()
+                detail_reasons[all_errors[err_id][strid]].add('Event=' +
+                                                              event)
+        for vm_name in vms_list:
+            if (vm_name in all_errors[err_id][msid]):
+                if vm_name not in all_vms.keys():
+                    vm_add = [k for k in all_vms.keys()
+                              for vm in all_vms[k]['id']
+                              if vm == vm_name]
+                else:
+                    vm_add = [vm_name]
+                needed_msgs.add(all_errors[err_id][strid])
+                if all_errors[err_id][strid] not in detail_reasons.keys():
+                    detail_reasons[all_errors[err_id][strid]] = set()
+                detail_reasons[all_errors[err_id][strid]].add('VM=' +
+                                                              vm_add[0])
+                if 'Differ by VM ID' in criterias:
+                    events[mstext]['keywords'].add(vm_name)
+        for host_name in hosts_list:
+            if (host_name in all_errors[err_id][msid]):
+                if host_name not in all_hosts.keys():
+                    host_add = [k for k in all_hosts.keys()
+                                for host in all_hosts[k]['id']
+                                if host == host_name]
+                else:
+                    host_add = [host_name]
+                needed_msgs.add(all_errors[err_id][strid])
+                if all_errors[err_id][strid] not in detail_reasons.keys():
+                    detail_reasons[all_errors[err_id][strid]] = set()
+                detail_reasons[all_errors[err_id][strid]].add('Host=' +
+                                                              host_add[0])
         if 'Subtasks' in criterias:
             for t in subtasks.keys():
                 if t in all_errors[err_id][msid]:
@@ -120,7 +125,7 @@ def clusterize_messages(out_descr, all_errors, fields, user_events, user_vms,
                         reasons[all_errors[err_id][strid]] = set()
                     reasons[all_errors[err_id][strid]].add('Task/' +
                                                            str(subtasks[t]))
-                    break
+                    # break
         if 'Error or warning' in criterias:
             for k in ['error', 'fail', 'failure', 'failed', 'traceback',
                       'warn', 'warning', 'could not', 'exception', 'down',

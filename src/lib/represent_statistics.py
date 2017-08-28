@@ -26,19 +26,24 @@ def print_only_dt_message(errors, new_fields, out):
     msg_idx = new_fields.index("message")
     reason_idx = new_fields.index("reason")
     details_idx = new_fields.index("details")
-
-    reason_len = max([len(r[reason_idx]) for r in errors])
+    reason = [err[reason_idx]
+              if err[details_idx] == ''
+              else err[details_idx] if err[reason_idx] == ''
+              else err[reason_idx] + '_' + err[details_idx]
+              for err in errors]
+    # reason_len = max([len(r[reason_idx]) for r in errors])
+    # details_len = max([len(r[details_idx]) for r in errors])
     linenum_len = max(len(err[line_idx]) for err in errors)
-    details_len = max([len(r[details_idx]) for r in errors])
-    out.write("%23s | %*s | %*s | %*s | %s\n" % ('Date+Time',
-              linenum_len, 'Line', reason_len, 'Reason', details_len,
-              'Details', 'Message'))
-    out.write('-'*(29+linenum_len+reason_len+details_len+50)+'\n')
+    full_reason_len = max([len(reason[r]) for r in range(len(reason))])
+    out.write("%23s | %*s | %*s | %s\n" % ('Date+Time',
+              linenum_len, 'Line', full_reason_len,
+              'Reason', 'Message'))
+    out.write('-'*(29+linenum_len+full_reason_len+50)+'\n')
     for idx, err in enumerate(errors):
-        out.write("%12s %s | %*s | %*s | %*s | %s\n" %
+        out.write("%12s %s | %*s | %*s | %s\n" %
                   (datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%H:%M:%S,%f")[:-3],
                    datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%d-%m-%Y"),
-                   linenum_len, err[line_idx], reason_len, err[reason_idx],
-                   details_len, err[details_idx], err[msg_idx]))
+                   linenum_len, err[line_idx], full_reason_len,
+                   reason[idx], err[msg_idx]))

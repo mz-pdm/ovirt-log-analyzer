@@ -956,7 +956,6 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                 continue
     f.close()
     bar.finish()
-    command_lvl = {}
     for com in sorted(commands.keys()):
         for task_id in sorted(tasks.keys()):
             if 'parent_id' not in tasks[task_id].keys():
@@ -967,7 +966,6 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                     commands[com]['ztasks'] = []
                 commands[com]['ztasks'] += [tasks[task_id]]
                 commands[com]['ztasks'][-1]['id'] = task_id
-                command_lvl[task_id] = 0
                 tasks.pop(task_id)
     json.dump(commands_threads, open(os.path.join(output_directory,
                                      log_directory.split('/')[-2] +
@@ -975,7 +973,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                                      'w'), indent=4, sort_keys=True)
     new_commands, command_lvl = link_commands(log_directory.split('/')[-2],
                                               output_descriptor,
-                                              commands, command_lvl,
+                                              commands,
                                               output_directory)
     if commands_threads != {} and 'Long operations' in criterias:
         long_actions, needed_linenum, reasons = find_long_operations(
@@ -986,7 +984,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
         needed_linenum, reasons
 
 
-def link_commands(log_dir, output_descriptor, commands, command_lvl,
+def link_commands(log_dir, output_descriptor, commands,
                   output_directory):
     without_parents = []
     new_commands = {}
@@ -994,7 +992,6 @@ def link_commands(log_dir, output_descriptor, commands, command_lvl,
         if 'childs' not in commands[command_id].keys():
             new_commands[command_id] = commands[command_id]
             new_commands[command_id]['lvl'] = 1
-            command_lvl[command_id] = 1
         else:
             for child in commands[command_id]['childs']:
                 if child['child_id'] not in commands.keys():
@@ -1003,7 +1000,6 @@ def link_commands(log_dir, output_descriptor, commands, command_lvl,
                 commands[command_id].pop('childs', None)
                 new_commands[command_id] = commands[command_id]
                 new_commands[command_id]['lvl'] = 1
-                command_lvl[command_id] = 1
     leafs = True
     while leafs:
         leafs = False
@@ -1028,7 +1024,6 @@ def link_commands(log_dir, output_descriptor, commands, command_lvl,
                                         'id': parent,
                                         'lvl': 2,
                                         'zchildren': []}
-                    command_lvl[parent] = 2
                     for child in commands[parent]['childs']:
                         if (child['child_id'] in new_commands.keys()
                                 or child['child_id'] in commands.keys()
@@ -1074,8 +1069,6 @@ def link_commands(log_dir, output_descriptor, commands, command_lvl,
                             child['child_id']
                         new_commands[parent]['lvl'] = \
                             new_commands[child['child_id']]['lvl'] + 1
-                        command_lvl[parent] = new_commands[child['child_id']][
-                                                           'lvl'] + 1
                         if child['child_id'] in commands.keys():
                             commands.pop(child['child_id'])
                         if child['child_id'] in new_commands.keys():
@@ -1083,10 +1076,39 @@ def link_commands(log_dir, output_descriptor, commands, command_lvl,
             break
     for com in without_parents:
         new_commands[com['id']] = com
+    new_commands, command_lvl = change_lvl_numbering(new_commands)
     json.dump(new_commands, open(os.path.join(output_directory,
-              log_dir + '_commands.json'), 'w'), indent=4,
-              sort_keys=True)
+              log_dir + '_commands.json'), 'w'), indent=4, sort_keys=True)
     return new_commands, command_lvl
+
+
+def change_lvl_numbering(commands):
+    command_lvl = {}
+    cur_lvl = 1
+    for com in commands.keys():
+        commands[com], lvl = change_lvl_numbering_recursive(commands[com],
+                                                            cur_lvl,
+                                                            command_lvl)
+    return commands, command_lvl
+
+
+def change_lvl_numbering_recursive(com, cur_lvl, lvls):
+    com['lvl'] = cur_lvl
+    lvls[com['id']] = cur_lvl
+    if ('zchildren' not in com.keys()
+            and 'ztasks' not in com.keys()):
+        return com, lvls
+    if 'zchildren' in com.keys():
+        for child_id, child in enumerate(com['zchildren']):
+            com['zchildren'][child_id], lvl = \
+                change_lvl_numbering_recursive(child, cur_lvl + 1, lvls)
+            lvls.update(lvl)
+    elif 'ztasks' in com.keys():
+        for child_id, child in enumerate(com['ztasks']):
+            com['ztasks'][child_id], lvl = \
+                change_lvl_numbering_recursive(child, cur_lvl + 1, lvls)
+            lvls.update(lvl)
+    return com, lvls
 
 
 def find_parent(output_descriptor, commands, command_id):
@@ -1299,14 +1321,14 @@ def find_long_operations(all_threads, needed_linenum, reasons):
                     reasons[c_id['log'] + ':' +
                             str(c_id['start_line_num'])] = set()
                 reasons[c_id['log'] + ':' + str(c_id['start_line_num'])].add(
-                    'Task (duration=' + str(np.round(c_id['duration'], 2)) +
+                    'Task(duration=' + str(np.round(c_id['duration'], 2)) +
                     ')')
                 if (c_id['log'] + ':' + str(c_id['finish_line_num'])
                         not in reasons.keys()):
                     reasons[c_id['log'] + ':' +
                             str(c_id['finish_line_num'])] = set()
                 reasons[c_id['log'] + ':' + str(c_id['finish_line_num'])].add(
-                    'Task (duration=' + str(np.round(c_id['duration'], 2)) +
+                    'Task(duration=' + str(np.round(c_id['duration'], 2)) +
                     ')')
     for command in sorted(full_operations_time.keys()):
         com_time = [c_id['duration_full']
@@ -1329,13 +1351,13 @@ def find_long_operations(all_threads, needed_linenum, reasons):
                     reasons[c_id['log'] + ':' +
                             str(c_id['init_line_num'])] = set()
                 reasons[c_id['log'] + ':' + str(c_id['init_line_num'])].add(
-                    'Task (duration=' + str(np.round(c_id[
+                    'Task(duration=' + str(np.round(c_id[
                         'duration_full'], 2)) + ')')
                 if (c_id['log'] + ':' + str(c_id['end_line_num'])
                         not in reasons.keys()):
                     reasons[c_id['log'] + ':' +
                             str(c_id['end_line_num'])] = set()
                 reasons[c_id['log'] + ':' + str(c_id['end_line_num'])].add(
-                            'Task (duration=' + str(np.round(c_id[
+                            'Task(duration=' + str(np.round(c_id[
                                 'duration_full'], 2)) + ')')
     return long_operations, needed_linenum, reasons
