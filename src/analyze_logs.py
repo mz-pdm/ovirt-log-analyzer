@@ -64,7 +64,9 @@ if __name__ == "__main__":
     parser.add_argument("--vm",
                         type=str,
                         nargs='+',
-                        help='Specify VM id(s) to find information about')
+                        help='Specify VM names and uuid to find ' +
+                             'information about (example: --vm VM1 ' +
+                             '0000-0001 VM2 VM3 0000-0003)')
     parser.add_argument("--host",
                         type=str,
                         nargs='+',
@@ -84,6 +86,19 @@ if __name__ == "__main__":
                         action='store_true',
                         help='Show full-screen progress bar for parsing ' +
                              'process')
+    parser.add_argument('--additive',
+                        action='store_true',
+                        help='Search for messages that contain user-defined' +
+                             'VMs OR hosts')
+    parser.add_argument('--criterias',
+                        type=str,
+                        nargs='+',
+                        help='Criterias of adding a message to the output.' +
+                             ' Available: "VM id", "Subtasks", ' +
+                             '"Error or warning", "Differ by VM ID", ' +
+                             '"Exclude frequent messages", "Coverage", ' +
+                             '"Increased errors", "Long operations". ' +
+                             'Default is all')
     # parser.add_argument("-chart", "--chart_filename",
     #                    type=str,
     #                    help="Create html file with chart" +
@@ -192,15 +207,23 @@ if __name__ == "__main__":
         format_file = args.format_file
     else:
         format_file = os.path.join("format_templates.txt")
+    if args.criterias is not None:
+        criterias = args.criterias
+    else:
+        criterias = ['All']
+    # Start algo
     logs = LogAnalyzer(output_descriptor,
                        args.log_directory,
                        files,
                        tz_info,
+                       criterias,
                        time_range_info,
                        vm_info,
                        event_info,
                        host_info,
-                       format_file)
+                       format_file,
+                       args.additive,
+                       output_directory)
     output_descriptor.write('Reading file\'s time range...\n')
     logs.read_time_ranges()
     output_descriptor.write('Searching for running VMs and hosts...\n')
@@ -232,15 +255,45 @@ if __name__ == "__main__":
             output_descriptor.write('\n')
         output_descriptor.write('------- List of VMs -------\n')
         for vm in sorted(logs.all_vms.keys()):
-            output_descriptor.write('name: %s\n' % vm)
-            for vmid in sorted(list(logs.all_vms[vm])):
-                output_descriptor.write('ID: %s\n' % vmid)
+            output_descriptor.write('Name: %s\n' % vm)
+            output_descriptor.write('IDs:')
+            for vmid in sorted(list(logs.all_vms[vm]['id'])):
+                output_descriptor.write(' %s' % vmid)
             output_descriptor.write('\n')
+            output_descriptor.write('Found on hosts:')
+            for hid in sorted(list(logs.all_vms[vm]['hostids'])):
+                output_descriptor.write(' %s' % hid)
+            output_descriptor.write('\n')
+            output_descriptor.write('\n')
+        if logs.not_running_vms != []:
+            output_descriptor.write('------------------------\n')
+            output_descriptor.write('Created but not running VMs:')
+            for vname in logs.not_running_vms:
+                output_descriptor.write(' %s' % vname)
+            output_descriptor.write('\n')
+        if logs.not_found_vmnames != []:
+            output_descriptor.write('VMs with not found names:')
+            for vid in logs.not_found_vmnames:
+                output_descriptor.write(' %s' % vid)
+            output_descriptor.write('\n')
+            output_descriptor.write('------------------------\n')
         output_descriptor.write('------- List of Hosts -------\n')
         for host in sorted(logs.all_hosts.keys()):
-            output_descriptor.write('name: %s\n' % host)
-            for hostid in sorted(list(logs.all_hosts[host])):
-                output_descriptor.write('ID: %s\n' % hostid)
+            output_descriptor.write('Name: %s\n' % host)
+            output_descriptor.write('IDs:')
+            for hostid in sorted(list(logs.all_hosts[host]['id'])):
+                output_descriptor.write(' %s' % hostid)
+            output_descriptor.write('\n')
+            output_descriptor.write('Running VMs:')
+            for vid in sorted(list(logs.all_hosts[host]['vmids'])):
+                output_descriptor.write(' %s' % vid)
+            output_descriptor.write('\n')
+            output_descriptor.write('\n')
+        output_descriptor.write('------------------------\n')
+        if logs.not_found_hostnames != []:
+            output_descriptor.write('Hosts with not found names:')
+            for hid in logs.not_found_hostnames:
+                output_descriptor.write(' %s' % hid)
             output_descriptor.write('\n')
         exit()
     output_descriptor.write('Searching for VM tasks...\n')
@@ -248,6 +301,7 @@ if __name__ == "__main__":
     output_descriptor.write('Loading data...\n')
     logs.load_data(args.warn, args.progressbar)
     output_descriptor.write('Analyzing the messages...\n')
+    logs.merge_all_messages()
     messages, new_fields = logs.find_important_events()
     output_descriptor.write('Printing messages...\n')
     # Output file

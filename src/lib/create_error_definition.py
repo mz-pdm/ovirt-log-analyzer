@@ -92,6 +92,7 @@ class LogLine:
         elif not any([sign in time_part for sign in ['+', '-']]):
             # if we have time without time zone
             dt += time_zone
+        self.fields['date_time'] = ''
         for dt_format in self.dt_formats:
             try:
                 date_time = datetime.strptime(dt, dt_format)
@@ -132,26 +133,46 @@ class LogLine:
         self.fields["message"] = self.re_punctuation.sub('', mstext)
 
 
-def check_constraints(line, events, host_ids, vm_numbers, tasks, flow_ids):
+def check_constraints(line, events, host_ids, vm_numbers, additive, dt,
+                      task_lines, line_num, flow_ids, subtasks, vm_timeline):
     if any([re.search(r'(^|[ \:\.\,]+)' + keyword + r'([ \:\.\,=]+|$)',
-            line.lower()) is not None for keyword in events + host_ids +
-            vm_numbers + ['error', 'fail', 'failure', 'failed', 'traceback',
-                          'warn', 'warning', 'exception', 'down',
-                          'crash']]):
+            line.lower()) is not None for keyword in events +
+            ['error', 'fail', 'failure', 'failed', 'traceback', 'warn',
+             'warning', 'exception', 'down', 'crash']]):
         return True
-    if any([thread in line for thread in tasks]):
+    if (line_num in task_lines):
+        return True
+    if any([task_id in line for task_id in subtasks.keys()]):
         return True
     if any(['flow_id='+flow in line for flow in flow_ids]):
         return True
+    if additive:
+        condition = (any([vm in line for vm in vm_numbers])
+                     or any([host in line for host in host_ids]))
     else:
-        return False
+        condition = check_vm_on_host(dt, line, host_ids, vm_numbers, additive,
+                                     vm_timeline)
+    return condition
+
+
+def check_vm_on_host(dt, line, host_ids, vm_numbers, additive, vm_timeline):
+    for vm_name in vm_timeline.keys():
+        if vm_name not in line:
+            continue
+        for host_name in vm_timeline[vm_name].keys():
+            if host_name in line:
+                return True
+            if any([dt >= tr[0] and dt <= tr[1]
+                    for tr in vm_timeline[vm_name][host_name]]):
+                return True
+    return False
 
 
 def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
                      multiline_line, fields_names, out_descr, time_zone,
-                     events, host_ids, vm_numbers,
-                     format_template, prev_fields, prev_line, tasks, flow_ids,
-                     show_warnings):
+                     additive, subtasks, events, host_ids, vm_numbers,
+                     vm_timeline, format_template, prev_fields, prev_line,
+                     task_lines, flow_ids, show_warnings):
     # write a concatenated string that include a Traceback message (try to
     # match the template first (if there were any fields that appear in the
     # other lines)
@@ -160,7 +181,9 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
         prev_line = prev_line + in_traceback_line
         # check if the line satisfy user conditions
         if not check_constraints(prev_line, events, host_ids, vm_numbers,
-                                 tasks, flow_ids):
+                                 additive, prev_fields['date_time'],
+                                 task_lines, prev_fields['line_num'],
+                                 flow_ids, subtasks, vm_timeline):
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
             # try to match with the log file format template
@@ -175,7 +198,6 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
                     line_info += [mess.fields["message"]]
                     continue
                 line_info += [prev_fields[field]]
-            # line_info += [mess.fields["message"]]
             if show_warnings:
                 out_descr.put('Info: create_line_info: ' +
                               'Traceback matched: %s\n' %
@@ -197,7 +219,9 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
         prev_line = multiline_line
         # check if the line satisfy user conditions
         if not check_constraints(prev_line, events, host_ids, vm_numbers,
-                                 tasks, flow_ids):
+                                 additive, prev_fields['date_time'],
+                                 task_lines, prev_fields['line_num'],
+                                 flow_ids, subtasks, vm_timeline):
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
             # try to match with the log file format template
@@ -211,7 +235,6 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
             line_info = []
             for field in fields_names:
                 line_info += [mess.fields[field]]
-            # line_info += [mess.fields["message"]]
             if show_warnings:
                 out_descr.put('Info: create_line_info: ' +
                               'Multiline matched: %s\n' %
@@ -246,7 +269,9 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
     else:
         # check if the line satisfy user conditions
         if not check_constraints(prev_line, events, host_ids, vm_numbers,
-                                 tasks, flow_ids):
+                                 additive, prev_fields['date_time'],
+                                 task_lines, prev_fields['line_num'],
+                                 flow_ids, subtasks, vm_timeline):
             return prev_line, [], in_traceback_flag, multiline_flag
         line_info = []
         for field in fields_names:
@@ -255,10 +280,10 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
 
 
 def loop_over_lines(directory, logname, format_template, time_zone, positions,
-                    out_descr, events, host_ids, time_ranges, vm_numbers,
-                    tasks, flow_ids, show_warnings, progressbar=None):
+                    out_descr, additive, events, host_ids,
+                    time_ranges, vm_numbers, vm_timeline, subtasks, task_lines,
+                    flow_ids, show_warnings, progressbar=None):
     full_filename = os.path.join(directory, logname)
-    # format_template = re.compile(format_template)
     fields_names = list(sorted(format_template.groupindex.keys()))
     fields_names.remove("message")
     fields_names.remove("date_time")
@@ -307,11 +332,15 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                                                           fields_names,
                                                           out_descr,
                                                           time_zone,
+                                                          additive,
+                                                          subtasks,
                                                           events, host_ids,
                                                           vm_numbers,
+                                                          vm_timeline,
                                                           format_template,
                                                           prev_fields,
-                                                          prev_line, tasks,
+                                                          prev_line,
+                                                          task_lines,
                                                           flow_ids,
                                                           show_warnings)
                     # if we normally parsed the previous line, we save it
@@ -331,11 +360,12 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                         create_line_info(in_traceback_flag,
                                          in_traceback_line, multiline_flag,
                                          multiline_line, fields_names,
-                                         out_descr, time_zone, events,
-                                         host_ids, vm_numbers,
-                                         format_template, prev_fields,
-                                         prev_line, tasks, flow_ids,
-                                         show_warnings)
+                                         out_descr, time_zone, additive,
+                                         subtasks, events, host_ids,
+                                         vm_numbers, vm_timeline,
+                                         format_template,
+                                         prev_fields, prev_line, task_lines,
+                                         flow_ids, show_warnings)
                     # if we normally parsed the previous line, we save it
                     if line_info != []:
                         file_lines += [line_info]
@@ -392,11 +422,12 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                         create_line_info(in_traceback_flag,
                                          in_traceback_line, multiline_flag,
                                          multiline_line, fields_names,
-                                         out_descr, time_zone, events,
-                                         host_ids, vm_numbers,
-                                         format_template, prev_fields,
-                                         prev_line, tasks, flow_ids,
-                                         show_warnings)
+                                         out_descr, time_zone, additive,
+                                         subtasks, events, host_ids,
+                                         vm_numbers, vm_timeline,
+                                         format_template,
+                                         prev_fields, prev_line, task_lines,
+                                         flow_ids, show_warnings)
                     if line_info != []:
                         file_lines += [line_info]
                 multiline_flag = True
@@ -418,12 +449,14 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                 create_line_info(in_traceback_flag,
                                  in_traceback_line, multiline_flag,
                                  multiline_line, fields_names, out_descr,
-                                 time_zone, events, host_ids,
-                                 vm_numbers, format_template, prev_fields,
-                                 prev_line, tasks, flow_ids, show_warnings)
+                                 time_zone, additive, subtasks, events,
+                                 host_ids, vm_numbers, vm_timeline,
+                                 format_template,
+                                 prev_fields, prev_line, task_lines,
+                                 flow_ids, show_warnings)
             if line_info != []:
                 file_lines += [line_info]
     f.close()
     if progressbar:
         progressbar.finish()
-    return file_lines, fields_names  # + ['message']
+    return file_lines, fields_names
