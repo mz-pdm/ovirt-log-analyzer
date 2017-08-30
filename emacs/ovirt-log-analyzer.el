@@ -38,26 +38,44 @@
   (interactive)
   (ovirt-log-analyzer-poi 'previous-single-property-change))
 
+(defun ovirt-log-analyzer-filter-by-function (filter-function)
+  (save-excursion
+    (goto-char (point-min))
+    (while (not (eobp))
+      (unless (funcall filter-function)
+        (let ((o (make-overlay (line-beginning-position) (1+ (line-end-position)))))
+          (overlay-put o 'invisible t)
+          (overlay-put o 'ovirt-log-analyzer-filter t)))
+      (forward-line))))
+
+(defun ovirt-log-analyzer-filter-by-text (text)
+  (message "Filtering by %s" text)
+  (ovirt-log-analyzer-filter-by-function (lambda () (search-forward text (line-end-position) t))))
+
+(defun ovirt-log-analyzer-filter-by-property (property value)
+  (message "Filtering by %s" value)
+  (ovirt-log-analyzer-filter-by-function (lambda () (equal (get-char-property (point) property) value))))
+
 (defun ovirt-log-analyzer-filter ()
   (interactive)
-  (unless (eq (get-text-property (point) 'face) 'font-lock-variable-name-face)
-    (error "Not on a UUID"))
   (dolist (o (overlays-in (point-min) (point-max)))
     (when (overlay-get o 'ovirt-log-analyzer-filter)
       (delete-overlay o)))
-  (let ((uuid-regexp "[0-9a-f]\\{8\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{12\\}"))
-    (save-excursion
-      (unless (looking-at uuid-regexp)
-        (goto-char (previous-single-property-change (point) 'face))
-        (looking-at uuid-regexp))
-      (let ((uuid (match-string 0)))
-        (goto-char (point-min))
-        (while (not (eobp))
-          (unless (search-forward uuid (line-end-position) t)
-            (let ((o (make-overlay (line-beginning-position) (1+ (line-end-position)))))
-              (overlay-put o 'invisible t)
-              (overlay-put o 'ovirt-log-analyzer-filter t)))
-          (forward-line))))))
+  (let ((analyzer-properties '()))
+    (dolist (property '(ovirt-log-analyzer-file ovirt-log-analyzer-host ovirt-log-analyzer-vm))
+      (let ((value (get-char-property (point) property)))
+        (when value
+          (push value analyzer-properties)
+          (push property analyzer-properties))))
+    (cond
+     ((eq (get-text-property (point) 'face) 'font-lock-variable-name-face)
+      (ovirt-log-analyzer-filter-by-text
+       (buffer-substring-no-properties (previous-single-property-change (point) 'face)
+                                       (next-single-property-change (point) 'face))))
+     (analyzer-properties
+      (ovirt-log-analyzer-filter-by-property (cl-first analyzer-properties) (cl-second analyzer-properties)))
+     (t
+      (error "Nothing to filter on")))))
 
 (defun ovirt-log-analyzer-toggle-filter ()
   (interactive)
@@ -89,6 +107,7 @@
                  (tag-list (split-string (match-string 3) "_")))
             (overlay-put line-overlay 'help-echo (mapconcat #'identity tag-list "; "))
             (overlay-put line-overlay 'ovirt-log-analyzer-file-reference file-field)
+            (overlay-put line-overlay 'ovirt-log-analyzer-file (car (split-string file-field ":")))
             (when (string-match "^\\(.*/\\)\\([^/]+\\)$" file-field)
               (let ((file-overlay (make-overlay file-point (+ file-point (match-end 1))))
                     (length (- (match-end 2) (match-beginning 2))))
