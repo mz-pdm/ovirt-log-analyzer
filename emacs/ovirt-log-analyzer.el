@@ -3,6 +3,12 @@
 (require 'cl-lib)
 (require 'hl-line)
 
+(defvar ovirt-log-analyzer-hosts '())
+(make-variable-buffer-local 'ovirt-log-analyzer-hosts)
+
+(defvar ovirt-log-analyzer-vms '())
+(make-variable-buffer-local 'ovirt-log-analyzer-vms)
+
 (defun ovirt-log-analyzer-show-log ()
   (interactive)
   (let ((file-reference (get-char-property (point) 'ovirt-log-analyzer-file-reference)))
@@ -59,6 +65,11 @@
     (when (overlay-get o 'ovirt-log-analyzer-filter)
       (overlay-put o 'invisible (not (overlay-get o 'invisible))))))
 
+(defun ovirt-log-analyzer-add-after (overlay string face)
+  (overlay-put overlay 'after-string
+               (concat (or (overlay-get overlay 'after-string) "")
+                       (propertize string 'face face) " ")))
+
 (defun ovirt-log-analyzer-process ()
   (save-excursion
     (goto-char (point-min))
@@ -90,7 +101,17 @@
                ((string-match "^Task/\\([1-9]\\)$" tag)
                 (overlay-put tag-overlay 'after-string (make-string (string-to-number (match-string 1 tag))  ? )))
                ((string-match "^Task(duration=\\([0-9.]+\\))$" tag)
-                (overlay-put tag-overlay 'after-string (propertize (concat (match-string 1 tag) "s" ) 'face 'font-lock-constant-face)))
+                (ovirt-log-analyzer-add-after tag-overlay (concat (match-string 1 tag) "s" ) 'font-lock-constant-face))
+               ((string-match "^Host=\\(.*\\)$" tag)
+                (let ((host (match-string 1 tag)))
+                  (add-to-list 'ovirt-log-analyzer-hosts host)
+                  (ovirt-log-analyzer-add-after tag-overlay (match-string 1 tag) 'font-lock-variable-name-face)
+                  (overlay-put line-overlay 'ovirt-log-analyzer-host host)))
+               ((string-match "^VM=\\(.*\\)$" tag)
+                (let ((vm (match-string 1 tag)))
+                  (add-to-list 'ovirt-log-analyzer-vms vm)
+                  (ovirt-log-analyzer-add-after tag-overlay (match-string 1 tag) 'font-lock-variable-name-face)
+                  (overlay-put line-overlay 'ovirt-log-analyzer-vm vm)))
                ((member tag '("Error or warning" "Long operation" "Task" "Unique"))
                 ;; handled by font lock
                 )
