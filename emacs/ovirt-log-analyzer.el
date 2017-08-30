@@ -89,6 +89,8 @@
               (cond
                ((string-match "^Task/\\([1-9]\\)$" tag)
                 (overlay-put tag-overlay 'after-string (make-string (string-to-number (match-string 1 tag))  ? )))
+               ((string-match "^Task(duration=\\([0-9.]+\\))$" tag)
+                (overlay-put tag-overlay 'after-string (propertize (concat (match-string 1 tag) "s" ) 'face 'font-lock-constant-face)))
                ((member tag '("Error or warning" "Long operation" "Task" "Unique"))
                 ;; handled by font lock
                 )
