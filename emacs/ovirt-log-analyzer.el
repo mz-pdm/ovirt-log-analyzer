@@ -21,6 +21,10 @@
       (goto-char 1)
       (forward-line (1- line)))))
 
+(defun ovirt-log-analyzer-show-tags ()
+  (interactive)
+  (message "%s" (or (get-char-property (point) 'help-echo) "No tags")))
+
 (defun ovirt-log-analyzer-poi (search-function)
   (let ((point (funcall search-function (point) 'face)))
     (while (and point
@@ -171,7 +175,8 @@
     (define-key map "f" 'ovirt-log-analyzer-filter)
     (define-key map [(meta n)] 'next-logical-line)
     (define-key map [(meta p)] 'previous-logical-line)
-    (define-key map "t" 'toggle-truncate-lines)
+    (define-key map "t" 'ovirt-log-analyzer-show-tags)
+    (define-key map "T" 'toggle-truncate-lines)
     map))
 
 (define-derived-mode ovirt-log-analyzer-mode text-mode "OLA"
