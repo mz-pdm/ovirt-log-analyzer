@@ -158,7 +158,7 @@
   '((("[0-9a-f]\\{8\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{12\\}" 0 font-lock-variable-name-face t)
      ("\\<\\(Command\\|VM\\)\\>\\|FAILED\\|SUCCEEDED" 0 font-lock-keyword-face t)
      ("Error or warning.*$" 0 font-lock-warning-face keep)
-     ("^\\(.*\\)|.*|.*Long operation" 1 font-lock-warning-face keep)
+     ("^\\(.*\\)|.*|.*Task(duration=" 1 font-lock-warning-face keep)
      ("^.*|\\(.*\\)|.*Unique" 1 font-lock-warning-face keep)
      ("Task.*|.*$" 0 font-lock-preprocessor-face keep))))
 
