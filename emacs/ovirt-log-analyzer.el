@@ -167,7 +167,7 @@
                    ((string= entity "Host")
                     (overlay-put o 'ovirt-log-analyzer-host value))
                    ((string= entity "VM")
-                    (overlay-put line-overlay 'ovirt-log-analyzer-vm value)))
+                    (overlay-put o 'ovirt-log-analyzer-vm value)))
                   (goto-char (overlay-end o)))))
             (overlay-put tag-overlay 'invisible 'yes)))
         (forward-line))
