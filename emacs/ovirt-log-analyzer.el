@@ -103,7 +103,7 @@
           (max-file-field-length 0))
       (while (not (eobp))
         (point)
-        (when (looking-at "[0-9][^|\n]*| \\( *[^|\n]+:[0-9]+\\) *|\\( *\\([^|\n]*\\) |\\).*$")
+        (when (looking-at "[0-9][^|\n]*| \\( *[^|\n]+:[0-9]+\\) *| \\( *\\([^|\n]*\\) |\\).*$")
           (let* ((beg (match-beginning 0))
                  (end (match-end 0))
                  (line-overlay (make-overlay beg end))
@@ -127,7 +127,10 @@
             (dolist (tag tag-list)
               (cond
                ((string-match "^Task/\\([1-9]\\)$" tag)
-                (overlay-put tag-overlay 'after-string (make-string (string-to-number (match-string 1 tag))  ? )))
+                (let ((o (make-overlay (- tag-beg 2) (- tag-beg 1))))
+                  (overlay-put o 'after-string
+                               (propertize (make-string (string-to-number (match-string 1 tag)) ?>)
+                                           'face 'font-lock-keyword-face))))
                ((string-match "^Task(duration=\\([0-9.]+\\))$" tag)
                 (ovirt-log-analyzer-add-after tag-overlay (concat " " (match-string 1 tag) "s" ) 'font-lock-constant-face))
                ((string-match "^Host=\\(.*\\)$" tag)
