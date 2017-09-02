@@ -90,7 +90,9 @@
   (interactive)
   (dolist (o (overlays-in (point-min) (point-max)))
     (when (overlay-get o 'ovirt-log-analyzer-filter)
-      (overlay-put o 'invisible (not (overlay-get o 'invisible))))))
+      (let ((invisible (not (eq (overlay-get o 'invisible) 'yes))))
+        (overlay-put o 'invisible (if invisible 'yes 'no))
+        (overlay-put o 'priority (if invisible 20 0))))))
 
 (defun ovirt-log-analyzer-add-after (overlay string face)
   (overlay-put overlay 'after-string
