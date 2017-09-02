@@ -56,6 +56,7 @@
       (unless (funcall filter-function)
         (let ((o (make-overlay (line-beginning-position) (1+ (line-end-position)))))
           (overlay-put o 'invisible 'yes)
+          (overlay-put o 'priority 20)
           (overlay-put o 'ovirt-log-analyzer-filter t)))
       (forward-line))))
 
@@ -75,7 +76,8 @@
           (push value analyzer-properties)
           (push property analyzer-properties))))
     (cond
-     ((eq (get-char-property (point) 'face) 'font-lock-variable-name-face)
+     ((or (eq (get-char-property (point) 'face) 'font-lock-variable-name-face)
+          (eq (get-text-property (point) 'face) 'font-lock-variable-name-face))
       (ovirt-log-analyzer-filter-by-text
        (or (get-char-property (point) 'ovirt-log-analyzer-host)
            (get-char-property (point) 'ovirt-log-analyzer-vm)
