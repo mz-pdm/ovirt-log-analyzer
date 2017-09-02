@@ -29,7 +29,7 @@ def print_only_dt_message(errors, new_fields, out):
     reason = [err[reason_idx]
               if err[details_idx] == ''
               else err[details_idx] if err[reason_idx] == ''
-              else err[reason_idx] + '_' + err[details_idx]
+              else err[reason_idx] + ';' + err[details_idx]
               for err in errors]
     # reason_len = max([len(r[reason_idx]) for r in errors])
     # details_len = max([len(r[details_idx]) for r in errors])

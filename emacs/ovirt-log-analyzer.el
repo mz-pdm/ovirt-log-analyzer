@@ -108,7 +108,7 @@
                  (tag-overlay (make-overlay (match-beginning 2) (match-end 2)))
                  (file-field (match-string 1))
                  (tag-field (match-string 3))
-                 (tag-list (split-string (match-string 3) "_")))
+                 (tag-list (split-string (match-string 3) ";")))
             (overlay-put line-overlay 'help-echo (mapconcat #'identity tag-list "; "))
             (overlay-put line-overlay 'ovirt-log-analyzer-file-reference file-field)
             (overlay-put line-overlay 'ovirt-log-analyzer-file (car (split-string file-field ":")))

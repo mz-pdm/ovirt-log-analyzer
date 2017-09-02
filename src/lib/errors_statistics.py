@@ -211,15 +211,18 @@ def clusterize_messages(out_descr, all_errors, fields, user_events,
         return msg_showed, new_fields
     f = open(os.path.join(output_directory,
              dirname.split('/')[-2]+'_diff.txt'), 'w')
-    max_len = max([len('_'.join(reasons[r])) for r in reasons.keys()])
+    separator = ';'
+    max_len = max([len(separator.join(reasons[r])) for r in reasons.keys()])
     for msg in all_errors:
         if msg[strid] in needed_msgs:
             if msg[strid] in reasons.keys():
-                all_reasons = '_'.join(sorted(reasons[msg[strid]]))
+                all_reasons = separator.join(sorted(reasons[msg[strid]]))
             else:
                 all_reasons = ''
             if msg[strid] in detail_reasons.keys():
-                all_details = '_'.join(sorted(detail_reasons[msg[strid]]))
+                all_details = separator.join(
+                    sorted(detail_reasons[msg[strid]])
+                )
             else:
                 all_details = ''
             msg_showed += [[msg[dtid], msg[strid],
@@ -228,7 +231,7 @@ def clusterize_messages(out_descr, all_errors, fields, user_events,
                             msg[msid]]]
         else:
             if msg[strid] in reasons.keys():
-                reason = '_'.join(sorted(reasons[msg[strid]]))
+                reason = separator.join(sorted(reasons[msg[strid]]))
             else:
                 reason = 'unknown'
             f.write("%12s %s | %20s | %*s | %s\n" %
