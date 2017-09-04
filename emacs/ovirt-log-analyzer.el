@@ -72,22 +72,19 @@
   (dolist (o (overlays-in (point-min) (point-max)))
     (when (overlay-get o 'ovirt-log-analyzer-filter)
       (delete-overlay o)))
-  (let ((analyzer-properties '()))
-    (dolist (property '(ovirt-log-analyzer-file ovirt-log-analyzer-host ovirt-log-analyzer-vm))
-      (let ((value (get-char-property (point) property)))
-        (when value
-          (push value analyzer-properties)
-          (push property analyzer-properties))))
-    (cond
-     ((or (eq (get-char-property (point) 'face) 'font-lock-variable-name-face)
-          (eq (get-text-property (point) 'face) 'font-lock-variable-name-face))
-      (ovirt-log-analyzer-filter-by-text
-       (or (get-char-property (point) 'ovirt-log-analyzer-host)
-           (get-char-property (point) 'ovirt-log-analyzer-vm)
-           (buffer-substring-no-properties (previous-single-property-change (point) 'face)
-                                           (next-single-property-change (point) 'face)))))
-     (t
-      (error "Nothing to filter on")))))
+  (cond
+   ((or (eq (get-char-property (point) 'face) 'font-lock-variable-name-face)
+        (eq (get-text-property (point) 'face) 'font-lock-variable-name-face))
+    (ovirt-log-analyzer-filter-by-text
+     (or (get-char-property (point) 'ovirt-log-analyzer-host)
+         (get-char-property (point) 'ovirt-log-analyzer-vm)
+         (buffer-substring-no-properties
+          (if (eq (get-text-property (1- (point)) 'face) 'font-lock-variable-name-face)
+              (previous-single-property-change (point) 'face)
+            (point))
+          (next-single-property-change (point) 'face)))))
+   (t
+    (error "Nothing to filter on"))))
 
 (defun ovirt-log-analyzer-toggle-filter ()
   (interactive)
