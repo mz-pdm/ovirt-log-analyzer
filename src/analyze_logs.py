@@ -5,6 +5,8 @@ import re
 import pytz
 from datetime import datetime
 from lib.LogAnalyzer import LogAnalyzer
+from lib.util import open_log_file
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Parse logfiles and summarize important messages ' +
@@ -104,24 +106,25 @@ if __name__ == "__main__":
     #                    help="Create html file with chart" +
     #                    "represented errors statistics")
     args = parser.parse_args()
+
     # Logfilenames
-    if args.filenames == ['.']:
+    def log_file_p(file_name):
+        base_file_name = os.path.basename(file_name)
+        return ('.log' in base_file_name and
+                not base_file_name.endswith('.json'))
+    if args.filenames is None or args.filenames == ['.']:
         files = []
         for dirpath, dirnames, filenames in os.walk(args.log_directory):
             for f in filenames:
-                base, ext = os.path.splitext(f)
-                if (ext in ('.log', '.xz',) and
-                    (dirpath == 'qemu' or
-                     base.startswith('engine') or
-                     'libvirt' in base or
-                     'vdsm' in base)):
+                if (log_file_p(f) and
+                    (args.filenames is None or
+                     dirpath == 'qemu' or
+                     f.startswith('engine') or
+                     'libvirt' in f or
+                     'vdsm' in f)):
                     files.append(os.path.join(dirpath, f))
     elif args.filenames is not None:
         files = sorted(args.filenames)
-    else:
-        files = os.listdir(args.log_directory)
-        files = [f for f in files if f[-4:] == '.log' or
-                 ('.log' in f and f[-3:] == '.xz')]
     # Output directory
     if args.output_dir is not None:
         if not os.path.isdir(args.output_dir):
