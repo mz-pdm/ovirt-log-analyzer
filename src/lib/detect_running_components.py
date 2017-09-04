@@ -1,12 +1,13 @@
 import os
 import re
-import lzma
 import json
 import pytz
 import numpy as np
 from datetime import datetime
 import progressbar
 from progressbar import ProgressBar
+
+from lib.util import open_log_file
 
 
 re_timestamp = re.compile(
@@ -51,11 +52,8 @@ def find_time_range(output_descriptor, log_directory, files, tz_info,
     relevant_logs = []
     for log_idx, log in enumerate(files):
         full_filename = os.path.join(log_directory, log)
-        if log[-4:] == '.log':
-                f = open(full_filename, 'rt')
-        elif log[-3:] == '.xz':
-            f = lzma.open(full_filename, 'rt')
-        else:
+        f = open_log_file(full_filename)
+        if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
         logs_datetimes[log] = []
@@ -118,11 +116,8 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
     needed_linenum = {}
     for log_idx, log in enumerate(files):
         full_filename = os.path.join(log_directory, log)
-        if log[-4:] == '.log':
-                f = open(full_filename, 'rt')
-        elif log[-3:] == '.xz':
-            f = lzma.open(full_filename, 'rt')
-        else:
+        f = open_log_file(full_filename)
+        if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
         needed_linenum[log] = []
@@ -162,8 +157,8 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
                 f.seek(next_pos, os.SEEK_SET)
                 offset = 1
                 while f.read(1) != "\n" and next_pos-offset >= 0:
-                    offset += 1
                     f.seek(next_pos-offset, os.SEEK_SET)
+                    offset += 1
                 prev_pos = cur_pos
                 dt = 0
                 while dt == 0:
@@ -664,11 +659,8 @@ def find_all_vm_host(positions,
     unknown_vmnames = []
     for log_idx, log in enumerate(files):
         full_filename = os.path.join(log_directory, log)
-        if log[-4:] == '.log':
-                f = open(full_filename)
-        elif log[-3:] == '.xz':
-            f = lzma.open(full_filename, 'rt')
-        else:
+        f = open_log_file(full_filename)
+        if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
         first_lines[log] = []
@@ -739,11 +731,8 @@ def find_all_vm_host(positions,
         if 'engine' not in log:
             continue
         full_filename = os.path.join(log_directory, log)
-        if log[-4:] == '.log':
-                f = open(full_filename)
-        elif log[-3:] == '.xz':
-            f = lzma.open(full_filename, 'rt')
-        else:
+        f = open_log_file(full_filename)
+        if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
         for tr_idx, log_position in enumerate(positions[log]):
@@ -766,11 +755,8 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
     tasks = {}
     commands = {}
     fullname = os.path.join(log_directory, log)
-    if (log[-4:] == '.log'):
-            f = open(fullname)
-    elif (log[-3:] == '.xz'):
-        f = lzma.open(fullname, 'rt')
-    else:
+    f = open_log_file(fullname)
+    if f is None:
         output_descriptor.write("Unknown file extension: %s" % log)
         return commands_threads, long_actions
     firstline = f.readline()
@@ -1196,11 +1182,8 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
     long_actions = []
     qemu_monitor = {}
     fullname = os.path.join(log_directory, log)
-    if (log[-4:] == '.log'):
-            f = open(fullname)
-    elif (log[-3:] == '.xz'):
-        f = lzma.open(fullname, 'rt')
-    else:
+    f = open_log_file(fullname)
+    if f is None:
         output_descriptor.write("Unknown file extension: %s" % log)
         return commands_threads, long_actions
     firstline = f.readline()

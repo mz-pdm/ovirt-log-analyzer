@@ -8,6 +8,8 @@ import re
 import os
 from datetime import datetime
 
+from lib.util import open_log_file
+
 
 class LogLineError(Exception):
     """Base class for logline exceptions"""
@@ -292,10 +294,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
     if 'libvirt' in logname:
         regexp = regexp + r".*|OBJECT_|.*release\ domain"
     re_skip = re.compile(regexp)
-    if logname[-4:] == '.log':
-        f = open(full_filename)
-    elif logname[-3:] == '.xz':
-        f = lzma.open(full_filename, 'rt')
+    f = open_log_file(full_filename)
     if progressbar:
         progressbar.start(max_value=max([i for p in positions for i in p]))
     for tr_idx, pos in enumerate(positions):

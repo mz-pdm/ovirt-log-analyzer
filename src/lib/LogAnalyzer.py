@@ -16,6 +16,7 @@ from lib.detect_running_components import find_vm_tasks_engine, \
                                           find_needed_linenum
 from lib.ProgressPool import ProgressPool
 from progressbar import ProgressBar
+from lib.util import open_log_file
 
 
 class LogAnalyzer:
@@ -79,17 +80,12 @@ class LogAnalyzer:
             # save log's time zome
             self.time_zones += [tz[log]]
             # find format of a log
-            if log[-4:] == '.log':
-                f = open(full_filename)
-                line = f.readline()
-                f.close()
-            elif log[-3:] == '.xz':
-                f = lzma.open(full_filename, 'rt')
-                line = f.readline()
-                f.close()
-            else:
+            f = open_log_file(full_filename)
+            if f is None:
                 self.out_descr.write("Unknown file extension: %s" % log)
                 continue
+            line = f.readline()
+            f.close()
             # save name of actually opened logfile
             self.found_logs += [log]
             for file_format_num in range(len(self.formats_templates)):
