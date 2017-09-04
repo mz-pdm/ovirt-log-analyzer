@@ -52,3 +52,39 @@ Print parser warnings about different log lines format
 
 * `--progressbar`
 Show full-screen progress bar for parsing process
+
+* `--additive`
+Search for messages that contain user-defined VMs OR hosts
+
+* `--criterias`
+Criterias of adding a message to the output. Available:
+	- `Subtasks` - Show messages containing information about VM tasks and subtasks
+	- `Error or warning` - Shaw messages with errors of warnings
+	- `Differ by VM ID` - Show messages that appears with several different VMs
+	- `Exclude frequent messages` - Remove frequent messages from the output (find them in "_frequent.txt")
+	- `Increased errors` - Show messages that are followed by increasing number of errors or warnings
+	- `Long operations` - Show messages containing information about long operations (with time of its execution)
+Default is all.
+
+* `--reload`
+Reload cached VMs, hosts, tasks and logfile positions for the new given time range.
+
+* `--clear`
+Remove all cached files (log_analyzer_cache)
+
+## Output
+Log analyzed produce several output files. You can place them into a directory by using -d flag. These files are:
+
+* `*_VMs_timeline.json` - information about time of VMs running on hosts and migrating between hosts
+
+* `*_clusters.txt` - groups of similar messages that was analyzed (affects filtering by frequency)
+
+* `*_commands.json` - full list of found tasks with time of execution (if both "start" and "finish" were detected)
+
+* `*_commands_by_id.json` - reconstructed hierarchy of tasks (may contain only a few of tasks from the _commands file)
+
+* `*_frequent.txt` - messages that were removed from the output by "Exclude frequent messages" criteria
+
+* If -o flag, the result will be saved to the file (to stdout otherwise)
+
+* `log_analyzer_cache` folder within the provided logfiles folder contain information about found VMs, hosts, tasks, and symbol positions for given time ranges

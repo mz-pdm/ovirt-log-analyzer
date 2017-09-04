@@ -225,9 +225,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
             return prev_line, [], in_traceback_flag, multiline_flag
         try:
             # try to match with the log file format template
-            mess = LogLine(fields_names,
-                           prev_fields['line_num'].split(':')[0] + ':' +
-                           str(int(prev_fields['line_num'].split(':')[1]) + 1),
+            mess = LogLine(fields_names, prev_fields['line_num'],
                            out_descr)
             mess.parse_date_time(time_zone, multiline_line)
             mess.parse_fields(format_template, multiline_line)
@@ -280,7 +278,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
 
 
 def loop_over_lines(directory, logname, format_template, time_zone, positions,
-                    out_descr, additive, events, host_ids,
+                    out_descr, queue_bar, additive, events, host_ids,
                     time_ranges, vm_numbers, vm_timeline, subtasks, task_lines,
                     flow_ids, show_warnings, progressbar=None):
     full_filename = os.path.join(directory, logname)
@@ -298,18 +296,16 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
         f = open(full_filename)
     elif logname[-3:] == '.xz':
         f = lzma.open(full_filename, 'rt')
-    f.seek(0, os.SEEK_END)
-    num = f.tell()
     if progressbar:
-        progressbar.start(max_value=num)
+        progressbar.start(max_value=max([i for p in positions for i in p]))
     for tr_idx, pos in enumerate(positions):
-        f.seek(pos, os.SEEK_SET)
+        f.seek(pos[0], os.SEEK_SET)
         prev_fields = {}
         in_traceback_line = ''
         in_traceback_flag = False
         multiline_line = ''
         multiline_flag = False
-        count = pos
+        count = pos[0]
         prev_line = ''
         for line_num, line in enumerate(f):
             # if line is empty and other cases when we don't need to parse it
@@ -317,6 +313,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                 count += len(line)
                 if progressbar:
                     progressbar.update(count)
+                queue_bar.put(len(line))
                 continue
             line_data = LogLine(fields_names, logname+':'+str(line_num+1),
                                 out_descr)
@@ -443,6 +440,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
             count += len(line)
             if progressbar:
                 progressbar.update(count)
+            queue_bar.put(len(line))
         # adding the last line
         if prev_fields != {}:
             prev_line, line_info, in_traceback_flag, multiline_flag = \
