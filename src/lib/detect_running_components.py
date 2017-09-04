@@ -155,8 +155,8 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
                 f.seek(next_pos, os.SEEK_SET)
                 offset = 1
                 while f.read(1) != "\n" and next_pos-offset >= 0:
-                    offset += 1
                     f.seek(next_pos-offset, os.SEEK_SET)
+                    offset += 1
                 prev_pos = cur_pos
                 dt = 0
                 while dt == 0:
