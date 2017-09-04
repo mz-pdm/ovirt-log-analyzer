@@ -75,6 +75,7 @@ class LogAnalyzer:
         for log in filenames:
             full_filename = os.path.join(self.directory, log)
             if not os.path.isfile(full_filename):
+                self.out_descr.write("%s\n" % full_filename)
                 self.out_descr.write("File not found: %s\n" % log)
                 continue
             # save log's time zome

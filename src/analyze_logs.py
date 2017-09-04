@@ -126,7 +126,7 @@ if __name__ == "__main__":
                      f.startswith('engine') or
                      'libvirt' in f or
                      'vdsm' in f)):
-                    files.append(os.path.join(dirpath, f))
+                    files.append(f)
     elif args.filenames is not None:
         files = sorted(args.filenames)
     if args.clear:
