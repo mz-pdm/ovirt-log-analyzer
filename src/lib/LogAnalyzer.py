@@ -70,7 +70,7 @@ class LogAnalyzer:
             else:
                 self.out_descr.write("Wrong format of template: %s\n" % line)
         self.found_logs = []
-        self.log_files_format = []
+        self.log_files_format = {}
         self.time_zones = []
         for log in filenames:
             full_filename = os.path.join(self.directory, log)
@@ -94,7 +94,7 @@ class LogAnalyzer:
                                                     'regexp'])
                 result = prog.search(line)
                 if result is not None:
-                    self.log_files_format += [prog]
+                    self.log_files_format[log] = prog
                     break
         if (self.found_logs == []):
             out_descr.write('No logfiles found.\n')
@@ -107,21 +107,29 @@ class LogAnalyzer:
                 os.path.join(self.directory, 'log_analyzer_cache'))):
             with open(os.path.join(self.directory, 'log_analyzer_cache',
                                    'time_ranges.pckl'), 'rb') as f:
-                self.positions, self.total_time_ranges, self.time_ranges, \
+                self.positions, self.total_time_ranges, cur_time_ranges, \
                     self.found_logs = pickle.load(f)
+                if self.time_ranges != cur_time_ranges:
+                    self.out_descr.write("Warning: time range differs " +
+                                         "from the saved version, it can " +
+                                         "cause errors or cutting the " +
+                                         "result to saved time range. " +
+                                         "Didn't you forget to add " +
+                                         "--reload flag?\n")
+                    self.time_ranges = cur_time_ranges
             return
         if not os.path.isdir(os.path.join(self.directory,
                                           'log_analyzer_cache')):
             os.mkdir(os.path.join(self.directory, 'log_analyzer_cache'))
+        self.total_time_ranges, self.found_logs = \
+            find_time_range(self.out_descr, self.directory,
+                            self.found_logs, self.time_zones,
+                            self.time_ranges)
         self.positions = find_needed_linenum(self.out_descr,
                                              self.directory,
                                              self.found_logs,
                                              self.time_zones,
                                              self.time_ranges)
-        self.total_time_ranges, self.found_logs = \
-            find_time_range(self.out_descr, self.directory,
-                            self.found_logs, self.time_zones,
-                            self.time_ranges)
         if (self.found_logs != [] and self.time_ranges == []):
             max_time = max([t for l in self.total_time_ranges.keys()
                             for t in self.total_time_ranges[l]])
@@ -345,6 +353,8 @@ class LogAnalyzer:
             sum_lines = sum(sum_lines)
             bar = ProgressBar(widgets=widget_style, max_value=sum_lines)
             pos = 0
+            # cum_sum = {}
+            from datetime import datetime
             with Pool(processes=4) as pool:
                 worker = pool.imap(star, run_args)
                 while True:
@@ -355,7 +365,12 @@ class LogAnalyzer:
                         except multiprocessing.TimeoutError:
                             pass
                         while not q_bar.empty():
-                            pos += q_bar.get()
+                            pos_tmp, name = q_bar.get()
+                            # if not name in cum_sum.keys():
+                            #     cum_sum[name] = pos_tmp
+                            # else:
+                            #     cum_sum[name] += pos_tmp
+                            pos += pos_tmp
                             bar.update(pos)
                     except StopIteration:
                         break
@@ -396,7 +411,7 @@ class LogAnalyzer:
     def print_errors(self, errors_list, new_fields, out):
         # print_all_headers(errors_list, self.list_headers,
         #                   self.format_fields, out)
-        print_only_dt_message(errors_list, new_fields, out)
+        print_only_dt_message(self.directory, errors_list, new_fields, out)
 
 
 def star(input):
@@ -413,7 +428,7 @@ def process_files(idx, log, formats_templates, directory, time_zones,
     # gathering all information about errors from a logfile into lists
     lines_info, fields_names = loop_over_lines(directory,
                                                log[idx],
-                                               formats_templates[idx],
+                                               formats_templates[log[idx]],
                                                time_zones[idx],
                                                positions[log[idx]],
                                                out_descr,

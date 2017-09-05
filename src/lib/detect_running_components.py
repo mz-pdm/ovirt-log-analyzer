@@ -263,7 +263,7 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
         if dt == 0:
             continue
         if dt >= time_range_info[1] and real_lastpos == file_len:
-            real_lastpos = i
+            real_lastpos = i + real_firstpos
         #     break
         vm_name = re.search(r'\<name\>(.+?)\<\/name\>', line)
         if (not multiline and vm_name is not None):
@@ -345,7 +345,7 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
         if dt == 0:
             continue
         if dt >= time_range_info[1] and real_lastpos == file_len:
-            real_lastpos = i
+            real_lastpos = i + real_firstpos
         #     break
         vdsm_host = re.search(r'I am the actual vdsm ' +
                               r'([^\ ]+)\ +([^\ ]+)', line)
@@ -415,7 +415,7 @@ def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
         host_name = ''
         host_id = ''
         if dt >= time_range_info[1] and real_lastpos == file_len:
-            real_lastpos = i
+            real_lastpos = i + real_firstpos
         #     break
         if any([v in line.lower() for v in ['vmid', 'vmname', 'vm_name']]):
             if (re.search(r"vmId=\'(.+?)\'", line) is not None):
@@ -667,17 +667,17 @@ def find_all_vm_host(positions,
         for tr_idx, log_position in enumerate(positions[log]):
             if 'vdsm' in log.lower():
                 vms, hosts, firstline_pos, lastline_pos = \
-                    vdsm_vm_host(f, log, [0, -1],  # log_position,
+                    vdsm_vm_host(f, log, log_position,
                                  tz_info[log_idx], vms, hosts,
                                  time_range_info[tr_idx])
             elif 'libvirt' in log.lower():
                 vms, hosts, firstline_pos, lastline_pos = \
-                    libvirtd_vm_host(f, log, [0, -1],  # log_position,
+                    libvirtd_vm_host(f, log, log_position,
                                      tz_info[log_idx], vms, hosts,
                                      time_range_info[tr_idx])
             else:
                 vms, unknown_vmnames, hosts, firstline_pos, lastline_pos = \
-                    engine_vm_host(f, log, [0, -1],  # log_position,
+                    engine_vm_host(f, log, log_position,
                                    tz_info[log_idx],
                                    vms, hosts,
                                    time_range_info[tr_idx])
@@ -758,7 +758,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
     f = open_log_file(fullname)
     if f is None:
         output_descriptor.write("Unknown file extension: %s" % log)
-        return commands_threads, long_actions
+        return commands_threads, long_actions, {}, {}, needed_linenum, reasons
     firstline = f.readline()
     for fmt in file_formats:
         prog = re.compile(fmt)
@@ -768,7 +768,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
             break
     if fields is None:
         # Format is not found
-        return commands_threads, long_actions
+        return commands_threads, long_actions, {}, {}, needed_linenum, reasons
     f.seek(0, os.SEEK_END)
     widget_style = [log + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
@@ -1185,7 +1185,7 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
     f = open_log_file(fullname)
     if f is None:
         output_descriptor.write("Unknown file extension: %s" % log)
-        return commands_threads, long_actions
+        return commands_threads, long_actions, needed_linenum, reasons
     firstline = f.readline()
     for fmt in file_formats:
         prog = re.compile(fmt)
@@ -1195,7 +1195,7 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
             break
     if fields is None:
         # Format is not found
-        return commands_threads, long_actions
+        return commands_threads, long_actions, needed_linenum, reasons
     f.seek(0, os.SEEK_END)
     widget_style = [log + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',

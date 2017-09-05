@@ -64,6 +64,11 @@ Criterias of adding a message to the output. Available:
 	- `Exclude frequent messages` - Remove frequent messages from the output (find them in "_frequent.txt")
 	- `Increased errors` - Show messages that are followed by increasing number of errors or warnings
 	- `Long operations` - Show messages containing information about long operations (with time of its execution)
+	- (Not included to the flag variables) `Event=*`, `VM=*`, `Host=*` - indicates the corresponding entity found in this message
+	- (Not included to the flag variables) `Unique` - Makrs messages that were alone inside the cluster (unique combination of the first two words)
+	- (Not included to the flag variables) `Rare` - Marks messages that are in the cluster with smaller size (fewer messages) (on 3 standard deviations from mean)
+	- (Not included to the flag variables) `Many messages` - Marks messages from big clusters (with large number of similar messages) (on 3 standard deviations from mean). These messages appear in _frequent file
+
 Default is all.
 
 * `--reload`

@@ -312,7 +312,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                 count += len(line)
                 if progressbar:
                     progressbar.update(count)
-                queue_bar.put(len(line))
+                queue_bar.put((len(line), logname))
                 continue
             line_data = LogLine(fields_names, logname+':'+str(line_num+1),
                                 out_descr)
@@ -345,6 +345,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                     count += len(line)
                     if progressbar:
                         progressbar.update(count)
+                    queue_bar.put((len(line), logname))
                     break
                 line_data.parse_fields(format_template, line)
                 line_data.parse_message()
@@ -439,7 +440,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
             count += len(line)
             if progressbar:
                 progressbar.update(count)
-            queue_bar.put(len(line))
+            queue_bar.put((len(line), logname))
         # adding the last line
         if prev_fields != {}:
             prev_line, line_info, in_traceback_flag, multiline_flag = \
