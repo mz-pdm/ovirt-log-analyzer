@@ -3,11 +3,9 @@
 sender, thread, event, message)
 """
 import pytz
-import lzma
 import re
 import os
 from datetime import datetime
-
 from lib.util import open_log_file
 
 

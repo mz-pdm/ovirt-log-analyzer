@@ -1,6 +1,5 @@
 import os
 import re
-import lzma
 import progressbar
 import pickle
 import multiprocessing
@@ -354,7 +353,6 @@ class LogAnalyzer:
             bar = ProgressBar(widgets=widget_style, max_value=sum_lines)
             pos = 0
             # cum_sum = {}
-            from datetime import datetime
             with Pool(processes=4) as pool:
                 worker = pool.imap(star, run_args)
                 while True:

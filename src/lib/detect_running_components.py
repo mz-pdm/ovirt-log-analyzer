@@ -503,7 +503,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
         dt = parse_date_time(line, tz_info)
         if dt == 0:
             continue
-        vm_start = re.search(r'[Mm]essage\:\ +(VM|Guest)\ +([^\ ]+)\ +' +
+        vm_start = re.search(r'(VM|Guest)\ +([^\ ]+)\ +' +
                              r'(started|was restarted)\ +on\ +[Hh]ost\ +' +
                              r'([^\ ]+?)([\ +\,]+|$)',
                              line)
@@ -522,7 +522,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
                 all_vms[vm_start.group(2)][this_host] = []
             all_vms[vm_start.group(2)][this_host] += [(dt, 'start')]
         # migration
-        migration_start = re.search(r'[Mm]essage\:\ +[Mm]igration\ +started' +
+        migration_start = re.search(r'[Mm]igration\ +started' +
                                     r'\ +\(VM\:\ +([^\ ]+),\ +[Ss]ource\:' +
                                     r'\ +([^\ ]+)\,\ +[Dd]estination\:\ +' +
                                     r'([^\ ]+?)[\ +\,]+',
@@ -548,7 +548,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
             all_vms[migration_start.group(1)][
                     this_host] += [(dt, 'migrating_to')]
         # migration completed
-        migration_end = re.search(r'[Mm]essage\:\ +[Mm]igration\ +completed' +
+        migration_end = re.search(r'[Mm]igration\ +completed' +
                                   r'\ +\(VM\:\ +([^\ ]+),\ +[Ss]ource\:' +
                                   r'\ +([^\ ]+)\,\ +[Dd]estination\:\ +' +
                                   r'([^\ ]+?)[\ +\,]+',
@@ -572,7 +572,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
                 all_vms[migration_end.group(1)][this_host] = []
             all_vms[migration_end.group(1)][this_host] += [(dt, 'migrated_to')]
         # suspend
-        vm_suspend = re.search(r'[Mm]essage\:\ +VM\ +([^\ ]+)\ +' +
+        vm_suspend = re.search(r'VM\ +([^\ ]+)\ +' +
                                r'on\ +[Hh]ost\ +([^\ ]+)[\ +\,]+is suspended',
                                line)
         if vm_suspend is not None:
@@ -590,7 +590,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
                 all_vms[vm_suspend.group(1)][this_host] = []
             all_vms[vm_suspend.group(1)][this_host] += [(dt, 'suspend')]
         # down
-        vm_down = re.search(r'[Mm]essage\:\ +VM\ +([^\ ]+)\ +is [Dd]own',
+        vm_down = re.search(r'VM\ +([^\ ]+)\ +is [Dd]own',
                             line)
         if vm_down is not None:
             if vm_down.group(1) not in all_vms.keys():

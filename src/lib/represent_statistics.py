@@ -32,7 +32,8 @@ def print_only_dt_message(directory, errors, new_fields, out):
               else err[details_idx] if err[reason_idx] == ''
               else err[reason_idx] + ';' + err[details_idx]
               for err in errors]
-    linenum_len = max(len(err[line_idx]) for err in errors)
+    linenum_len = max(len(os.path.join(directory, err[line_idx]))
+                      for err in errors)
     full_reason_len = max([len(reason[r]) for r in range(len(reason))])
     out.write("%23s | %*s | %*s | %s\n" % ('Date+Time',
               linenum_len, 'Line', full_reason_len,
