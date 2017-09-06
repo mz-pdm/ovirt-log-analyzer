@@ -117,16 +117,15 @@ if __name__ == "__main__":
         return ('.log' in base_file_name and
                 not base_file_name.endswith('.json'))
     if args.filenames is None or args.filenames == ['.']:
+        re_file_name = re.compile('(engine|sanlock|spm-lock)|.*(vdsm|libvirt)')
         files = []
         for dirpath, dirnames, filenames in os.walk(args.log_directory):
             for f in filenames:
                 if (log_file_p(f) and
                     (args.filenames is None or
                      dirpath == 'qemu' or
-                     f.startswith('engine') or
-                     'libvirt' in f or
-                     'vdsm' in f)):
-                    files.append(f)
+                     re_file_name.match(f) is not None)):
+                    files.append(os.path.join(dirpath, f))
     elif args.filenames is not None:
         files = sorted(args.filenames)
     if args.clear:
