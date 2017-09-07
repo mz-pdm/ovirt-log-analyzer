@@ -59,13 +59,13 @@ Search for messages that contain user-defined VMs OR hosts
 * `--criterias`
 Criterias of adding a message to the output. Available:
 	- `Subtasks` - Show messages containing information about VM tasks and subtasks
-	- `Error or warning` - Shaw messages with errors of warnings
-	- `Differ by VM ID` - Show messages that appears with several different VMs
+	- `Error or warning` - Show messages with errors of warnings
+	- `Differ by VM ID` - Show messages that appear with several different VMs
 	- `Exclude frequent messages` - Remove frequent messages from the output (find them in "_frequent.txt")
 	- `Increased errors` - Show messages that are followed by increasing number of errors or warnings
 	- `Long operations` - Show messages containing information about long operations (with time of its execution)
 	- (Not included to the flag variables) `Event=*`, `VM=*`, `Host=*` - indicates the corresponding entity found in this message
-	- (Not included to the flag variables) `Unique` - Makrs messages that were alone inside the cluster (unique combination of the first two words)
+	- (Not included to the flag variables) `Unique` - Marks messages that were alone inside the cluster (unique combination of the first two words)
 	- (Not included to the flag variables) `Rare` - Marks messages that are in the cluster with smaller size (fewer messages) (on 3 standard deviations from mean)
 	- (Not included to the flag variables) `Many messages` - Marks messages from big clusters (with large number of similar messages) (on 3 standard deviations from mean). These messages appear in _frequent file
 
@@ -82,7 +82,7 @@ Log analyzed produce several output files. You can place them into a directory b
 
 * `*_VMs_timeline.json` - information about time of VMs running on hosts and migrating between hosts
 
-* `*_clusters.txt` - groups of similar messages that was analyzed (affects filtering by frequency)
+* `*_clusters.txt` - groups of similar messages that were analyzed (affects filtering by frequency)
 
 * `*_commands.json` - full list of found tasks with time of execution (if both "start" and "finish" were detected)
 
