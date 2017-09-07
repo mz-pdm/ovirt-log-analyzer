@@ -123,7 +123,7 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
         needed_linenum[log] = []
         if time_range_info == []:
             f.seek(0, os.SEEK_END)
-            needed_linenum[log] += [0]
+            needed_linenum[log] += [[0, f.tell()]]
             continue
         for tr_idx in range(len(time_range_info)):
             f.seek(0, os.SEEK_SET)
@@ -132,9 +132,10 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
             while dt == 0:
                 cur_pos = f.tell()
                 dt = parse_date_time(f.readline(), tz_info[log_idx])
-            if (dt >= needed_time and dt < time_range_info[tr_idx][1]):
-                needed_linenum[log] += [cur_pos]
-                continue
+
+            # if (dt >= needed_time and dt < time_range_info[tr_idx][1]):
+            #     needed_linenum[log] += [[cur_pos, cur_pos]]
+            #     continue
             cur_time = dt
             prev_time = dt
             f.seek(0, os.SEEK_END)
@@ -151,7 +152,8 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
             cur_pos = 0
             next_pos = file_len//2
             condition = False
-            while not condition:
+            was_found = False
+            while not (was_found and condition):
                 f.seek(next_pos, os.SEEK_SET)
                 offset = 1
                 while f.read(1) != "\n" and next_pos-offset >= 0:
@@ -165,15 +167,67 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
                 prev_time = cur_time
                 cur_time = dt
                 if cur_time >= needed_time:
-                    next_pos = cur_pos//2
+                    next_pos = cur_pos - (cur_pos - prev_pos)//2
                 else:
-                    next_pos = file_len - (file_len - cur_pos)//2
+                    next_pos = prev_pos - (prev_pos - cur_pos)//2
                 condition = (prev_time <= needed_time) \
                     and (cur_time > needed_time) \
                     or (prev_time > needed_time) \
                     and (cur_time <= needed_time) \
                     or (cur_time == prev_time)
-            needed_linenum[log] += [min(prev_pos, cur_pos)]
+                if condition:
+                    was_found = True
+                    if cur_time != prev_time:
+                        condition = False
+
+            border_left = min(prev_pos, cur_pos)
+            # end-range
+            needed_time = time_range_info[tr_idx][1]
+            cur_time = dt
+            prev_time = dt
+            f.seek(0, os.SEEK_END)
+            file_len = f.tell()
+            dt = 0
+            offset = 1
+            while dt == 0:
+                while f.read(1) != "\n":
+                    offset += 1
+                    f.seek(file_len-offset, os.SEEK_SET)
+                cur_pos = f.tell()
+                dt = parse_date_time(f.readline(), tz_info[log_idx])
+            prev_pos = border_left
+            cur_pos = border_left
+            next_pos = file_len//2
+            condition = False
+            was_found = False
+            while not (was_found and condition):
+                f.seek(next_pos, os.SEEK_SET)
+                offset = 1
+                while f.read(1) != "\n" and next_pos-offset >= 0:
+                    offset += 1
+                    f.seek(next_pos-offset, os.SEEK_SET)
+                prev_pos = cur_pos
+                dt = 0
+                while dt == 0:
+                    cur_pos = f.tell()
+                    dt = parse_date_time(f.readline(), tz_info[log_idx])
+                prev_time = cur_time
+                cur_time = dt
+                if cur_time >= needed_time:
+                    next_pos = cur_pos - (cur_pos - prev_pos)//2
+                else:
+                    next_pos = prev_pos - (prev_pos - cur_pos)//2
+                condition = (prev_time < needed_time) \
+                    and (cur_time >= needed_time) \
+                    or (prev_time >= needed_time) \
+                    and (cur_time < needed_time) \
+                    or (cur_time == prev_time)
+                if condition:
+                    was_found = True
+                    if cur_time != prev_time:
+                        condition = False
+            border_right = max(prev_pos, cur_pos)
+            needed_linenum[log] += [[border_left, border_right]]
     return needed_linenum
 
 
@@ -183,7 +237,7 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
     f.seek(0, os.SEEK_END)
     file_len = f.tell()
     multiline = False
-    f.seek(pos, os.SEEK_SET)
+    f.seek(pos[0], os.SEEK_SET)
     dt = 0
     c = 0
     while dt < time_range_info[0]:
@@ -192,12 +246,15 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
         while dt == 0:
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
-    f.seek(real_firstpos, os.SEEK_SET)
+    # f.seek(real_firstpos, os.SEEK_SET)
+    f.seek(0, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
                     progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len)
-    i = real_firstpos
+    # i = real_firstpos
+    i = 0
+    real_lastpos = file_len
     bar.update(i)
     for line_num, line in enumerate(f):
         i += len(line)
@@ -205,7 +262,8 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
         dt = parse_date_time(line, tz_info)
         if dt == 0:
             continue
-        # if dt > time_range_info[1]:
+        if dt >= time_range_info[1] and real_lastpos == file_len:
+            real_lastpos = i + real_firstpos
         #     break
         vm_name = re.search(r'\<name\>(.+?)\<\/name\>', line)
         if (not multiline and vm_name is not None):
@@ -253,7 +311,7 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
                 vms[other_vm.group(1)] = {'id': set(), 'hostids': set()}
             vms[other_vm.group(1)]['id'].add(other_vm.group(2))
     bar.finish()
-    return vms, hosts, real_firstpos
+    return vms, hosts, real_firstpos, real_lastpos
 
 
 def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
@@ -262,20 +320,23 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
     file_len = f.tell()
     this_host = ''
     multiline = False
-    f.seek(pos, os.SEEK_SET)
+    f.seek(pos[0], os.SEEK_SET)
     dt = 0
     while dt < time_range_info[0]:
         dt = 0
         while dt == 0:
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
-    f.seek(real_firstpos, os.SEEK_SET)
+    # f.seek(real_firstpos, os.SEEK_SET)
+    f.seek(0, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
                     progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len,
                       redirect_stdout=True)
-    i = real_firstpos
+    # i = real_firstpos
+    i = 0
+    real_lastpos = file_len
     bar.update(i)
     for line_num, line in enumerate(f):
         i += len(line)
@@ -283,7 +344,8 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
         dt = parse_date_time(line, tz_info)
         if dt == 0:
             continue
-        # if dt > time_range_info[1]:
+        if dt >= time_range_info[1] and real_lastpos == file_len:
+            real_lastpos = i + real_firstpos
         #     break
         vdsm_host = re.search(r'I am the actual vdsm ' +
                               r'([^\ ]+)\ +([^\ ]+)', line)
@@ -318,25 +380,28 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
                 vms[other_vm.group(2)]['hostids'].add(this_host)
                 hosts[this_host]['vmids'].add(other_vm.group(1))
     bar.finish()
-    return vms, hosts, real_firstpos
+    return vms, hosts, real_firstpos, real_lastpos
 
 
 def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
     f.seek(0, os.SEEK_END)
     file_len = f.tell()
-    f.seek(pos, os.SEEK_SET)
+    f.seek(pos[0], os.SEEK_SET)
     dt = 0
     while dt < time_range_info[0]:
         dt = 0
         while dt == 0:
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
-    f.seek(real_firstpos, os.SEEK_SET)
+    # f.seek(real_firstpos, os.SEEK_SET)
+    f.seek(0, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
                     progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len)
-    i = real_firstpos
+    # i = real_firstpos
+    i = 0
+    real_lastpos = file_len
     bar.update(i)
     unknown_vmnames = []
     for line_num, line in enumerate(f):
@@ -349,7 +414,8 @@ def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
         vm_id = ''
         host_name = ''
         host_id = ''
-        # if dt > time_range_info[1]:
+        if dt >= time_range_info[1] and real_lastpos == file_len:
+            real_lastpos = i + real_firstpos
         #     break
         if any([v in line.lower() for v in ['vmid', 'vmname', 'vm_name']]):
             if (re.search(r"vmId=\'(.+?)\'", line) is not None):
@@ -423,7 +489,7 @@ def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
         hosts[host_name]['id'].add(host_id)
         hosts[host_name]['vmids'].add(vm_id)
     bar.finish()
-    return vms, unknown_vmnames, hosts, real_firstpos
+    return vms, unknown_vmnames, hosts, real_firstpos, real_lastpos
 
 
 def timeline_for_engine_vm(output_directory, log_directory, f, filename,
@@ -437,7 +503,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
         dt = parse_date_time(line, tz_info)
         if dt == 0:
             continue
-        vm_start = re.search(r'[Mm]essage\:\ +(VM|Guest)\ +([^\ ]+)\ +' +
+        vm_start = re.search(r'(VM|Guest)\ +([^\ ]+)\ +' +
                              r'(started|was restarted)\ +on\ +[Hh]ost\ +' +
                              r'([^\ ]+?)([\ +\,]+|$)',
                              line)
@@ -456,7 +522,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
                 all_vms[vm_start.group(2)][this_host] = []
             all_vms[vm_start.group(2)][this_host] += [(dt, 'start')]
         # migration
-        migration_start = re.search(r'[Mm]essage\:\ +[Mm]igration\ +started' +
+        migration_start = re.search(r'[Mm]igration\ +started' +
                                     r'\ +\(VM\:\ +([^\ ]+),\ +[Ss]ource\:' +
                                     r'\ +([^\ ]+)\,\ +[Dd]estination\:\ +' +
                                     r'([^\ ]+?)[\ +\,]+',
@@ -482,7 +548,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
             all_vms[migration_start.group(1)][
                     this_host] += [(dt, 'migrating_to')]
         # migration completed
-        migration_end = re.search(r'[Mm]essage\:\ +[Mm]igration\ +completed' +
+        migration_end = re.search(r'[Mm]igration\ +completed' +
                                   r'\ +\(VM\:\ +([^\ ]+),\ +[Ss]ource\:' +
                                   r'\ +([^\ ]+)\,\ +[Dd]estination\:\ +' +
                                   r'([^\ ]+?)[\ +\,]+',
@@ -506,7 +572,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
                 all_vms[migration_end.group(1)][this_host] = []
             all_vms[migration_end.group(1)][this_host] += [(dt, 'migrated_to')]
         # suspend
-        vm_suspend = re.search(r'[Mm]essage\:\ +VM\ +([^\ ]+)\ +' +
+        vm_suspend = re.search(r'VM\ +([^\ ]+)\ +' +
                                r'on\ +[Hh]ost\ +([^\ ]+)[\ +\,]+is suspended',
                                line)
         if vm_suspend is not None:
@@ -524,7 +590,7 @@ def timeline_for_engine_vm(output_directory, log_directory, f, filename,
                 all_vms[vm_suspend.group(1)][this_host] = []
             all_vms[vm_suspend.group(1)][this_host] += [(dt, 'suspend')]
         # down
-        vm_down = re.search(r'[Mm]essage\:\ +VM\ +([^\ ]+)\ +is [Dd]own',
+        vm_down = re.search(r'VM\ +([^\ ]+)\ +is [Dd]own',
                             line)
         if vm_down is not None:
             if vm_down.group(1) not in all_vms.keys():
@@ -600,22 +666,22 @@ def find_all_vm_host(positions,
         first_lines[log] = []
         for tr_idx, log_position in enumerate(positions[log]):
             if 'vdsm' in log.lower():
-                vms, hosts, firstline_pos = \
-                    vdsm_vm_host(f, log, 0,  # log_position,
+                vms, hosts, firstline_pos, lastline_pos = \
+                    vdsm_vm_host(f, log, log_position,
                                  tz_info[log_idx], vms, hosts,
                                  time_range_info[tr_idx])
             elif 'libvirt' in log.lower():
-                vms, hosts, firstline_pos = \
-                    libvirtd_vm_host(f, log, 0,  # log_position,
+                vms, hosts, firstline_pos, lastline_pos = \
+                    libvirtd_vm_host(f, log, log_position,
                                      tz_info[log_idx], vms, hosts,
                                      time_range_info[tr_idx])
             else:
-                vms, unknown_vmnames, hosts, firstline_pos = \
-                    engine_vm_host(f, log, 0,  # log_position,
+                vms, unknown_vmnames, hosts, firstline_pos, lastline_pos = \
+                    engine_vm_host(f, log, log_position,
                                    tz_info[log_idx],
                                    vms, hosts,
                                    time_range_info[tr_idx])
-            first_lines[log] += [firstline_pos]
+            first_lines[log] += [[firstline_pos, lastline_pos]]
         f.close()
     # print('------VMS------')
     not_running_vms = []
@@ -692,7 +758,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
     f = open_log_file(fullname)
     if f is None:
         output_descriptor.write("Unknown file extension: %s" % log)
-        return commands_threads, long_actions
+        return commands_threads, long_actions, {}, {}, needed_linenum, reasons
     firstline = f.readline()
     for fmt in file_formats:
         prog = re.compile(fmt)
@@ -702,16 +768,16 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
             break
     if fields is None:
         # Format is not found
-        return commands_threads, long_actions
+        return commands_threads, long_actions, {}, {}, needed_linenum, reasons
     f.seek(0, os.SEEK_END)
-    file_len = f.tell()
     widget_style = [log + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
                     progressbar.Bar(), ' ', progressbar.Timer()]
-    bar = ProgressBar(widgets=widget_style, max_value=file_len)
+    bar = ProgressBar(widgets=widget_style, max_value=max(
+                      [p[i] for p in positions for i in range(len(p))]))
     for tr_idx, pos in enumerate(positions):
-        f.seek(pos, os.SEEK_SET)
-        i = pos
+        f.seek(pos[0], os.SEEK_SET)
+        i = pos[0]
         bar.update(i)
         for line_num, line in enumerate(f):
             i += len(line)
@@ -829,7 +895,6 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                         com_id = len(com_list) - 1 - \
                                  com_list.index(ending.group(3))
                     except:
-                        output_descriptor.write('Not found com_id\n')
                         continue
                     commands_threads[thr_list[com_id][0]][
                                     thr_list[com_id][1]]['end_time'] = dt
@@ -1025,7 +1090,9 @@ def link_commands(log_dir, output_descriptor, commands,
                                 new_commands.pop(child['child_id'])
                 break
     heads = []
-    while(len(commands) > 0):
+    com_len = 0
+    while(com_len != len(commands)):
+        com_len = len(commands)
         for idx, command_id in enumerate(sorted(new_commands.keys())):
             if command_id in heads:
                 continue
@@ -1118,7 +1185,7 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
     f = open_log_file(fullname)
     if f is None:
         output_descriptor.write("Unknown file extension: %s" % log)
-        return commands_threads, long_actions
+        return commands_threads, long_actions, needed_linenum, reasons
     firstline = f.readline()
     for fmt in file_formats:
         prog = re.compile(fmt)
@@ -1128,16 +1195,16 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
             break
     if fields is None:
         # Format is not found
-        return commands_threads, long_actions
+        return commands_threads, long_actions, needed_linenum, reasons
     f.seek(0, os.SEEK_END)
-    file_len = f.tell()
     widget_style = [log + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
                     progressbar.Bar(), ' ', progressbar.Timer()]
-    bar = ProgressBar(widgets=widget_style, max_value=file_len)
+    bar = ProgressBar(widgets=widget_style, max_value=sum(
+                      [p[i] for p in positions for i in range(len(p))]))
     for tr_idx, pos in enumerate(positions):
-        f.seek(pos, os.SEEK_SET)
-        i = pos
+        f.seek(pos[0], os.SEEK_SET)
+        i = pos[0]
         bar.update(i)
         for line_num, line in enumerate(f):
             i += len(line)
@@ -1228,7 +1295,7 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
                                     not in reasons.keys()):
                                 reasons[log + ':' + str(line_num + 1)] = set()
                             reasons[log + ':' + str(line_num + 1)].add(
-                                                            'Long monitor')
+                                'Monitor(duration=' + str(duration) + ')')
                             needed_linenum.add(log + ':' + qemu_monitor[
                                                 return_monitor.group(1)][
                                                 mes_idx]['start_line_num'])
@@ -1243,7 +1310,8 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
                                                 return_monitor.group(1)][
                                                 mes_idx][
                                                 'start_line_num']].add(
-                                                    'Long monitor')
+                                                'Monitor(duration=' +
+                                                str(duration) + ')')
                         break
 
     f.close()
@@ -1268,6 +1336,104 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
     #                                  '.json'),
     #                                  'w'), indent=4, sort_keys=True)
     return commands_threads, long_actions, needed_linenum, reasons
+
+
+# def find_vm_tasks_vdsm(positions, output_descriptor, log_directory,
+#                        log, file_formats, tz_info, time_range_info,
+#                        output_directory, needed_linenum, reasons,
+#                        criterias):
+#     commands_threads = {}
+#     long_actions = []
+#     qemu_monitor = {}
+#     fullname = os.path.join(log_directory, log)
+#     if (log[-4:] == '.log'):
+#             f = open(fullname)
+#     elif (log[-3:] == '.xz'):
+#         f = lzma.open(fullname, 'rt')
+#     else:
+#         output_descriptor.write("Unknown file extension: %s" % log)
+#         return commands_threads, long_actions
+#     firstline = f.readline()
+#     for fmt in file_formats:
+#         prog = re.compile(fmt)
+#         fields = prog.search(firstline)
+#         if fields is not None:
+#             file_format = prog
+#             break
+#     if fields is None:
+#         # Format is not found
+#         return commands_threads, long_actions
+#     f.seek(0, os.SEEK_END)
+#     file_len = f.tell()
+#     widget_style = [log + ':', progressbar.Percentage(), ' (',
+#                     progressbar.SimpleProgress(), ')', ' ',
+#                     progressbar.Bar(), ' ', progressbar.Timer()]
+#     bar = ProgressBar(widgets=widget_style, max_value=file_len)
+#     for tr_idx, pos in enumerate(positions):
+#         f.seek(pos, os.SEEK_SET)
+#         i = pos
+#         bar.update(i)
+#         for line_num, line in enumerate(f):
+#             i += len(line)
+#             bar.update(i)
+#             fields = file_format.search(line)
+#             if fields is None:
+#                 # Tracebacks will be added anyway
+#                 continue
+#             fields = fields.groupdict()
+#             dt = parse_date_time(line, tz_info)
+#             if dt == 0:
+#                 continue
+#             if (dt > time_range_info[tr_idx][1]):
+#                 break
+#             start = re.search(r"Thread (.+?) \((.+?)\) is now running " +
+#                               r"job (.+)", line)
+#             if (start is not None):
+#                 if (start.group(1) not in commands_threads.keys()):
+#                     commands_threads[start.group(1)] = []
+#                 commands_threads[start.group(1)] += [
+#                                  {'command_name': start.group(3),
+#                                   'command_start_name': start.group(3),
+#                                   'start_line_num': line_num + 1,
+#                                   'start_time': dt,
+#                                   'log': log}]
+#                 continue
+#             finish = re.search(r"Thread (.+?) \((.+?)\) finished job (.+?)" +
+#                                r"( .*|$)", line)
+#             if (finish is not None):
+#                 if (finish.group(1) not in commands_threads.keys()):
+#                     continue
+#                 else:
+#                     com_list = [com['command_name'] for com in
+#                                 commands_threads[finish.group(1)]]
+#                     try:
+#                         com_id = len(com_list) - 1 - \
+#                                  com_list[::-1].index(finish.group(3))
+#                     except:
+#                         continue
+#                 commands_threads[finish.group(1)][com_id]['finish_time'] = dt
+#                 commands_threads[finish.group(1)][com_id][
+#                                             'finish_line_num'] = line_num + 1
+#                 if ('start_time' in commands_threads[
+#                         finish.group(1)][com_id].keys()):
+#                     commands_threads[finish.group(1)][com_id]['duration'] = \
+#                         commands_threads[finish.group(1)][
+#                                          com_id]['finish_time'] -\
+#                         commands_threads[finish.group(1)][
+#                                          com_id]['start_time']
+#                 continue
+#     f.close()
+#     bar.finish()
+#     json.dump(qemu_monitor, open(os.path.join(output_directory,
+#                                  log_directory.split('/')[-2] +
+#                                  '_vdsm_tasks.json'),
+#                                  'w'), indent=4, sort_keys=True)
+#     if commands_threads != {} and 'Long operations' in criterias:
+#         long_actions, needed_linenum, reasons = find_long_operations(
+#                                                             commands_threads,
+#                                                             needed_linenum,
+#                                                             reasons)
+#     return commands_threads, long_actions, needed_linenum, reasons
 
 
 def find_long_operations(all_threads, needed_linenum, reasons):

@@ -1,9 +1,10 @@
 """Saving received information about log lines
 """
 from datetime import datetime
+import os
 
 
-def print_all_headers(errors, headers, log_format_headers, out):
+def print_all_headers(directory, errors, headers, log_format_headers, out):
     for err in errors:
         format_name = err[1].split(':')[0]
         for h in headers:
@@ -17,7 +18,7 @@ def print_all_headers(errors, headers, log_format_headers, out):
         out.write("\n")
 
 
-def print_only_dt_message(errors, new_fields, out):
+def print_only_dt_message(directory, errors, new_fields, out):
     if errors == []:
         return
 
@@ -31,9 +32,8 @@ def print_only_dt_message(errors, new_fields, out):
               else err[details_idx] if err[reason_idx] == ''
               else err[reason_idx] + ';' + err[details_idx]
               for err in errors]
-    # reason_len = max([len(r[reason_idx]) for r in errors])
-    # details_len = max([len(r[details_idx]) for r in errors])
-    linenum_len = max(len(err[line_idx]) for err in errors)
+    linenum_len = max(len(os.path.join(directory, err[line_idx]))
+                      for err in errors)
     full_reason_len = max([len(reason[r]) for r in range(len(reason))])
     out.write("%23s | %*s | %*s | %s\n" % ('Date+Time',
               linenum_len, 'Line', full_reason_len,
@@ -45,5 +45,5 @@ def print_only_dt_message(errors, new_fields, out):
                    "%H:%M:%S,%f")[:-3],
                    datetime.utcfromtimestamp(err[dt_idx]).strftime(
                    "%d-%m-%Y"),
-                   linenum_len, err[line_idx], full_reason_len,
-                   reason[idx], err[msg_idx]))
+                   linenum_len, os.path.join(directory, err[line_idx]),
+                   full_reason_len, reason[idx], err[msg_idx]))

@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import argparse
 import re
@@ -96,15 +97,18 @@ if __name__ == "__main__":
                         type=str,
                         nargs='+',
                         help='Criterias of adding a message to the output.' +
-                             ' Available: "VM id", "Subtasks", ' +
+                             ' Available: "Subtasks", ' +
                              '"Error or warning", "Differ by VM ID", ' +
-                             '"Exclude frequent messages", "Coverage", ' +
+                             '"Exclude frequent messages", ' +
                              '"Increased errors", "Long operations". ' +
                              'Default is all')
-    # parser.add_argument("-chart", "--chart_filename",
-    #                    type=str,
-    #                    help="Create html file with chart" +
-    #                    "represented errors statistics")
+    parser.add_argument('--reload',
+                        action='store_true',
+                        help='Make a new search for VMs, hosts, tasks')
+    parser.add_argument('--clear',
+                        action='store_true',
+                        help='Delete all temporal files (log_analyzer_cache)' +
+                             'for the directory')
     args = parser.parse_args()
 
     # Logfilenames
@@ -124,6 +128,9 @@ if __name__ == "__main__":
                     files.append(os.path.join(dirpath, f))
     elif args.filenames is not None:
         files = sorted(args.filenames)
+    if args.clear:
+        shutil.rmtree(os.path.join(args.log_directory, 'log_analyzer_cache'))
+        exit()
     # Output directory
     if args.output_dir is not None:
         if not os.path.isdir(args.output_dir):
@@ -238,9 +245,9 @@ if __name__ == "__main__":
                        args.additive,
                        output_directory)
     output_descriptor.write('Reading file\'s time range...\n')
-    logs.read_time_ranges()
+    logs.read_time_ranges(args.reload)
     output_descriptor.write('Searching for running VMs and hosts...\n')
-    logs.find_vms_and_hosts()
+    logs.find_vms_and_hosts(args.reload)
     if args.list_vm_host:
         output_descriptor.write('------- List of files\' time ranges (UTC) ' +
                                 '-------\n')
@@ -310,7 +317,7 @@ if __name__ == "__main__":
             output_descriptor.write('\n')
         exit()
     output_descriptor.write('Searching for VM tasks...\n')
-    logs.find_vm_tasks()
+    logs.find_vm_tasks(args.reload)
     output_descriptor.write('Loading data...\n')
     logs.load_data(args.warn, args.progressbar)
     output_descriptor.write('Analyzing the messages...\n')

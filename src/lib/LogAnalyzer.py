@@ -1,7 +1,8 @@
 import os
 import re
-import lzma
 import progressbar
+import pickle
+import multiprocessing
 from multiprocessing import Manager, Pool
 from lib.create_error_definition import loop_over_lines
 from lib.errors_statistics import merge_all_errors_by_time, \
@@ -43,7 +44,7 @@ class LogAnalyzer:
             self.criterias = ['Subtasks',
                               'Error or warning',
                               'Differ by VM ID', 'Exclude frequent messages',
-                              'Coverage', 'Increased errors',
+                              'Increased errors',
                               'Long operations']
         else:
             self.criterias = criterias
@@ -68,11 +69,12 @@ class LogAnalyzer:
             else:
                 self.out_descr.write("Wrong format of template: %s\n" % line)
         self.found_logs = []
-        self.log_files_format = []
+        self.log_files_format = {}
         self.time_zones = []
         for log in filenames:
             full_filename = os.path.join(self.directory, log)
             if not os.path.isfile(full_filename):
+                self.out_descr.write("%s\n" % full_filename)
                 self.out_descr.write("File not found: %s\n" % log)
                 continue
             # save log's time zome
@@ -91,31 +93,68 @@ class LogAnalyzer:
                                                     'regexp'])
                 result = prog.search(line)
                 if result is not None:
-                    self.log_files_format += [prog]
+                    self.log_files_format[log] = prog
                     break
         if (self.found_logs == []):
             out_descr.write('No logfiles found.\n')
             exit()
 
-    def read_time_ranges(self):
+    def read_time_ranges(self, re_load):
+        if (not re_load and os.path.isdir(
+                os.path.join(self.directory, 'log_analyzer_cache'))
+                and 'time_ranges.pckl' in os.listdir(
+                os.path.join(self.directory, 'log_analyzer_cache'))):
+            with open(os.path.join(self.directory, 'log_analyzer_cache',
+                                   'time_ranges.pckl'), 'rb') as f:
+                self.positions, self.total_time_ranges, cur_time_ranges, \
+                    self.found_logs = pickle.load(f)
+                if self.time_ranges != cur_time_ranges:
+                    self.out_descr.write("Warning: time range differs " +
+                                         "from the saved version, it can " +
+                                         "cause errors or cutting the " +
+                                         "result to saved time range. " +
+                                         "Didn't you forget to add " +
+                                         "--reload flag?\n")
+                    self.time_ranges = cur_time_ranges
+            return
+        if not os.path.isdir(os.path.join(self.directory,
+                                          'log_analyzer_cache')):
+            os.mkdir(os.path.join(self.directory, 'log_analyzer_cache'))
+        self.total_time_ranges, self.found_logs = \
+            find_time_range(self.out_descr, self.directory,
+                            self.found_logs, self.time_zones,
+                            self.time_ranges)
         self.positions = find_needed_linenum(self.out_descr,
                                              self.directory,
                                              self.found_logs,
                                              self.time_zones,
                                              self.time_ranges)
-        self.total_time_ranges, self.found_logs = \
-            find_time_range(self.out_descr, self.directory,
-                            self.found_logs, self.time_zones,
-                            self.time_ranges)
         if (self.found_logs != [] and self.time_ranges == []):
             max_time = max([t for l in self.total_time_ranges.keys()
                             for t in self.total_time_ranges[l]])
             min_time = min([t for l in self.total_time_ranges.keys()
                             for t in self.total_time_ranges[l]])
             self.time_ranges = [[min_time, max_time]]
+        with open(os.path.join(self.directory, 'log_analyzer_cache',
+                               'time_ranges.pckl'), 'wb') as f:
+            pickle.dump([self.positions, self.total_time_ranges,
+                         self.time_ranges, self.found_logs], f)
 
-    def find_vms_and_hosts(self):
-        # if os.isdir(os.path.join(self.directory, 'log_analyzer_cache'))
+    def find_vms_and_hosts(self, re_load):
+        if (not re_load and os.path.isdir(
+                os.path.join(self.directory, 'log_analyzer_cache'))
+                and 'vms_and_hosts.pckl' in os.listdir(
+                os.path.join(self.directory, 'log_analyzer_cache'))):
+            with open(os.path.join(self.directory, 'log_analyzer_cache',
+                                   'vms_and_hosts.pckl'), 'rb') as f:
+                self.all_vms, self.all_hosts, self.not_running_vms, \
+                    self.not_found_vmnames, self.not_found_hostnames, \
+                    self.positions, self.user_vms, self.user_hosts, \
+                    self.vm_timeline = pickle.load(f)
+            return
+        if not os.path.isdir(os.path.join(self.directory,
+                                          'log_analyzer_cache')):
+            os.mkdir(os.path.join(self.directory, 'log_analyzer_cache'))
         self.all_vms, self.all_hosts, self.not_running_vms, \
             self.not_found_vmnames, self.not_found_hostnames, \
             self.positions, vm_timeline = find_all_vm_host(self.positions,
@@ -125,6 +164,7 @@ class LogAnalyzer:
                                                            self.found_logs,
                                                            self.time_zones,
                                                            self.time_ranges)
+
         if self.user_vms == []:
             for k in self.all_vms.keys():
                 self.user_vms += [k]
@@ -172,8 +212,28 @@ class LogAnalyzer:
                 if host_name not in self.user_hosts:
                     vm_timeline[vm_name].pop(host_name)
         self.vm_timeline = vm_timeline
+        with open(os.path.join(self.directory, 'log_analyzer_cache',
+                               'vms_and_hosts.pckl'), 'wb') as f:
+            pickle.dump([self.all_vms, self.all_hosts, self.not_running_vms,
+                         self.not_found_vmnames, self.not_found_hostnames,
+                         self.positions, self.user_vms, self.user_hosts,
+                         self.vm_timeline], f)
 
-    def find_vm_tasks(self):
+    def find_vm_tasks(self, re_load):
+        if (not re_load and os.path.isdir(
+                os.path.join(self.directory, 'log_analyzer_cache'))
+                and 'vm_tasks.pckl' in
+                os.listdir(os.path.join(self.directory,
+                                        'log_analyzer_cache'))):
+            with open(os.path.join(self.directory, 'log_analyzer_cache',
+                                   'vm_tasks.pckl'), 'rb') as f:
+                self.needed_lines, self.reasons, self.vm_tasks, \
+                    self.long_tasks, self.subtasks, \
+                    self.stuctured_commands = pickle.load(f)
+            return
+        if not os.path.isdir(os.path.join(self.directory,
+                                          'log_analyzer_cache')):
+            os.mkdir(os.path.join(self.directory, 'log_analyzer_cache'))
         self.needed_lines = set()
         self.reasons = {}
         engine_formats = [fmt['regexp'] for fmt in self.formats_templates if
@@ -221,12 +281,18 @@ class LogAnalyzer:
                 self.long_tasks[log] = long_tasks_file
                 self.needed_lines = self.needed_lines.union(cur_needed_lines)
                 self.reasons.update(cur_reasons)
+        with open(os.path.join(self.directory, 'log_analyzer_cache',
+                               'vm_tasks.pckl'), 'wb') as f:
+            pickle.dump([self.needed_lines, self.reasons, self.vm_tasks,
+                         self.long_tasks, self.subtasks,
+                         self.stuctured_commands], f)
 
     def load_data(self, show_warnings, show_progressbar):
         self.all_errors = {}
         self.format_fields = {}
         m = Manager()
         q = m.Queue()
+        q_bar = Manager().Queue()
         idxs = range(len(self.found_logs))
         if show_progressbar:
             result = ProgressPool([(process_files,
@@ -237,6 +303,7 @@ class LogAnalyzer:
                                      self.time_zones,
                                      self.positions,
                                      q,
+                                     q_bar,
                                      self.additive_link,
                                      self.user_events,
                                      self.user_hosts,
@@ -261,6 +328,7 @@ class LogAnalyzer:
                          self.time_zones,
                          self.positions,
                          q,
+                         q_bar,
                          self.additive_link,
                          self.user_events,
                          self.user_hosts,
@@ -278,11 +346,35 @@ class LogAnalyzer:
                             progressbar.SimpleProgress(), ')', ' ',
                             progressbar.Bar(), ' ', progressbar.Timer(), ' ',
                             progressbar.AdaptiveETA()]
-            bar = ProgressBar(widgets=widget_style)
+            sum_lines = []
+            for log in self.found_logs:
+                sum_lines += [p[1] - p[0] for p in self.positions[log]]
+            sum_lines = sum(sum_lines)
+            bar = ProgressBar(widgets=widget_style, max_value=sum_lines)
+            pos = 0
+            # cum_sum = {}
             with Pool(processes=4) as pool:
                 worker = pool.imap(star, run_args)
-                for _ in bar(run_args):
-                    result += [worker.next()]
+                while True:
+                    try:
+                        try:
+                            while True:
+                                result += [worker.next(0)]
+                        except multiprocessing.TimeoutError:
+                            pass
+                        while not q_bar.empty():
+                            pos_tmp, name = q_bar.get()
+                            # if not name in cum_sum.keys():
+                            #     cum_sum[name] = pos_tmp
+                            # else:
+                            #     cum_sum[name] += pos_tmp
+                            pos += pos_tmp
+                            bar.update(pos)
+                    except StopIteration:
+                        break
+                # for _ in bar(run_args):
+                #    result += [worker.next()]
+            bar.finish()
         for idx, log in enumerate(self.found_logs):
             self.all_errors[log] = result[idx][0]
             # saving logfile format fields names
@@ -317,7 +409,7 @@ class LogAnalyzer:
     def print_errors(self, errors_list, new_fields, out):
         # print_all_headers(errors_list, self.list_headers,
         #                   self.format_fields, out)
-        print_only_dt_message(errors_list, new_fields, out)
+        print_only_dt_message(self.directory, errors_list, new_fields, out)
 
 
 def star(input):
@@ -325,8 +417,8 @@ def star(input):
 
 
 def process_files(idx, log, formats_templates, directory, time_zones,
-                  positions, out_descr, additive, user_events, user_hosts,
-                  time_ranges, user_vms, vm_timeline, tasks,
+                  positions, out_descr, q_bar, additive, user_events,
+                  user_hosts, time_ranges, user_vms, vm_timeline, tasks,
                   needed_lines, flow_ids, show_warnings, progressbar=None,
                   text_header=None):
     if text_header:
@@ -334,10 +426,11 @@ def process_files(idx, log, formats_templates, directory, time_zones,
     # gathering all information about errors from a logfile into lists
     lines_info, fields_names = loop_over_lines(directory,
                                                log[idx],
-                                               formats_templates[idx],
+                                               formats_templates[log[idx]],
                                                time_zones[idx],
                                                positions[log[idx]],
                                                out_descr,
+                                               q_bar,
                                                additive,
                                                user_events,
                                                user_hosts,

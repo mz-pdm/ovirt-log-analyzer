@@ -210,7 +210,7 @@ def clusterize_messages(out_descr, all_errors, fields, user_events,
     if reasons == {}:
         return msg_showed, new_fields
     f = open(os.path.join(output_directory,
-             dirname.split('/')[-2]+'_diff.txt'), 'w')
+             dirname.split('/')[-2]+'_frequent.txt'), 'w')
     separator = ';'
     max_len = max([len(separator.join(reasons[r])) for r in reasons.keys()])
     for msg in all_errors:
