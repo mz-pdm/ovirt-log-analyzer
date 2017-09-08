@@ -287,6 +287,23 @@ class LogAnalyzer:
                          self.long_tasks, self.subtasks,
                          self.stuctured_commands], f)
 
+    def find_real_line_num(self):
+        self.real_line_num = {}
+        if self.time_ranges == {}:
+            for log in self.found_logs:
+                self.real_line_num[log] = [0]
+            return
+        for log in self.found_logs:
+            f = open_log_file(os.path.join(self.directory, log))
+            line_num = 0
+            self.real_line_num[log] = []
+            for pos in self.positions[log]:
+                while f.tell() < pos[0]:
+                    f.readline()
+                    line_num += 1
+                self.real_line_num[log] += [line_num]
+            f.close()
+
     def load_data(self, show_warnings, show_progressbar):
         self.all_errors = {}
         self.format_fields = {}
@@ -312,6 +329,7 @@ class LogAnalyzer:
                                      self.vm_timeline,
                                      self.subtasks,
                                      self.needed_lines,
+                                     self.real_line_num,
                                      [mes['flow_id']
                                       for l in self.vm_tasks.keys()
                                       for t in self.vm_tasks[l].keys()
@@ -337,6 +355,7 @@ class LogAnalyzer:
                          self.vm_timeline,
                          self.subtasks,
                          self.needed_lines,
+                         self.real_line_num,
                          [mes['flow_id'] for l in self.vm_tasks.keys()
                           for t in self.vm_tasks[l].keys()
                           for mes in (self.vm_tasks)[l][t] if ('flow_id'
@@ -352,7 +371,6 @@ class LogAnalyzer:
             sum_lines = sum(sum_lines)
             bar = ProgressBar(widgets=widget_style, max_value=sum_lines)
             pos = 0
-            # cum_sum = {}
             with Pool(processes=4) as pool:
                 worker = pool.imap(star, run_args)
                 while True:
@@ -364,16 +382,10 @@ class LogAnalyzer:
                             pass
                         while not q_bar.empty():
                             pos_tmp, name = q_bar.get()
-                            # if not name in cum_sum.keys():
-                            #     cum_sum[name] = pos_tmp
-                            # else:
-                            #     cum_sum[name] += pos_tmp
                             pos += pos_tmp
                             bar.update(pos)
                     except StopIteration:
                         break
-                # for _ in bar(run_args):
-                #    result += [worker.next()]
             bar.finish()
         for idx, log in enumerate(self.found_logs):
             self.all_errors[log] = result[idx][0]
@@ -407,8 +419,6 @@ class LogAnalyzer:
         return important_events, new_fields
 
     def print_errors(self, errors_list, new_fields, out):
-        # print_all_headers(errors_list, self.list_headers,
-        #                   self.format_fields, out)
         print_only_dt_message(self.directory, errors_list, new_fields, out)
 
 
@@ -419,8 +429,8 @@ def star(input):
 def process_files(idx, log, formats_templates, directory, time_zones,
                   positions, out_descr, q_bar, additive, user_events,
                   user_hosts, time_ranges, user_vms, vm_timeline, tasks,
-                  needed_lines, flow_ids, show_warnings, progressbar=None,
-                  text_header=None):
+                  needed_lines, real_line_num, flow_ids, show_warnings,
+                  progressbar=None, text_header=None):
     if text_header:
         text_header.update_mapping(type_op="Parsing:")
     # gathering all information about errors from a logfile into lists
@@ -439,6 +449,7 @@ def process_files(idx, log, formats_templates, directory, time_zones,
                                                vm_timeline,
                                                tasks,
                                                needed_lines,
+                                               real_line_num[log[idx]],
                                                flow_ids,
                                                show_warnings,
                                                progressbar)

@@ -6,7 +6,6 @@ import numpy as np
 from datetime import datetime
 import progressbar
 from progressbar import ProgressBar
-
 from lib.util import open_log_file
 
 

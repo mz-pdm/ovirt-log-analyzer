@@ -125,7 +125,7 @@ if __name__ == "__main__":
                     (args.filenames is None or
                      dirpath == 'qemu' or
                      re_file_name.match(f) is not None)):
-                    files.append(os.path.join(dirpath, f))
+                    files.append(f)
     elif args.filenames is not None:
         files = sorted(args.filenames)
     if args.clear:
@@ -318,6 +318,7 @@ if __name__ == "__main__":
         exit()
     output_descriptor.write('Searching for VM tasks...\n')
     logs.find_vm_tasks(args.reload)
+    logs.find_real_line_num()
     output_descriptor.write('Loading data...\n')
     logs.load_data(args.warn, args.progressbar)
     output_descriptor.write('Analyzing the messages...\n')

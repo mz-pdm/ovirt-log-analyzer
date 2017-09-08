@@ -280,7 +280,7 @@ def create_line_info(in_traceback_flag, in_traceback_line, multiline_flag,
 def loop_over_lines(directory, logname, format_template, time_zone, positions,
                     out_descr, queue_bar, additive, events, host_ids,
                     time_ranges, vm_numbers, vm_timeline, subtasks, task_lines,
-                    flow_ids, show_warnings, progressbar=None):
+                    real_line_num, flow_ids, show_warnings, progressbar=None):
     full_filename = os.path.join(directory, logname)
     fields_names = list(sorted(format_template.groupindex.keys()))
     fields_names.remove("message")
@@ -304,6 +304,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
         multiline_flag = False
         count = pos[0]
         prev_line = ''
+        real_line = real_line_num[tr_idx]
         for line_num, line in enumerate(f):
             # if line is empty and other cases when we don't need to parse it
             if (re_skip.match(line) is not None):
@@ -312,8 +313,8 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                     progressbar.update(count)
                 queue_bar.put((len(line), logname))
                 continue
-            line_data = LogLine(fields_names, logname+':'+str(line_num+1),
-                                out_descr)
+            line_data = LogLine(fields_names, logname+':'+str(real_line +
+                                line_num + 1), out_descr)
             try:
                 line_data.parse_date_time(time_zone, line)
                 if (line_data.fields['date_time'] > time_ranges[tr_idx][1]
@@ -373,7 +374,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                     exception_message:
                 if prev_fields == {}:
                     if show_warnings:
-                        out_descr.put(str(line_num+1) + ': ')
+                        out_descr.put(str(real_line + line_num + 1) + ': ')
                         out_descr.put(str(exception_message))
                 elif in_traceback_flag:
                     # Remember a line if we are in a traceback.
