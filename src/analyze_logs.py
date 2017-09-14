@@ -6,6 +6,7 @@ import re
 import pytz
 from datetime import datetime
 from lib.LogAnalyzer import LogAnalyzer
+from lib.detect_running_components import parse_date_time
 from lib.util import open_log_file
 
 if __name__ == "__main__":
@@ -173,30 +174,20 @@ if __name__ == "__main__":
                   '(-time). Must be even')
             exit()
         for tr_idx in range(0, len(args.time_range)-1, 2):
-            try:
-                date_time_1 = datetime.strptime(args.time_range[tr_idx],
-                                                "%Y-%m-%dT%H:%M:%S,%f")
-                date_time_1 = date_time_1.replace(tzinfo=pytz.utc)
-                date_time_1 = date_time_1.timestamp()
-            except ValueError:
-                print('Argparser: Wrong datetime format: %s' %
-                      args.time_range[tr_idx])
-                exit()
-            try:
-                date_time_2 = datetime.strptime(args.time_range[tr_idx+1],
-                                                "%Y-%m-%dT%H:%M:%S,%f")
-                date_time_2 = date_time_2.replace(tzinfo=pytz.utc)
-                date_time_2 = date_time_2.timestamp()
-            except ValueError:
-                print('Argparser: Wrong datetime format: %s' %
-                      args.time_range[tr_idx+1])
-                exit()
-            if date_time_2 < date_time_1:
+            time_range = []
+            for i in (0, 1,):
+                date_time = parse_date_time(args.time_range[tr_idx+i], '+0000')
+                if date_time == 0:
+                    print('Argparser: Wrong datetime format: %s' %
+                          args.time_range[tr_idx+i])
+                    exit()
+                time_range.append(date_time)
+            if time_range[1] < time_range[0]:
                 print(("Argparser: Provided date time range doesn't " +
                       "overlap: %s %s") % (args.time_range[tr_idx],
                                            args.time_range[tr_idx+1]))
                 exit()
-            time_range_info += [[date_time_1, date_time_2]]
+            time_range_info += [time_range]
         time_range_info = sorted(time_range_info, key=lambda k: k[0])
     # VMs
     if args.vm is not None:
