@@ -753,8 +753,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
     long_actions = []
     tasks = {}
     commands = {}
-    fullname = os.path.join(log_directory, log)
-    f = open_log_file(fullname)
+    f = open_log_file(log)
     if f is None:
         output_descriptor.write("Unknown file extension: %s" % log)
         return commands_threads, long_actions, {}, {}, needed_linenum, reasons
@@ -1180,8 +1179,7 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
     commands_threads = {}
     long_actions = []
     qemu_monitor = {}
-    fullname = os.path.join(log_directory, log)
-    f = open_log_file(fullname)
+    f = open_log_file(log)
     if f is None:
         output_descriptor.write("Unknown file extension: %s" % log)
         return commands_threads, long_actions, needed_linenum, reasons

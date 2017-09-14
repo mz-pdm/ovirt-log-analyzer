@@ -116,20 +116,22 @@ if __name__ == "__main__":
         base_file_name = os.path.basename(file_name)
         return ('.log' in base_file_name and
                 not base_file_name.endswith('.json'))
+    log_directory = args.log_directory
     if args.filenames is None or args.filenames == ['.']:
         re_file_name = re.compile('(engine|sanlock|spm-lock)|.*(vdsm|libvirt)')
         files = []
-        for dirpath, dirnames, filenames in os.walk(args.log_directory):
+        for dirpath, dirnames, filenames in os.walk(log_directory):
             for f in filenames:
                 if (log_file_p(f) and
                     (args.filenames is None or
                      os.path.basename(dirpath) == 'qemu' or
                      re_file_name.match(f) is not None)):
-                    files.append(f)
+                    files.append(os.path.join(dirpath, f))
     elif args.filenames is not None:
-        files = sorted(args.filenames)
+        files = [os.path.join(log_directory, f)
+                 for f in sorted(args.filenames)]
     if args.clear:
-        shutil.rmtree(os.path.join(args.log_directory, 'log_analyzer_cache'))
+        shutil.rmtree(os.path.join(log_directory, 'log_analyzer_cache'))
         exit()
     # Output directory
     if args.output_dir is not None:
@@ -233,7 +235,7 @@ if __name__ == "__main__":
         criterias = ['All']
     # Start algo
     logs = LogAnalyzer(output_descriptor,
-                       args.log_directory,
+                       log_directory,
                        files,
                        tz_info,
                        criterias,

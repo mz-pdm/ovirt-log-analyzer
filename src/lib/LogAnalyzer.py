@@ -72,15 +72,14 @@ class LogAnalyzer:
         self.log_files_format = {}
         self.time_zones = []
         for log in filenames:
-            full_filename = os.path.join(self.directory, log)
-            if not os.path.isfile(full_filename):
-                self.out_descr.write("%s\n" % full_filename)
+            if not os.path.isfile(log):
+                self.out_descr.write("%s\n" % log)
                 self.out_descr.write("File not found: %s\n" % log)
                 continue
             # save log's time zome
             self.time_zones += [tz[log]]
             # find format of a log
-            f = open_log_file(full_filename)
+            f = open_log_file(log)
             if f is None:
                 self.out_descr.write("Unknown file extension: %s" % log)
                 continue
@@ -294,7 +293,7 @@ class LogAnalyzer:
                 self.real_line_num[log] = [0]
             return
         for log in self.found_logs:
-            f = open_log_file(os.path.join(self.directory, log))
+            f = open_log_file(log)
             line_num = 0
             self.real_line_num[log] = []
             for pos in self.positions[log]:
