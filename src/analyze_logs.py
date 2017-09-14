@@ -123,7 +123,7 @@ if __name__ == "__main__":
             for f in filenames:
                 if (log_file_p(f) and
                     (args.filenames is None or
-                     dirpath == 'qemu' or
+                     os.path.basename(dirpath) == 'qemu' or
                      re_file_name.match(f) is not None)):
                     files.append(f)
     elif args.filenames is not None:
