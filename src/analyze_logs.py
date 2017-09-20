@@ -189,6 +189,18 @@ if __name__ == "__main__":
                 exit()
             time_range_info += [time_range]
         time_range_info = sorted(time_range_info, key=lambda k: k[0])
+
+    if args.out is not None:
+        if os.path.isdir(args.out):
+            print("Argparser: Provided output path %s is a directory, not a file." % args.out)
+            exit()
+        elif not os.path.isfile(args.out):
+            try:
+                out = open(args.out, "w").close()
+            except IOError:
+                print("Argparser: Can not open provided output file %s for writing." % args.out)
+                exit()
+
     # VMs
     if args.vm is not None:
         vm_info = args.vm
