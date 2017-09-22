@@ -132,7 +132,11 @@ if __name__ == "__main__":
         files = [os.path.join(log_directory, f)
                  for f in sorted(args.filenames)]
     if args.clear:
-        shutil.rmtree(os.path.join(log_directory, 'log_analyzer_cache'))
+        try:
+            shutil.rmtree(os.path.join(log_directory, 'log_analyzer_cache'))
+        except IOError as e:
+            print("Error trying to clear the directory: %s. Has the clear been called already?" % e)
+
         exit()
     # Output directory
     if args.output_dir is not None:
