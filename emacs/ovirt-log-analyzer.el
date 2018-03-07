@@ -9,6 +9,16 @@
 (defvar ovirt-log-analyzer-vms '())
 (make-variable-buffer-local 'ovirt-log-analyzer-vms)
 
+(defmacro ovirt-log-analyzer-while (interval condition &rest body)
+  (let ((counter (make-symbol "counter")))
+    `(let ((,counter 0))
+       (while ,condition
+         ,@body
+         (cl-incf ,counter)
+         (when (= (mod ,counter ,interval) 0)
+           (accept-process-output)
+           (sit-for 0))))))
+
 (defun ovirt-log-analyzer-show-log ()
   (interactive)
   (let ((file-reference (get-char-property (point) 'ovirt-log-analyzer-file-reference)))
@@ -52,7 +62,7 @@
 (defun ovirt-log-analyzer-filter-by-function (filter-function)
   (save-excursion
     (goto-char (point-min))
-    (while (< (point) (point-max))
+    (ovirt-log-analyzer-while 50 (< (point) (point-max))
       (let ((beg (point))
             (end (if (funcall filter-function) (line-beginning-position) (point-max))))
         (unless (= beg end)
@@ -105,8 +115,7 @@
     (remove-overlays)
     (let ((unknown-tags '())
           (max-file-field-length 0))
-      (while (not (eobp))
-        (point)
+      (ovirt-log-analyzer-while 50 (not (eobp))
         (when (looking-at "[0-9][^|\n]*| \\( *[^|\n]+:[0-9]+\\) *| \\( *\\([^|\n]*\\) |\\).*$")
           (let* ((beg (match-beginning 0))
                  (end (match-end 0))
@@ -174,8 +183,8 @@
       (when (> max-file-field-length 0)
         (goto-char (point-min))
         (let (point)
-          (while (and (not (eobp))
-                      (setq point (next-single-char-property-change (point) 'ovirt-log-analyzer-file-field-length)))
+          (ovirt-log-analyzer-while 100 (and (not (eobp))
+                                            (setq point (next-single-char-property-change (point) 'ovirt-log-analyzer-file-field-length)))
             (goto-char point)
             (let ((length (get-char-property (point) 'ovirt-log-analyzer-file-field-length)))
               (when (and length (< length max-file-field-length))
