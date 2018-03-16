@@ -3,6 +3,8 @@
 (require 'cl-lib)
 (require 'hl-line)
 
+(defvar ovirt-log-analyzer-frequent-file "frequent.txt")
+
 (defvar ovirt-log-analyzer-hosts '())
 (make-variable-buffer-local 'ovirt-log-analyzer-hosts)
 
@@ -19,17 +21,39 @@
            (accept-process-output)
            (sit-for 0))))))
 
-(defun ovirt-log-analyzer-show-log ()
-  (interactive)
+(defun ovirt-log-analyzer-file-reference ()
   (let ((file-reference (get-char-property (point) 'ovirt-log-analyzer-file-reference)))
     (unless file-reference
       (error "No file reference found"))
     (string-match "^ *\\(.*\\):\\([0-9]+\\)" file-reference)
-    (let ((file (match-string 1 file-reference))
-          (line (string-to-number (match-string 2 file-reference))))
-      (find-file file)
-      (goto-char 1)
-      (forward-line (1- line)))))
+    (list (match-string 1 file-reference)
+          (string-to-number (match-string 2 file-reference)))))
+
+(defun ovirt-log-analyzer-show-log ()
+  (interactive)
+  (cl-destructuring-bind (file line) (ovirt-log-analyzer-file-reference)
+    (find-file file)
+    (goto-char 1)
+    (forward-line (1- line))))
+
+(defun ovirt-log-analyzer-show-frequent-log ()
+  (interactive)
+  (unless (file-exists-p ovirt-log-analyzer-frequent-file)
+    (error "%s file not present in the current directory" ovirt-log-analyzer-frequent-file))
+  (cl-destructuring-bind (file line) (ovirt-log-analyzer-file-reference)
+    (find-file ovirt-log-analyzer-frequent-file)
+    (goto-char (point-min))
+    (let ((regexp (concat "^[^|]*| *" (regexp-quote file) ":\\([0-9]+\\)"))
+          (last-found (point))
+          (distance (1+ line)))
+      (while (re-search-forward regexp nil t)
+        (let* ((frequent-line (string-to-number (match-string 1)))
+               (frequent-distance (abs (- line frequent-line))))
+          (if (>= frequent-distance distance)
+              (goto-char (point-max))   ; end loop
+            (setq last-found (point)
+                  distance frequent-distance))))
+      (goto-char last-found))))
 
 (defun ovirt-log-analyzer-show-tags ()
   (interactive)
@@ -234,6 +258,7 @@
 (defvar ovirt-log-analyzer-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map [return] 'ovirt-log-analyzer-show-log)
+    (define-key map [(meta return)] 'ovirt-log-analyzer-show-frequent-log)
     (define-key map [tab] 'ovirt-log-analyzer-next-poi)
     (define-key map [backtab] 'ovirt-log-analyzer-previous-poi)
     (define-key map "a" 'ovirt-log-analyzer-toggle-filter)

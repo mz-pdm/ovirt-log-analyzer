@@ -411,7 +411,7 @@ class LogAnalyzer:
             clusterize_messages(self.out_descr, self.merged_errors,
                                 self.all_fields, self.user_events,
                                 self.all_vms, self.all_hosts, self.subtasks,
-                                self.directory, self.timeline, self.vm_tasks,
+                                self.timeline, self.vm_tasks,
                                 self.long_tasks, self.output_dir,
                                 self.reasons, self.needed_lines,
                                 self.criterias, self.vm_timeline)
