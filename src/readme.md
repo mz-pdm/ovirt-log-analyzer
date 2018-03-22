@@ -88,8 +88,37 @@ Log analyzed produce several output files. You can place them into a directory b
 
 * `*_commands_by_id.json` - reconstructed hierarchy of tasks (may contain only a few of tasks from the _commands file)
 
-* `*_frequent.txt` - messages that were removed from the output by "Exclude frequent messages" criteria
+* `frequent.txt` - messages that were removed from the output by "Exclude frequent messages" criteria
 
 * If -o flag, the result will be saved to the file (to stdout otherwise)
 
 * `log_analyzer_cache` folder within the provided logfiles folder contain information about found VMs, hosts, tasks, and symbol positions for given time ranges
+
+## Emacs UI
+
+The result file produced by ovirt-log-analyzer can be viewed as is or it can be
+handled in an Emacs UI providing some useful functionality over it.
+
+The easiest way to view the file in the Emacs UI is by running
+
+  emacs -l …/ovirt-log-analyzer/emacs/ovirt-log-analyzer.el RESULT-FILE -f ovirt-log-analyzer-mode
+
+Alternatively, you can add the mode to your running Emacs with
+`M-x load-file RET …/ovirt-log-analyzer/emacs/ovirt-log-analyzer.el RET`.
+Then you can open a result file created by ovirt-log-analyzer using `C-x C-f`
+command and enable the UI by typing `M-x ovirt-log-analyzer-mode RET`.
+
+===========  =====================================
+key          command
+===========  =====================================
+<tab>        move to next interesting point
+<backtab>    move to previous interesting point
+M-n          move to next log line
+M-p          move to previous log line
+<return>     jump to log
+<M-return>   jump to frequent.txt file
+f            filter lines
+a            toggle filter
+t            show line tags
+T            toggle truncating lines
+===========  =====================================
