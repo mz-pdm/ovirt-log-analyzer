@@ -220,7 +220,7 @@ if __name__ == "__main__":
         event_info = args.event
     else:
         event_info = []
-    # Output desctiptor
+    # Output descriptor
     if args.print is not None:
         if args.print == "stdout":
             output_descriptor = sys.stdout
