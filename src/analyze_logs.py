@@ -232,10 +232,11 @@ if __name__ == "__main__":
     else:
         output_descriptor = sys.stderr
     # Format templates
+    source_directory = os.path.dirname(__file__)
     if args.format_file is not None:
         format_file = args.format_file
     else:
-        format_file = os.path.join("format_templates.txt")
+        format_file = os.path.join(source_directory, "format_templates.txt")
     if args.criterias is not None:
         criterias = args.criterias
     else:
