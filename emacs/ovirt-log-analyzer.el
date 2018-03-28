@@ -114,6 +114,14 @@
               (previous-single-property-change (point) 'face)
             (point))
           (next-single-property-change (point) 'face)))))
+   ((get-text-property (point) 'ovirt-log-analyzer-file-reference)
+    (let ((file (car (ovirt-log-analyzer-file-reference))))
+      (ovirt-log-analyzer-filter-by-function
+       (lambda ()
+         (while (and (< (point) (point-max))
+                     (not (string= file (car (ignore-errors (ovirt-log-analyzer-file-reference))))))
+           (goto-char (next-single-property-change (point) 'ovirt-log-analyzer-file-reference nil (point-max))))
+         (< (point) (point-max))))))
    (t
     (error "Nothing to filter on"))))
 
