@@ -6,6 +6,17 @@
 **Multiprocessing** - `pip install multiprocess`
 **Progressbar**     - `pip install progressbar2`
 
+## Basic usage
+
+Assuming your oVirt logs are stored in DIRECTORY, you run the analyzer as
+
+  python …/ovirt-log-analyzer/src/analyze_logs.py DIRECTORY
+
+This produces some files in the current directory, most notably result.txt
+file.  That file contains the basic results of the log analysis.
+
+See next sections for details.
+
 ## List of available options
 ### positional arguments:
 * directory
