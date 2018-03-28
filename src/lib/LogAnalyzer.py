@@ -86,7 +86,6 @@ class LogAnalyzer:
             line = f.readline()
             f.close()
             # save name of actually opened logfile
-            self.found_logs += [log]
             for file_format_num in range(len(self.formats_templates)):
                 prog = re.compile(self.formats_templates[file_format_num][
                                                     'regexp'])
@@ -94,6 +93,10 @@ class LogAnalyzer:
                 if result is not None:
                     self.log_files_format[log] = prog
                     break
+            if result is None:
+                self.out_descr.write("Unrecognized file format: %s\n" % log)
+                continue
+            self.found_logs.append(log)
         if (self.found_logs == []):
             out_descr.write('No logfiles found.\n')
             exit()
