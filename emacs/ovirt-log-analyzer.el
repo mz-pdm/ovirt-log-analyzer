@@ -65,7 +65,7 @@
 (defun ovirt-log-analyzer-poi (search-function limit-function)
   (let ((point (funcall search-function (point) 'face)))
     (while (and point
-                (< point (point-max))
+                (< (point-min) point (point-max))
                 (or (not (eq (get-text-property point 'face) 'font-lock-variable-name-face))
                     (not (ovirt-log-analyzer-visible-p point))))
       (setq point (funcall search-function point 'face nil (funcall limit-function))))
