@@ -55,21 +55,29 @@ def find_time_range(output_descriptor, log_directory, files, tz_info,
         if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
-        logs_datetimes[log] = []
-        dt = 0
-        while dt == 0:
-            dt = parse_date_time(f.readline(), tz_info[log_idx])
-        logs_datetimes[log] += [dt]
+        first_dt = 0
+        while first_dt == 0:
+            line = f.readline()
+            if not line:
+                break
+            first_dt = parse_date_time(line, tz_info[log_idx])
+        if first_dt == 0:
+            output_descriptor.write("Log file time format not recognized: "
+                                    "%s\n" % log)
+            continue
         f.seek(0, os.SEEK_END)
         file_len = f.tell()
         offset = 1
-        dt = 0
-        while dt == 0:
+        last_dt = 0
+        while last_dt == 0:
             while f.read(1) != "\n":
                 offset += 1
-                f.seek(file_len-offset, os.SEEK_SET)
-            dt = parse_date_time(f.readline(), tz_info[log_idx])
-        logs_datetimes[log] += [dt]
+                if offset > file_len:
+                    f.seek(0, os.SEEK_SET)
+                    break
+                f.seek(file_len - offset, os.SEEK_SET)
+            last_dt = parse_date_time(f.readline(), tz_info[log_idx])
+        logs_datetimes[log] = [first_dt, last_dt]
         if (logs_datetimes[log][1] < logs_datetimes[log][0]):
             output_descriptor.write(('Warning: %s - end datetime (%s) is ' +
                                      'less than start time (%s)\n') %
