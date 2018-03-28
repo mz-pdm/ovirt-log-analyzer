@@ -22,7 +22,7 @@
            (sit-for 0))))))
 
 (defun ovirt-log-analyzer-file-reference ()
-  (let ((file-reference (get-char-property (point) 'ovirt-log-analyzer-file-reference)))
+  (let ((file-reference (get-text-property (point) 'ovirt-log-analyzer-file-reference)))
     (unless file-reference
       (error "No file reference found"))
     (string-match "^ *\\(.*\\):\\([0-9]+\\)" file-reference)
@@ -73,14 +73,12 @@
 
 (defun ovirt-log-analyzer-next-poi ()
   (interactive)
-  (ovirt-log-analyzer-poi #'(lambda (&rest args) (min (apply #'next-single-char-property-change args)
-                                                      (apply #'next-single-property-change args)))
+  (ovirt-log-analyzer-poi #'(lambda (&rest args) (apply #'next-single-property-change args))
                           #'point-max))
 
 (defun ovirt-log-analyzer-previous-poi ()
   (interactive)
-  (ovirt-log-analyzer-poi #'(lambda (&rest args) (min (apply #'previous-single-char-property-change args)
-                                                      (apply #'previous-single-property-change args)))
+  (ovirt-log-analyzer-poi #'(lambda (&rest args) (apply #'previous-single-property-change args))
                           #'point-min))
 
 (defun ovirt-log-analyzer-filter-by-function (filter-function)
@@ -107,8 +105,7 @@
     (when (overlay-get o 'ovirt-log-analyzer-filter)
       (delete-overlay o)))
   (cond
-   ((or (eq (get-char-property (point) 'face) 'font-lock-variable-name-face)
-        (eq (get-text-property (point) 'face) 'font-lock-variable-name-face))
+   ((or (eq (get-text-property (point) 'face) 'font-lock-variable-name-face))
     (ovirt-log-analyzer-filter-by-text
      (or (get-char-property (point) 'ovirt-log-analyzer-host)
          (get-char-property (point) 'ovirt-log-analyzer-vm)
