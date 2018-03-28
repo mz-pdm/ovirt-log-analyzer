@@ -24,8 +24,8 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--filenames',
                         type=str,
                         nargs='+',
-                        help='logfiles filenames' +
-                        '(with expansion); use . to find common log files')
+                        help="log files to process; " +
+                        "use `all' to process all log files")
     parser.add_argument("--default_tzinfo",
                         type=str,
                         nargs='+',
@@ -118,13 +118,13 @@ if __name__ == "__main__":
         return ('.log' in base_file_name and
                 not base_file_name.endswith('.json'))
     log_directory = args.log_directory
-    if args.filenames is None or args.filenames == ['.']:
+    if args.filenames is None or args.filenames == ['all']:
         re_file_name = re.compile('(engine|sanlock|spm-lock)|.*(vdsm|libvirt)')
         files = []
         for dirpath, dirnames, filenames in os.walk(log_directory):
             for f in filenames:
                 if (log_file_p(f) and
-                    (args.filenames is None or
+                    (args.filenames is not None or
                      os.path.basename(dirpath) == 'qemu' or
                      re_file_name.match(f) is not None)):
                     files.append(os.path.join(dirpath, f))

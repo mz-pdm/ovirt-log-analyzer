@@ -16,7 +16,7 @@ Logfiles directory
 Print all VMs and hosts in given time range (or without it in all log)
 
 * `-f` FILENAMES [FILENAMES ...], `--filenames` FILENAMES [FILENAMES ...]
-List of logfiles filenames (with expansion)
+Log files to process; use `all` to process all log files; if not given then common oVirt log files are processed
 
 * `--default_tzinfo` DEFAULT_TZINFO [DEFAULT_TZINFO ...]
 Specify time zones for all files (will be used) if file datetime does not have time zone (example: --default_tzinfo -0400). If not specified - UTC is used
