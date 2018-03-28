@@ -21,6 +21,9 @@
            (accept-process-output)
            (sit-for 0))))))
 
+(defun ovirt-log-analyzer-visible-p (point)
+  (not (eq (get-char-property point 'invisible) 'yes)))
+
 (defun ovirt-log-analyzer-file-reference ()
   (let ((file-reference (get-text-property (point) 'ovirt-log-analyzer-file-reference)))
     (unless file-reference
@@ -63,8 +66,8 @@
   (let ((point (funcall search-function (point) 'face)))
     (while (and point
                 (< point (point-max))
-                (not (eq (get-char-property point 'face) 'font-lock-variable-name-face))
-                (not (eq (get-text-property point 'face) 'font-lock-variable-name-face)))
+                (or (not (eq (get-text-property point 'face) 'font-lock-variable-name-face))
+                    (not (ovirt-log-analyzer-visible-p point))))
       (setq point (funcall search-function point 'face nil (funcall limit-function))))
     (if (and point
              (< point (point-max)))
@@ -255,7 +258,10 @@
      ("Error or warning.*$" 0 font-lock-warning-face keep)
      ("^\\(.*\\)|.*|.*Task(duration=" 1 font-lock-warning-face keep)
      ("^.*|\\(.*\\)|.*Unique" 1 font-lock-warning-face keep)
-     ("Task.*|.*$" 0 font-lock-preprocessor-face keep))))
+     ("Task.*|.*$" 0 font-lock-preprocessor-face keep)
+     ;; The following hack is necessary to break connections to invisible texts with the same face.
+     ;; Simple faces such as `default' or `bold' don't work here.
+     ("| " 0 font-lock-negation-char-face t))))
 
 (defvar ovirt-log-analyzer-mode-map
   (let ((map (make-sparse-keymap)))
