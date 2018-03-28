@@ -195,15 +195,21 @@ if __name__ == "__main__":
             time_range_info += [time_range]
         time_range_info = sorted(time_range_info, key=lambda k: k[0])
 
-    if args.out != '-':
-        if os.path.isdir(args.out):
-            print("Argparser: Provided output path %s is a directory, not a file." % args.out)
+    # Output file
+    if args.out == '-':
+        output_file_name = None
+    else:
+        output_file_name = os.path.join(output_directory, args.out)
+        if os.path.isdir(output_file_name):
+            print("Argparser: Provided output path %s is a directory, "
+                  "not a file." % output_file_name)
             exit()
         elif not os.path.isfile(args.out):
             try:
-                out = open(args.out, "w").close()
+                open(output_file_name, 'w').close()
             except IOError:
-                print("Argparser: Can not open provided output file %s for writing." % args.out)
+                print("Argparser: Cannot open provided output file %s for "
+                      "writing." % output_file_name)
                 exit()
 
     # VMs
@@ -336,9 +342,8 @@ if __name__ == "__main__":
     logs.merge_all_messages()
     messages, new_fields = logs.find_important_events()
     output_descriptor.write('Printing messages...\n')
-    # Output file
-    if args.out == '-':
+    if output_file_name is None:
         output_file = sys.stdout
     else:
-        output_file = open(os.path.join(output_directory, args.out), 'w')
+        output_file = open(output_file_name, 'w')
     logs.print_errors(messages, new_fields, output_file)
