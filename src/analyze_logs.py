@@ -48,7 +48,8 @@ if __name__ == "__main__":
                         '(filename, "stdout" or "stderr")')
     parser.add_argument("-o", "--out",
                         type=str,
-                        help='Directs the output to the file')
+                        default='result.txt',
+                        help="File to output results to; use `-' for stdout")
     parser.add_argument("-d", "--output_dir",
                         type=str,
                         help='Specify directory to save program output')
@@ -194,7 +195,7 @@ if __name__ == "__main__":
             time_range_info += [time_range]
         time_range_info = sorted(time_range_info, key=lambda k: k[0])
 
-    if args.out is not None:
+    if args.out != '-':
         if os.path.isdir(args.out):
             print("Argparser: Provided output path %s is a directory, not a file." % args.out)
             exit()
@@ -336,8 +337,8 @@ if __name__ == "__main__":
     messages, new_fields = logs.find_important_events()
     output_descriptor.write('Printing messages...\n')
     # Output file
-    if args.out is not None:
-        output_file = open(os.path.join(output_directory, args.out), 'w')
-    else:
+    if args.out == '-':
         output_file = sys.stdout
+    else:
+        output_file = open(os.path.join(output_directory, args.out), 'w')
     logs.print_errors(messages, new_fields, output_file)

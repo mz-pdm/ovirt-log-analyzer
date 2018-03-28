@@ -27,7 +27,8 @@ Specify time zones for files (will be used) if file datetime does not have tz (e
 * `-p` PRINT, `--print` PRINT
 Where to print the output (filename, "stdout" or "stderr")
 
-* `-o` OUT, `--out` OUT     Directs the output to the file
+* `-o` OUT, `--out` OUT
+File to output results to; result.txt by default; use `-' for standard output
 
 * `-d` OUTPUT_DIR, `--output_dir` OUTPUT_DIR
 Specify directory to save program output
@@ -90,7 +91,7 @@ Log analyzed produce several output files. You can place them into a directory b
 
 * `frequent.txt` - messages that were removed from the output by "Exclude frequent messages" criteria
 
-* If -o flag, the result will be saved to the file (to stdout otherwise)
+* `result.txt` - results of the analysis, use `-o' command line option to use a different file name or standard output
 
 * `log_analyzer_cache` folder within the provided logfiles folder contain information about found VMs, hosts, tasks, and symbol positions for given time ranges
 
