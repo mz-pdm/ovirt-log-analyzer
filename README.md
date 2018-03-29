@@ -12,11 +12,14 @@ user.
 
 ## List of libraries to install
 
+ovirt-log-analyzer requires Python 3 and the following Python libraries:
+
 * **argparse**        - `pip install argparse`
 * **pytz**            - `pip install pytz`
 * **lzma**            - `pip install pyliblzma`
 * **Multiprocessing** - `pip install multiprocess`
 * **Progressbar**     - `pip install progressbar2`
+* **NumPy**           - `pip install numpy`
 
 ## Basic usage
 
