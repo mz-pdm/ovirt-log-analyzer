@@ -135,13 +135,13 @@ command and enable the UI by typing `M-x ovirt-log-analyzer-mode RET`.
 
 key        | command
 -----------|------------
-<tab>      | move to next interesting point
-<backtab>  | move to previous interesting point
+tab        | move to next interesting point
+backtab    | move to previous interesting point
 M-n        | move to next log line
 M-p        | move to previous log line
-<return>   | jump to log
-<M-return> | jump to frequent.txt file
+return     | jump to log
+M-return   | jump to frequent.txt file
 f          | filter lines
 a          | toggle filter
 t          | show line tags
-T          | toggle truncating lines
+T          | toggle line truncation
