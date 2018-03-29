@@ -10,19 +10,19 @@ ovirt-log-analyzer is a tool for sorting, correlating, filtering, marking, and
 highlighting the log data and presenting them in a comprehensible form to the
 user.
 
-## List of libraries to install:
+## List of libraries to install
 
-**argparse**        - `pip install argparse`
-**pytz**            - `pip install pytz`
-**lzma**            - `pip install pyliblzma`
-**Multiprocessing** - `pip install multiprocess`
-**Progressbar**     - `pip install progressbar2`
+* **argparse**        - `pip install argparse`
+* **pytz**            - `pip install pytz`
+* **lzma**            - `pip install pyliblzma`
+* **Multiprocessing** - `pip install multiprocess`
+* **Progressbar**     - `pip install progressbar2`
 
 ## Basic usage
 
 Assuming your oVirt logs are stored in DIRECTORY, you run the analyzer as
 
-  python …/ovirt-log-analyzer/src/analyze_logs.py DIRECTORY
+    python …/ovirt-log-analyzer/src/analyze_logs.py DIRECTORY
 
 This produces some files in the current directory, most notably result.txt
 file.  That file contains the basic results of the log analysis.
@@ -30,9 +30,10 @@ file.  That file contains the basic results of the log analysis.
 See next sections for details.
 
 ## List of available options
+
 ### positional arguments:
-* directory
-Logfiles directory
+
+* DIRECTORY - directory with the log files
 
 ### optional arguments:
 * `-l`, `--list_vm_host`
@@ -125,24 +126,22 @@ handled in an Emacs UI providing some useful functionality over it.
 
 The easiest way to view the file in the Emacs UI is by running
 
-  emacs -l …/ovirt-log-analyzer/emacs/ovirt-log-analyzer.el RESULT-FILE -f ovirt-log-analyzer-mode
+    emacs -l …/ovirt-log-analyzer/emacs/ovirt-log-analyzer.el RESULT-FILE -f ovirt-log-analyzer-mode
 
 Alternatively, you can add the mode to your running Emacs with
 `M-x load-file RET …/ovirt-log-analyzer/emacs/ovirt-log-analyzer.el RET`.
 Then you can open a result file created by ovirt-log-analyzer using `C-x C-f`
 command and enable the UI by typing `M-x ovirt-log-analyzer-mode RET`.
 
-===========  =====================================
-key          command
-===========  =====================================
-<tab>        move to next interesting point
-<backtab>    move to previous interesting point
-M-n          move to next log line
-M-p          move to previous log line
-<return>     jump to log
-<M-return>   jump to frequent.txt file
-f            filter lines
-a            toggle filter
-t            show line tags
-T            toggle truncating lines
-===========  =====================================
+key        | command
+-----------|------------
+<tab>      | move to next interesting point
+<backtab>  | move to previous interesting point
+M-n        | move to next log line
+M-p        | move to previous log line
+<return>   | jump to log
+<M-return> | jump to frequent.txt file
+f          | filter lines
+a          | toggle filter
+t          | show line tags
+T          | toggle truncating lines
