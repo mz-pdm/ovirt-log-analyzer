@@ -64,6 +64,8 @@ def find_time_range(output_descriptor, log_directory, files, tz_info,
             output_descriptor.write("Log file time format not recognized: "
                                     "%s\n" % log)
             continue
+
+        output_descriptor.write("Reading time ranges of %s\n" % (log,))
         f.seek(0, os.SEEK_END)
         file_len = f.tell()
         offset = 1
