@@ -138,9 +138,6 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
                 cur_pos = f.tell()
                 dt = parse_date_time(f.readline(), tz_info[log_idx])
 
-            # if (dt >= needed_time and dt < time_range_info[tr_idx][1]):
-            #     needed_linenum[log] += [[cur_pos, cur_pos]]
-            #     continue
             cur_time = dt
             prev_time = dt
             f.seek(0, os.SEEK_END)
@@ -251,7 +248,6 @@ def libvirtd_vm_host(f, filename, pos, tz_info, vms, hosts,
         while dt == 0:
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
-    # f.seek(real_firstpos, os.SEEK_SET)
     f.seek(0, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
@@ -332,14 +328,12 @@ def vdsm_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
         while dt == 0:
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
-    # f.seek(real_firstpos, os.SEEK_SET)
     f.seek(0, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
                     progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len,
                       redirect_stdout=True)
-    # i = real_firstpos
     i = 0
     real_lastpos = file_len
     bar.update(i)
@@ -398,13 +392,11 @@ def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
         while dt == 0:
             real_firstpos = f.tell()
             dt = parse_date_time(f.readline(), tz_info)
-    # f.seek(real_firstpos, os.SEEK_SET)
     f.seek(0, os.SEEK_SET)
     widget_style = [filename + ':', progressbar.Percentage(), ' (',
                     progressbar.SimpleProgress(), ')', ' ',
                     progressbar.Bar(), ' ', progressbar.Timer()]
     bar = ProgressBar(widgets=widget_style, max_value=file_len)
-    # i = real_firstpos
     i = 0
     real_lastpos = file_len
     bar.update(i)
@@ -687,7 +679,6 @@ def find_all_vm_host(positions,
                                    time_range_info[tr_idx])
             first_lines[log] += [[firstline_pos, lastline_pos]]
         f.close()
-    # print('------VMS------')
     not_running_vms = []
     for k in sorted(vms.keys()):
         if '' in vms[k]['id']:
@@ -1321,120 +1312,12 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
                                  log_directory.split('/')[-2] +
                                  '_qemu_libvirt.json'),
                                  'w'), indent=4, sort_keys=True)
-    # json.dump(commands_threads, open(os.path.join(output_directory,
-    #                                  'tasks_libvirtd_' +
-    #                                  log_directory.split('/')[-2] +
-    #                                  '.json'),
-    #                                  'w'), indent=4, sort_keys=True)
     if commands_threads != {} and 'Long operations' in criterias:
         long_actions, needed_linenum, reasons = find_long_operations(
                                                             commands_threads,
                                                             needed_linenum,
                                                             reasons)
-    # json.dump(commands_threads, open(os.path.join(output_directory,
-    #                                  'filtered_tasks_libvirtd_' +
-    #                                  log_directory.split('/')[-2] +
-    #                                  '.json'),
-    #                                  'w'), indent=4, sort_keys=True)
     return commands_threads, long_actions, needed_linenum, reasons
-
-
-# def find_vm_tasks_vdsm(positions, output_descriptor, log_directory,
-#                        log, file_formats, tz_info, time_range_info,
-#                        output_directory, needed_linenum, reasons,
-#                        criterias):
-#     commands_threads = {}
-#     long_actions = []
-#     qemu_monitor = {}
-#     fullname = os.path.join(log_directory, log)
-#     if (log[-4:] == '.log'):
-#             f = open(fullname)
-#     elif (log[-3:] == '.xz'):
-#         f = lzma.open(fullname, 'rt')
-#     else:
-#         output_descriptor.write("Unknown file extension: %s" % log)
-#         return commands_threads, long_actions
-#     firstline = f.readline()
-#     for fmt in file_formats:
-#         prog = re.compile(fmt)
-#         fields = prog.search(firstline)
-#         if fields is not None:
-#             file_format = prog
-#             break
-#     if fields is None:
-#         # Format is not found
-#         return commands_threads, long_actions
-#     f.seek(0, os.SEEK_END)
-#     file_len = f.tell()
-#     widget_style = [log + ':', progressbar.Percentage(), ' (',
-#                     progressbar.SimpleProgress(), ')', ' ',
-#                     progressbar.Bar(), ' ', progressbar.Timer()]
-#     bar = ProgressBar(widgets=widget_style, max_value=file_len)
-#     for tr_idx, pos in enumerate(positions):
-#         f.seek(pos, os.SEEK_SET)
-#         i = pos
-#         bar.update(i)
-#         for line_num, line in enumerate(f):
-#             i += len(line)
-#             bar.update(i)
-#             fields = file_format.search(line)
-#             if fields is None:
-#                 # Tracebacks will be added anyway
-#                 continue
-#             fields = fields.groupdict()
-#             dt = parse_date_time(line, tz_info)
-#             if dt == 0:
-#                 continue
-#             if (dt > time_range_info[tr_idx][1]):
-#                 break
-#             start = re.search(r"Thread (.+?) \((.+?)\) is now running " +
-#                               r"job (.+)", line)
-#             if (start is not None):
-#                 if (start.group(1) not in commands_threads.keys()):
-#                     commands_threads[start.group(1)] = []
-#                 commands_threads[start.group(1)] += [
-#                                  {'command_name': start.group(3),
-#                                   'command_start_name': start.group(3),
-#                                   'start_line_num': line_num + 1,
-#                                   'start_time': dt,
-#                                   'log': log}]
-#                 continue
-#             finish = re.search(r"Thread (.+?) \((.+?)\) finished job (.+?)" +
-#                                r"( .*|$)", line)
-#             if (finish is not None):
-#                 if (finish.group(1) not in commands_threads.keys()):
-#                     continue
-#                 else:
-#                     com_list = [com['command_name'] for com in
-#                                 commands_threads[finish.group(1)]]
-#                     try:
-#                         com_id = len(com_list) - 1 - \
-#                                  com_list[::-1].index(finish.group(3))
-#                     except:
-#                         continue
-#                 commands_threads[finish.group(1)][com_id]['finish_time'] = dt
-#                 commands_threads[finish.group(1)][com_id][
-#                                             'finish_line_num'] = line_num + 1
-#                 if ('start_time' in commands_threads[
-#                         finish.group(1)][com_id].keys()):
-#                     commands_threads[finish.group(1)][com_id]['duration'] = \
-#                         commands_threads[finish.group(1)][
-#                                          com_id]['finish_time'] -\
-#                         commands_threads[finish.group(1)][
-#                                          com_id]['start_time']
-#                 continue
-#     f.close()
-#     bar.finish()
-#     json.dump(qemu_monitor, open(os.path.join(output_directory,
-#                                  log_directory.split('/')[-2] +
-#                                  '_vdsm_tasks.json'),
-#                                  'w'), indent=4, sort_keys=True)
-#     if commands_threads != {} and 'Long operations' in criterias:
-#         long_actions, needed_linenum, reasons = find_long_operations(
-#                                                             commands_threads,
-#                                                             needed_linenum,
-#                                                             reasons)
-#     return commands_threads, long_actions, needed_linenum, reasons
 
 
 def find_long_operations(all_threads, needed_linenum, reasons):
