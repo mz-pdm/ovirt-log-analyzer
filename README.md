@@ -38,6 +38,11 @@ See next sections for details.
 
 * DIRECTORY - directory with the log files
 
+DIRECTORY can contain any log files in any directory structure.  Only common
+oVirt log files (engine.log, vdsm.log, libvirtd.log, QEMU logs, sanlock.log,
+spm-lock.log) are processed by default.  See also `--filenames` command line
+option below.
+
 ### optional arguments:
 * `-l`, `--list_vm_host`
 Print all VMs and hosts in given time range (or without it in all log)
