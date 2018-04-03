@@ -50,8 +50,7 @@ def find_time_range(output_descriptor, log_directory, files, tz_info,
     logs_datetimes = {}
     relevant_logs = []
     for log_idx, log in enumerate(files):
-        full_filename = os.path.join(log_directory, log)
-        f = open_log_file(full_filename)
+        f = open_log_file(log)
         if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
@@ -122,8 +121,7 @@ def find_needed_linenum(output_descriptor, log_directory, files, tz_info,
                         time_range_info):
     needed_linenum = {}
     for log_idx, log in enumerate(files):
-        full_filename = os.path.join(log_directory, log)
-        f = open_log_file(full_filename)
+        f = open_log_file(log)
         if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
@@ -665,8 +663,7 @@ def find_all_vm_host(positions,
     first_lines = {}
     unknown_vmnames = []
     for log_idx, log in enumerate(files):
-        full_filename = os.path.join(log_directory, log)
-        f = open_log_file(full_filename)
+        f = open_log_file(log)
         if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue
@@ -737,8 +734,7 @@ def find_all_vm_host(positions,
     for log_idx, log in enumerate(files):
         if 'engine' not in log:
             continue
-        full_filename = os.path.join(log_directory, log)
-        f = open_log_file(full_filename)
+        f = open_log_file(log)
         if f is None:
             output_descriptor.write("Unknown file extension: %s" % log)
             continue

@@ -281,7 +281,6 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
                     out_descr, queue_bar, additive, events, host_ids,
                     time_ranges, vm_numbers, vm_timeline, subtasks, task_lines,
                     real_line_num, flow_ids, show_warnings, progressbar=None):
-    full_filename = os.path.join(directory, logname)
     fields_names = list(sorted(format_template.groupindex.keys()))
     fields_names.remove("message")
     fields_names.remove("date_time")
@@ -292,7 +291,7 @@ def loop_over_lines(directory, logname, format_template, time_zone, positions,
     if 'libvirt' in logname:
         regexp = regexp + r".*|OBJECT_|.*release\ domain"
     re_skip = re.compile(regexp)
-    f = open_log_file(full_filename)
+    f = open_log_file(logname)
     if progressbar:
         progressbar.start(max_value=max([i for p in positions for i in p]))
     for tr_idx, pos in enumerate(positions):
