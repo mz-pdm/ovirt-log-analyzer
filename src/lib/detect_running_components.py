@@ -455,8 +455,8 @@ def engine_vm_host(f, filename, pos, tz_info, vms, hosts, time_range_info):
             if (other_vm is not None):
                 vm_name = other_vm.group(2)
                 vm_id = other_vm.group(1)
-        if (any([i in line.lower() for i in ['hostid',
-                                             'hostname']])):
+        if (any([l in line.lower()
+                 for l in ['hostid', 'hostname']])):
             host_name = re.search(r"HostName\ *=\ *(.+?),", line)
             if host_name is not None:
                 host_name = host_name.group(1)
@@ -785,20 +785,20 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                 continue
             if (dt > time_range_info[tr_idx][1]):
                 break
-            com = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +" +
-                            r"[Rr]unning [Cc]ommand:\ +" +
-                            r"([^\s]+)[Cc]ommand", line)
-            if (com is not None):
-                if (com.group(1) not in commands_threads.keys()):
-                    commands_threads[com.group(1)] = []
-                commands_threads[com.group(1)] += [
-                                 {'command_name': com.group(3),
-                                  'command_start_name': com.group(3),
+            command = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +" +
+                                r"[Rr]unning [Cc]ommand:\ +" +
+                                r"([^\s]+)[Cc]ommand", line)
+            if (command is not None):
+                if (command.group(1) not in commands_threads.keys()):
+                    commands_threads[command.group(1)] = []
+                commands_threads[command.group(1)] += [
+                                 {'command_name': command.group(3),
+                                  'command_start_name': command.group(3),
                                   'init_time': dt,
                                   'log': log,
                                   'init_line_num': line_num + 1,
-                                  'flow_id': com.group(2),
-                                  'thread': com.group(1)}]
+                                  'flow_id': command.group(2),
+                                  'thread': command.group(1)}]
                 continue
             start = re.search(r"\((.+?)\)\ +\[(.*?)\]\ +" +
                               r"[Ss][Tt][Aa][Rr][Tt],\ +" +
@@ -828,7 +828,7 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                             com_id]['log_id'] = start.group(4)
                         commands_threads[start.group(1)][
                             com_id]['start_line_num'] = line_num + 1
-                    except:
+                    except (KeyError, ValueError):
                         commands_threads[start.group(1)] += [
                                         {'command_name': start.group(3),
                                          'command_start_name': start.group(3),
@@ -882,12 +882,12 @@ def find_vm_tasks_engine(positions, output_descriptor, log_directory,
                                 and 'duration_full' not in com.keys()]
                     to_sort_idx = sorted(range(len(thr_list)),
                                          key=lambda k: thr_list[k][2])
-                    thr_list = [thr_list[i] for i in to_sort_idx]
-                    com_list = [com_list[i] for i in to_sort_idx]
+                    thr_list = [thr_list[idx] for idx in to_sort_idx]
+                    com_list = [com_list[idx] for idx in to_sort_idx]
                     try:
                         com_id = len(com_list) - 1 - \
                                  com_list.index(ending.group(3))
-                    except:
+                    except ValueError:
                         continue
                     commands_threads[thr_list[com_id][0]][
                                     thr_list[com_id][1]]['end_time'] = dt
@@ -1234,7 +1234,7 @@ def find_vm_tasks_libvirtd(positions, output_descriptor, log_directory,
                     try:
                         com_id = len(com_list) - 1 - \
                                  com_list[::-1].index(finish.group(3))
-                    except:
+                    except ValueError:
                         continue
                 commands_threads[finish.group(1)][com_id]['finish_time'] = dt
                 commands_threads[finish.group(1)][com_id][

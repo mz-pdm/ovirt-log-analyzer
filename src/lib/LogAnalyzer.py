@@ -58,7 +58,7 @@ class LogAnalyzer:
             elif line[0:2] == 'r^' and format_name != '':
                 try:
                     re.compile(line[1:])
-                except:
+                except Exception:
                     self.out_descr.write("Wrong format of regexp: %s\n" %
                                          line[1:])
                     exit()
@@ -404,10 +404,7 @@ class LogAnalyzer:
     def merge_all_messages(self):
         self.timeline, self.merged_errors, self.all_fields = \
             merge_all_errors_by_time(self.all_errors, self.format_fields)
-        try:
-            del self.all_errors
-        except:
-            pass
+        del self.all_errors
 
     def find_important_events(self):
         important_events, new_fields = \

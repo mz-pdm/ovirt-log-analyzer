@@ -3,11 +3,9 @@ import shutil
 import sys
 import argparse
 import re
-import pytz
 from datetime import datetime
 from lib.LogAnalyzer import LogAnalyzer
 from lib.detect_running_components import parse_date_time
-from lib.util import open_log_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -137,8 +135,8 @@ if __name__ == "__main__":
         try:
             shutil.rmtree(os.path.join(log_directory, 'log_analyzer_cache'))
         except IOError as e:
-            print("Error trying to clear the directory: %s. Has the clear been called already?" % e)
-
+            print("Error trying to clear the directory: %s. "
+                  "Has the clear been called already?" % e)
         exit()
     # Output directory
     if args.output_dir is not None:
