@@ -117,8 +117,9 @@ if __name__ == "__main__":
     def log_file_p(file_name):
         base_file_name = os.path.basename(file_name)
         return ('.log' in base_file_name and
-                not base_file_name.endswith('.json'))
-    log_directory = args.log_directory
+                not base_file_name.endswith('.json') and
+                not base_file_name.endswith('.conf'))
+    log_directory = os.path.abspath(args.log_directory)
     if args.filenames is None or args.filenames == ['all']:
         re_file_name = re.compile('(engine|sanlock|spm-lock)|.*(vdsm|libvirt)')
         files = []
